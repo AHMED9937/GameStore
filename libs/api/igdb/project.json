@@ -1,0 +1,26 @@
+{
+  "name": "api-igdb",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/api/igdb/src",
+  "projectType": "library",
+  "tags": ["scope:api", "type:integration", "platform:integration"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/api/igdb",
+        "main": "libs/api/igdb/src/index.ts",
+        "tsConfig": "libs/api/igdb/tsconfig.lib.json",
+        "assets": ["libs/api/igdb/*.md"]
+      }
+    },
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "reportsDirectory": "coverage/libs/api/igdb"
+      }
+    }
+  }
+}
