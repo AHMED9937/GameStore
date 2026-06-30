@@ -1,0 +1,14 @@
+/* App-level resets — theme tokens live in @gamestore/shared/theme */
+
+html {
+  scroll-behavior: smooth;
+}
+
+a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+svg {
+  display: block;
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "SeoLib",
+  "title": "Create shared SEO library shell",
+  "type": "object",
+  "properties": {},
+  "required": []
+}

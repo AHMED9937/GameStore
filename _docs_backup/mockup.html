@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nexus Pass | Premium Offline Game Activation Store</title>
+  
+  <!-- Modern Font Family -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM & CORE STYLES
+       ========================================================================== */
+    :root {
+      /* Theme Color Variables - Cybernetic Amethyst & Aqua Neon */
+      --bg-darker: #06070d;
+      --bg-dark: #0a0c16;
+      --bg-card: rgba(15, 18, 36, 0.4);
+      --bg-card-hover: rgba(26, 30, 56, 0.6);
+      --bg-input: rgba(10, 12, 22, 0.8);
+      
+      --color-primary: #a855f7;       /* Amethyst Purple */
+      --color-primary-glow: rgba(168, 85, 247, 0.15);
+      --color-secondary: #06b6d4;     /* Cyber Cyan */
+      --color-secondary-glow: rgba(6, 182, 212, 0.2);
+      --color-accent: #10b981;        /* Active Emerald */
+      --color-danger: #ef4444;        /* Alert Crimson */
+      
+      --border-light: rgba(255, 255, 255, 0.05);
+      --border-hover: rgba(168, 85, 247, 0.4);
+      
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dim: #6b7280;
+      
+      --gradient-brand: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+      --gradient-glow: linear-gradient(135deg, rgba(168, 85, 247, 0.5) 0%, rgba(6, 182, 212, 0.5) 100%);
+      
+      --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-darker);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.05) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-darker);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--color-primary);
+    }
+
+    h1, h2, h3, .logo-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Glassmorphism Common Styles */
+    .glass-panel {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      transition: var(--transition-smooth);
+    }
+
+    /* ==========================================================================
+       HEADER / NAVIGATION
+       ========================================================================== */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6, 7, 13, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-light);
+      padding: 16px 0;
+    }
+
+    .header-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .logo-icon {
+      background: var(--gradient-brand);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--bg-darker);
+      box-shadow: 0 0 20px var(--color-primary-glow);
+    }
+
+    .logo-text {
+      font-size: 22px;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    nav {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      transition: var(--transition-smooth);
+    }
+
+    .nav-link:hover, .nav-link.active {
+      color: var(--text-main);
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .lang-selector {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: var(--transition-smooth);
+    }
+
+    .lang-selector:hover {
+      border-color: var(--border-hover);
+    }
+
+    .btn-activate {
+      background: transparent;
+      border: 1px solid var(--color-primary);
+      color: var(--text-main);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+      box-shadow: inset 0 0 0 0 var(--color-primary);
+    }
+
+    .btn-activate:hover {
+      background: var(--color-primary);
+      color: #fff;
+      box-shadow: 0 0 25px var(--color-primary-glow);
+      transform: translateY(-2px);
+    }
+
+    .cart-btn {
+      color: var(--text-muted);
+      font-size: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition-smooth);
+    }
+
+    .cart-btn:hover {
+      color: var(--color-secondary);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -6px;
+      right: -8px;
+      background: var(--gradient-brand);
+      color: var(--bg-darker);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       HERO SECTION
+       ========================================================================== */
+    .hero {
+      padding: 80px 0 60px 0;
+      position: relative;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 60px;
+    }
+
+    .hero-content h1 {
+      font-size: 56px;
+      line-height: 1.1;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #fff 40%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-content p {
+      font-size: 18px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    .hero-btns {
+      display: flex;
+      gap: 16px;
+    }
+
+    .btn-primary {
+      background: var(--gradient-brand);
+      color: var(--bg-darker);
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 0 30px var(--color-secondary-glow);
+      transition: var(--transition-smooth);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 0 40px var(--color-primary-glow);
+    }
+
+    .hero-showcase {
+      position: relative;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .showcase-card {
+      width: 260px;
+      height: 350px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      position: absolute;
+      transform-origin: center bottom;
+      transition: var(--transition-smooth);
+    }
+
+    .showcase-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Stack overlap effect */
+    .showcase-card-1 {
+      transform: rotate(-10deg) translateX(-80px);
+      z-index: 1;
+      filter: brightness(0.6);
+    }
+    .showcase-card-2 {
+      transform: rotate(10deg) translateX(80px);
+      z-index: 1;
+      filter: brightness(0.6);
+    }
+    .showcase-card-3 {
+      transform: rotate(0deg);
+      z-index: 2;
+      box-shadow: 0 0 40px var(--color-primary-glow);
+      border-color: var(--color-primary);
+    }
+
+    .hero-showcase:hover .showcase-card-1 {
+      transform: rotate(-15deg) translateX(-120px) translateY(-10px);
+      filter: brightness(0.8);
+    }
+
+    .hero-showcase:hover .showcase-card-2 {
+      transform: rotate(15deg) translateX(120px) translateY(-10px);
+      filter: brightness(0.8);
+    }
+
+    .hero-showcase:hover .showcase-card-3 {
+      transform: scale(1.05) translateY(-15px);
+    }
+
+    /* ==========================================================================
+       SUBSCRIPTION BANNERS
+       ========================================================================== */
+    .subscriptions {
+      padding: 40px 0;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 40px;
+      position: relative;
+      display: inline-block;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 20%;
+      right: 20%;
+      height: 3px;
+      background: var(--gradient-brand);
+      border-radius: 2px;
+    }
+
+    .subs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+
+    .sub-card {
+      padding: 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sub-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, rgba(168, 85, 247, 0.05) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .sub-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-4px);
+      box-shadow: 0 10px 30px rgba(168, 85, 247, 0.05);
+    }
+
+    .sub-info h3 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .sub-info p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .sub-price {
+      font-size: 36px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      color: var(--color-secondary);
+    }
+
+    .sub-price span {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .btn-sub {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: var(--transition-smooth);
+    }
+
+    .sub-card:hover .btn-sub {
+      background: var(--gradient-brand);
+      color: var(--bg-darker);
+      border-color: transparent;
+      box-shadow: 0 0 20px var(--color-secondary-glow);
+    }
+
+    /* ==========================================================================
+       CATALOG / FILTER SECTION
+       ========================================================================== */
+    .catalog {
+      padding: 60px 0;
+    }
+
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .platform-filters {
+      display: flex;
+      gap: 10px;
+    }
+
+    .filter-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text-muted);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: var(--transition-smooth);
+    }
+
+    .filter-btn:hover {
+      border-color: var(--border-hover);
+      color: var(--text-main);
+    }
+
+    .filter-btn.active {
+      background: rgba(168, 85, 247, 0.1);
+      border-color: var(--color-primary);
+      color: var(--text-main);
+      box-shadow: 0 0 15px var(--color-primary-glow);
+    }
+
+    .search-sort {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 10px 16px 10px 40px;
+      border-radius: 10px;
+      outline: none;
+      width: 260px;
+      transition: var(--transition-smooth);
+    }
+
+    .search-box input:focus {
+      border-color: var(--color-secondary);
+      width: 320px;
+      box-shadow: 0 0 15px var(--color-secondary-glow);
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+    }
+
+    .sort-select {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 10px;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .sort-select:hover {
+      border-color: var(--border-hover);
+    }
+
+    /* ==========================================================================
+       GAME GRID & CARDS
+       ========================================================================== */
+    .game-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 30px;
+    }
+
+    .game-card {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 440px;
+    }
+
+    .game-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-8px);
+      box-shadow: 0 15px 35px var(--color-primary-glow);
+    }
+
+    .game-media {
+      height: 280px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .game-media img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: var(--transition-smooth);
+    }
+
+    .game-card:hover .game-media img {
+      transform: scale(1.08);
+    }
+
+    .platform-badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      background: rgba(6, 7, 13, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .steam-badge i { color: #1b2838; }
+    .epic-badge i { color: #ffffff; }
+
+    .game-card-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex-grow: 1;
+      background: linear-gradient(180deg, transparent 0%, rgba(6, 7, 13, 0.6) 100%);
+    }
+
+    .game-type {
+      font-size: 11px;
+      color: var(--color-secondary);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 6px;
+    }
+
+    .game-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .game-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding-top: 14px;
+    }
+
+    .price-tag {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-buy-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .game-card:hover .btn-buy-card {
+      background: var(--gradient-brand);
+      color: var(--bg-darker);
+      border-color: transparent;
+      box-shadow: 0 0 15px var(--color-secondary-glow);
+    }
+
+    /* ==========================================================================
+       FOOTER / HELP / NEWSLETTER
+       ========================================================================== */
+    footer {
+      background: #04050a;
+      border-top: 1px solid var(--border-light);
+      padding: 60px 0 30px 0;
+      margin-top: 80px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1.5fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 16px 0 24px 0;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 12px;
+    }
+
+    .social-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: var(--transition-smooth);
+    }
+
+    .social-btn:hover {
+      color: var(--text-main);
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .footer-links h4 {
+      font-size: 16px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .footer-links ul {
+      list-style: none;
+    }
+
+    .footer-links li {
+      margin-bottom: 12px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      transition: var(--transition-smooth);
+    }
+
+    .footer-links a:hover {
+      color: var(--color-primary);
+      padding-left: 4px;
+    }
+
+    .footer-newsletter h4 {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    .newsletter-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .newsletter-form input {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      color: var(--text-main);
+      padding: 10px 16px;
+      border-radius: 8px;
+      outline: none;
+      flex-grow: 1;
+    }
+
+    .newsletter-form button {
+      background: var(--gradient-brand);
+      color: var(--bg-darker);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .newsletter-form button:hover {
+      box-shadow: 0 0 15px var(--color-primary-glow);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--border-light);
+      padding-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-dim);
+      font-size: 12px;
+    }
+
+    .footer-bottom-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-bottom-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+    }
+
+    .footer-bottom-links a:hover {
+      color: var(--text-muted);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 40px;
+      }
+      .hero-content h1 {
+        font-size: 42px;
+      }
+      .hero-btns {
+        justify-content: center;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .subs-grid {
+        grid-template-columns: 1fr;
+      }
+      .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .search-sort {
+        flex-direction: column;
+      }
+      .search-box input {
+        width: 100%;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="container header-inner">
+      <a href="#" class="logo">
+        <div class="logo-icon">
+          <i class="fa-solid fa-cube"></i>
+        </div>
+        <span class="logo-text">NEXUS PASS</span>
+      </a>
+      
+      <nav>
+        <a href="#" class="nav-link active">Shop</a>
+        <a href="#" class="nav-link">My Games</a>
+        <a href="#" class="nav-link">FAQ</a>
+        <a href="#" class="nav-link">Contact</a>
+      </nav>
+      
+      <div class="header-actions">
+        <select class="lang-selector">
+          <option value="en">EN</option>
+          <option value="ar">AR</option>
+          <option value="fr">FR</option>
+          <option value="es">ES</option>
+        </select>
+        
+        <button class="cart-btn">
+          <i class="fa-solid fa-shopping-cart"></i>
+          <span class="cart-badge">0</span>
+        </button>
+        
+        <a href="#" class="btn-activate">
+          <i class="fa-solid fa-key"></i> Activate Key
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <h1>Next-Gen Offline Game Activations</h1>
+        <p>Gain instant, high-speed access to a massive library of 300+ blockbuster titles. Switch modes effortlessly, keep your saves local, and play with zero restrictions.</p>
+        <div class="hero-btns">
+          <a href="#catalog" class="btn-primary">
+            Explore Games <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+      
+      <div class="hero-showcase">
+        <div class="showcase-card showcase-card-1">
+          <img src="https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?q=80&w=400&auto=format&fit=crop" alt="Game 1">
+        </div>
+        <div class="showcase-card showcase-card-2">
+          <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop" alt="Game 2">
+        </div>
+        <div class="showcase-card showcase-card-3">
+          <img src="https://images.unsplash.com/photo-1553481187-be93c21490a9?q=80&w=400&auto=format&fit=crop" alt="Game 3">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUBSCRIPTIONS -->
+  <section class="subscriptions">
+    <div class="container">
+      <h2 class="section-title">Join The Pass</h2>
+      <div class="subs-grid">
+        <!-- Monthly Card -->
+        <div class="glass-panel sub-card">
+          <div class="sub-info">
+            <h3>Monthly Access</h3>
+            <p>Perfect for trying out the latest releases and checking compatibility.</p>
+            <div class="sub-price">€4.99 <span>/ month</span></div>
+          </div>
+          <a href="#" class="btn-sub">Subscribe</a>
+        </div>
+        
+        <!-- Yearly Card -->
+        <div class="glass-panel sub-card">
+          <div class="sub-info">
+            <h3>Annual Membership</h3>
+            <p>Best value. Unlimited downloads and updates for a full year.</p>
+            <div class="sub-price">€44.99 <span>/ year</span></div>
+          </div>
+          <a href="#" class="btn-sub">Subscribe</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATALOG -->
+  <section class="catalog" id="catalog">
+    <div class="container">
+      <h2 class="section-title">Game Catalog</h2>
+      
+      <!-- Filter and Search Bar -->
+      <div class="filter-bar">
+        <div class="platform-filters">
+          <button class="filter-btn active" data-platform="all">
+            <i class="fa-solid fa-gamepad"></i> All Games
+          </button>
+          <button class="filter-btn" data-platform="steam">
+            <i class="fa-brands fa-steam"></i> Steam
+          </button>
+          <button class="filter-btn" data-platform="epic">
+            <i class="fa-solid fa-bolt"></i> Epic Games
+          </button>
+          <button class="filter-btn" data-platform="ubisoft">
+            <i class="fa-solid fa-shield-halved"></i> Ubisoft
+          </button>
+        </div>
+        
+        <div class="search-sort">
+          <div class="search-box">
+            <i class="fa-solid fa-search"></i>
+            <input type="text" placeholder="Search game title...">
+          </div>
+          
+          <select class="sort-select">
+            <option value="popular">Popularity</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="newest">New Releases</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Games Grid -->
+      <div class="game-grid">
+        <!-- Game 1 -->
+        <div class="glass-panel game-card">
+          <div class="game-media">
+            <span class="platform-badge steam-badge"><i class="fa-brands fa-steam"></i> STEAM</span>
+            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&auto=format&fit=crop" alt="Black Myth Wukong">
+          </div>
+          <div class="game-card-body">
+            <div>
+              <div class="game-type">Offline Steam Account</div>
+              <div class="game-title">Black Myth: Wukong</div>
+            </div>
+            <div class="game-footer">
+              <span class="price-tag">€7.99</span>
+              <button class="btn-buy-card"><i class="fa-solid fa-cart-plus"></i></button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Game 2 -->
+        <div class="glass-panel game-card">
+          <div class="game-media">
+            <span class="platform-badge steam-badge"><i class="fa-brands fa-steam"></i> STEAM</span>
+            <img src="https://images.unsplash.com/photo-1553481187-be93c21490a9?q=80&w=400&auto=format&fit=crop" alt="S.T.A.L.K.E.R. 2">
+          </div>
+          <div class="game-card-body">
+            <div>
+              <div class="game-type">Offline Steam Account</div>
+              <div class="game-title">S.T.A.L.K.E.R. 2: Heart of Chornobyl</div>
+            </div>
+            <div class="game-footer">
+              <span class="price-tag">€9.99</span>
+              <button class="btn-buy-card"><i class="fa-solid fa-cart-plus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game 3 -->
+        <div class="glass-panel game-card">
+          <div class="game-media">
+            <span class="platform-badge epic-badge"><i class="fa-solid fa-bolt"></i> EPIC GAMES</span>
+            <img src="https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?q=80&w=400&auto=format&fit=crop" alt="Alan Wake 2">
+          </div>
+          <div class="game-card-body">
+            <div>
+              <div class="game-type">Offline Epic Account</div>
+              <div class="game-title">Alan Wake 2</div>
+            </div>
+            <div class="game-footer">
+              <span class="price-tag">€6.99</span>
+              <button class="btn-buy-card"><i class="fa-solid fa-cart-plus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game 4 -->
+        <div class="glass-panel game-card">
+          <div class="game-media">
+            <span class="platform-badge steam-badge"><i class="fa-brands fa-steam"></i> STEAM</span>
+            <img src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=400&auto=format&fit=crop" alt="Cyberpunk 2077">
+          </div>
+          <div class="game-card-body">
+            <div>
+              <div class="game-type">Offline Steam Account</div>
+              <div class="game-title">Cyberpunk 2077: Phantom Liberty</div>
+            </div>
+            <div class="game-footer">
+              <span class="price-tag">€7.99</span>
+              <button class="btn-buy-card"><i class="fa-solid fa-cart-plus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game 5 -->
+        <div class="glass-panel game-card">
+          <div class="game-media">
+            <span class="platform-badge steam-badge"><i class="fa-brands fa-steam"></i> STEAM</span>
+            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=400&auto=format&fit=crop" alt="Elden Ring">
+          </div>
+          <div class="game-card-body">
+            <div>
+              <div class="game-type">Offline Steam Account</div>
+              <div class="game-title">Elden Ring: Shadow of the Erdtree</div>
+            </div>
+            <div class="game-footer">
+              <span class="price-tag">€8.99</span>
+              <button class="btn-buy-card"><i class="fa-solid fa-cart-plus"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game 6 -->
+        <div class="glass-panel game-card">
+          <div class="game-media">
+            <span class="platform-badge steam-badge"><i class="fa-brands fa-steam"></i> STEAM</span>
+            <img src="https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=400&auto=format&fit=crop" alt="Hogwarts Legacy">
+          </div>
+          <div class="game-card-body">
+            <div>
+              <div class="game-type">Offline Steam Account</div>
+              <div class="game-title">Hogwarts Legacy</div>
+            </div>
+            <div class="game-footer">
+              <span class="price-tag">€5.99</span>
+              <button class="btn-buy-card"><i class="fa-solid fa-cart-plus"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <div class="logo-icon"><i class="fa-solid fa-cube"></i></div>
+          <span class="logo-text">NEXUS PASS</span>
+        </a>
+        <p>Premium offline game activation service. Get instant access to the biggest PC game releases safely, affordably, and automatically.</p>
+        <div class="social-links">
+          <a href="#" class="social-btn"><i class="fa-brands fa-discord"></i></a>
+          <a href="#" class="social-btn"><i class="fa-brands fa-telegram"></i></a>
+          <a href="#" class="social-btn"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      
+      <div class="footer-links">
+        <h4>Explore</h4>
+        <ul>
+          <li><a href="#">All Games</a></li>
+          <li><a href="#">Subscriptions</a></li>
+          <li><a href="#">Special Offers</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">My Games</a></li>
+          <li><a href="#">FAQ Accordion</a></li>
+          <li><a href="#">Contact Us</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-newsletter">
+        <h4>Stay Updated</h4>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">Subscribe to get notified about new release additions.</p>
+        <form class="newsletter-form" onsubmit="event.preventDefault();">
+          <input type="email" placeholder="Your email address">
+          <button type="submit">Subscribe</button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="container footer-bottom">
+      <p>&copy; 2026 Nexus Pass. All rights reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Platform Filters Interactivity Mock
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        const platform = btn.getAttribute('data-platform');
+        const cards = document.querySelectorAll('.game-card');
+        
+        cards.forEach(card => {
+          if (platform === 'all') {
+            card.style.display = 'flex';
+          } else {
+            const badge = card.querySelector('.platform-badge').textContent.toLowerCase();
+            if (badge.includes(platform)) {
+              card.style.display = 'flex';
+            } else {
+              card.style.display = 'none';
+            }
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

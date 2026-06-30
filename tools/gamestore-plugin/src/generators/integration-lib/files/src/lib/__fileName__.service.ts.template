@@ -1,0 +1,9 @@
+import { Injectable } from '@nestjs/common';
+import { <%= className %>Config } from './<%= fileName %>.config';
+
+@Injectable()
+export class <%= className %>Service {
+  health() {
+    return <%= className %>Config.getSetupResponse('health');
+  }
+}

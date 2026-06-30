@@ -1,0 +1,5 @@
+.gamestore-theme {
+  background-color: var(--bg-darker);
+  color: var(--text-main);
+  min-height: 100vh;
+}

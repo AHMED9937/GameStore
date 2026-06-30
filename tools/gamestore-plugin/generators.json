@@ -1,0 +1,54 @@
+{
+  "generators": {
+    "init-workspace": {
+      "factory": "./src/generators/init-workspace/init-workspace",
+      "schema": "./src/generators/init-workspace/schema.json",
+      "description": "init-workspace generator"
+    },
+    "theme-lib": {
+      "factory": "./src/generators/theme-lib/theme-lib",
+      "schema": "./src/generators/theme-lib/schema.json",
+      "description": "theme-lib generator"
+    },
+    "seo-lib": {
+      "factory": "./src/generators/seo-lib/seo-lib",
+      "schema": "./src/generators/seo-lib/schema.json",
+      "description": "seo-lib generator"
+    },
+    "ui-lib": {
+      "factory": "./src/generators/ui-lib/ui-lib",
+      "schema": "./src/generators/ui-lib/schema.json",
+      "description": "ui-lib generator"
+    },
+    "web-feature": {
+      "factory": "./src/generators/web-feature/web-feature",
+      "schema": "./src/generators/web-feature/schema.json",
+      "description": "web-feature generator"
+    },
+    "web-page-tree": {
+      "factory": "./src/generators/web-page-tree/web-page-tree",
+      "schema": "./src/generators/web-page-tree/schema.json",
+      "description": "web-page-tree generator"
+    },
+    "api-module": {
+      "factory": "./src/generators/api-module/api-module",
+      "schema": "./src/generators/api-module/schema.json",
+      "description": "api-module generator"
+    },
+    "api-resource": {
+      "factory": "./src/generators/api-resource/api-resource",
+      "schema": "./src/generators/api-resource/schema.json",
+      "description": "api-resource generator"
+    },
+    "integration-lib": {
+      "factory": "./src/generators/integration-lib/integration-lib",
+      "schema": "./src/generators/integration-lib/schema.json",
+      "description": "integration-lib generator"
+    },
+    "e2e-spec": {
+      "factory": "./src/generators/e2e-spec/e2e-spec",
+      "schema": "./src/generators/e2e-spec/schema.json",
+      "description": "e2e-spec generator"
+    }
+  }
+}

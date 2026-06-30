@@ -1,0 +1,27 @@
+.section {
+  padding: 3rem 0 2rem;
+}
+
+.panel {
+  padding: 1.5rem;
+}
+
+.twoCol {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .twoCol {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.setupMessage {
+  margin-top: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-secondary);
+  color: var(--color-secondary);
+  background: rgba(6, 182, 212, 0.08);
+}

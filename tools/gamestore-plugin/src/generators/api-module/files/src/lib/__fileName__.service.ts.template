@@ -1,0 +1,12 @@
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class <%= className %>Service {
+  getStatus() {
+    return {
+      status: 'setup',
+      module: '<%= fileName %>',
+      message: '<%= className %> module — wired, implement CRUD in Phase 6',
+    };
+  }
+}
