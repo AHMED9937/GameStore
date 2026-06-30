@@ -1,0 +1,5 @@
+<% components.forEach(function(component) { %>
+export function <%= page %><%= component.charAt(0).toUpperCase() + component.slice(1) %>() {
+  return <div><%= page %> / <%= component %></div>;
+}
+<% }); %>

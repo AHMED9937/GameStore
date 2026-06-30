@@ -1,0 +1,11 @@
+export class <%= className %>Config {
+  static integration = '<%= integration %>';
+
+  static getSetupResponse(action: string) {
+    return {
+      status: 'setup',
+      integration: '<%= integration %>',
+      message: `<%= className %> ${action} — not implemented yet`,
+    };
+  }
+}

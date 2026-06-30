@@ -1,0 +1,19 @@
+{
+  "name": "test-utils",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/testing/test-utils/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:util"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/testing/test-utils",
+        "main": "libs/testing/test-utils/src/index.ts",
+        "tsConfig": "libs/testing/test-utils/tsconfig.lib.json",
+        "assets": ["libs/testing/test-utils/*.md"]
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+# dependencies
+node_modules
+
+# nx
+.nx/cache
+.nx/workspace-data
+
+# build
+dist
+tmp
+out-tsc
+.next
+
+# env
+.env
+.env.local
+
+# ide
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# os
+.DS_Store
+Thumbs.db
+
+# test
+test-output
+playwright-report
+blob-report
+coverage
+
+# misc
+*.log
+vitest.config.*.timestamp*

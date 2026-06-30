@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "InitWorkspace",
+  "title": "Initialize GameStore workspace apps and env",
+  "type": "object",
+  "properties": {},
+  "required": []
+}

@@ -1,0 +1,26 @@
+{
+  "name": "shared-seo",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/shared/seo/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:integration"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/shared/seo",
+        "main": "libs/shared/seo/src/index.ts",
+        "tsConfig": "libs/shared/seo/tsconfig.lib.json",
+        "assets": ["libs/shared/seo/*.md"]
+      }
+    },
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "reportsDirectory": "coverage/libs/shared/seo"
+      }
+    }
+  }
+}

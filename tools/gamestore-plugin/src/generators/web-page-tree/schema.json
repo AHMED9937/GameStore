@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "WebPageTree",
+  "title": "Add component tree folders to a web feature",
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": "string",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "Feature/page name?"
+    },
+    "components": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Component slugs to generate"
+    }
+  },
+  "required": ["page"]
+}

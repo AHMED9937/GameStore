@@ -1,0 +1,56 @@
+{
+  "name": "api-prisma",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/api/prisma/src",
+  "projectType": "library",
+  "tags": ["scope:api", "type:integration", "platform:database"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/api/prisma",
+        "main": "libs/api/prisma/src/index.ts",
+        "tsConfig": "libs/api/prisma/tsconfig.lib.json",
+        "assets": ["libs/api/prisma/*.md"]
+      }
+    },
+    "prisma-generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma generate --schema=libs/api/prisma/prisma/schema.prisma"
+      }
+    },
+    "prisma-migrate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate dev --schema=libs/api/prisma/prisma/schema.prisma --skip-seed"
+      }
+    },
+    "prisma-migrate-deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma migrate deploy --schema=libs/api/prisma/prisma/schema.prisma"
+      }
+    },
+    "db-seed": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma db seed --schema=libs/api/prisma/prisma/schema.prisma"
+      }
+    },
+    "prisma-studio": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "prisma studio --schema=libs/api/prisma/prisma/schema.prisma"
+      }
+    },
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "reportsDirectory": "coverage/libs/api/prisma"
+      }
+    }
+  }
+}

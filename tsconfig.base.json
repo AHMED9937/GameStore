@@ -1,0 +1,56 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@gamestore/workspace": ["./tools/gamestore-plugin/src/index.ts"],
+      "@gamestore/testing/test-utils": [
+        "./libs/testing/test-utils/src/index.ts"
+      ],
+      "@gamestore/shared/theme": ["./libs/shared/theme/src/index.ts"],
+      "@gamestore/shared/ui": ["./libs/shared/ui/src/index.ts"],
+      "@gamestore/web/data-access": ["./libs/web/data-access/src/index.ts"],
+      "@gamestore/web/feature-home": ["./libs/web/feature-home/src/index.ts"],
+      "@gamestore/web/feature-catalog": [
+        "./libs/web/feature-catalog/src/index.ts"
+      ],
+      "@gamestore/web/feature-game-detail": [
+        "./libs/web/feature-game-detail/src/index.ts"
+      ],
+      "@gamestore/web/feature-checkout": [
+        "./libs/web/feature-checkout/src/index.ts"
+      ],
+      "@gamestore/web/feature-checkout-success": [
+        "./libs/web/feature-checkout-success/src/index.ts"
+      ],
+      "@gamestore/web/feature-my-games": [
+        "./libs/web/feature-my-games/src/index.ts"
+      ],
+      "@gamestore/web/feature-faq": ["./libs/web/feature-faq/src/index.ts"],
+      "@gamestore/web/feature-contact": [
+        "./libs/web/feature-contact/src/index.ts"
+      ],
+      "@gamestore/shared/seo": ["./libs/shared/seo/src/index.ts"],
+      "@gamestore/api/prisma": ["./libs/api/prisma/src/index.ts"],
+      "@gamestore/api/stripe": ["./libs/api/stripe/src/index.ts"],
+      "@gamestore/api/steam": ["./libs/api/steam/src/index.ts"],
+      "@gamestore/api/data-access": ["./libs/api/data-access/src/index.ts"],
+      "@gamestore/api/auth": ["./libs/api/auth/src/index.ts"],
+      "@gamestore/api/auth/sync": ["./libs/api/auth/src/sync.ts"],
+      "@gamestore/api/prisma/db": ["./libs/api/prisma/src/lib/db.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

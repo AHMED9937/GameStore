@@ -1,0 +1,8 @@
+export function <%= className %>() {
+  return (
+    <section>
+      <h1><%= className %></h1>
+      <p>Placeholder — libs/web/feature-<%= fileName %></p>
+    </section>
+  );
+}

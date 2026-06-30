@@ -1,0 +1,231 @@
+.page {
+  padding: 3rem 0 4rem;
+  max-width: 640px;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.cardTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+.details {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.details dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.details dd {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.875rem;
+  word-break: break-all;
+}
+
+.danger {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.dangerText {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.error {
+  margin: 0 0 1rem;
+  color: #f87171;
+}
+
+.deleteBtn {
+  appearance: none;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profileForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--gradient-brand);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 24px var(--color-primary-glow);
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarInitials {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--bg-darker);
+}
+
+.profileName {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.profileEmail {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 540px) {
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.input {
+  appearance: none;
+  width: 100%;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: rgba(10, 12, 22, 0.9);
+  color: var(--text-main);
+  padding: 0.75rem 0.875rem;
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(168, 85, 247, 0.65);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+}
+
+.inputReadonly {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.fieldHint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.saveBtn {
+  appearance: none;
+  align-self: flex-start;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--bg-darker);
+  background: var(--gradient-brand);
+  box-shadow: 0 0 20px var(--color-primary-glow);
+}
+
+.saveBtn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.saveBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.success {
+  margin: 0;
+  color: #34d399;
+  font-size: 0.9rem;
+}

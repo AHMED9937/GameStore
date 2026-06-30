@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Game {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String?
+  platform        String
+  priceBase       Decimal  @db.Decimal(10, 2)
+  coverImage      String?
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  pricingRegions GamePricingRegion[]
+  accounts       GameAccount[]
+  licenses       License[]
+
+  @@map("games")
+}
+
+model GamePricingRegion {
+  id            String  @id @default(cuid())
+  gameId        String
+  countryCode   String  @db.VarChar(2)
+  priceAdjusted Decimal @db.Decimal(10, 2)
+  currency      String  @default("USD") @db.VarChar(3)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, countryCode])
+  @@map("game_pricing_regions")
+}
+
+model GameAccount {
+  id                String    @id @default(cuid())
+  gameId            String
+  platform          String
+  username          String
+  passwordEncrypted String
+  sharedSecret      String
+  region            String    @default("global")
+  activeUsersCount  Int       @default(0)
+  isActive          Boolean   @default(true)
+  lockedUntil       DateTime?
+  lastHealthCheck   DateTime?
+  createdAt         DateTime  @default(now())
+
+  game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  licenses License[]
+
+  @@index([gameId, isActive])
+  @@map("game_accounts")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  firstName String?
+  lastName  String?
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  licenses  License[]
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  ip         String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+model License {
+  id           String    @id @default(cuid())
+  licenseKey   String    @unique
+  gameId       String
+  accountId    String?
+  ownerId      String?
+  status       String    @default("available")
+  buyerEmail   String?
+  buyerCountry String?   @db.VarChar(2)
+  activatedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  game    Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  account GameAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  owner   User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([gameId, status])
+  @@index([ownerId])
+  @@map("licenses")
+}

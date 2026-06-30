@@ -1,0 +1,24 @@
+.section {
+  padding: 3rem 0 2rem;
+}
+
+.panel {
+  padding: 1.5rem;
+}
+
+.twoCol {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .twoCol {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}

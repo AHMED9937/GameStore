@@ -1,0 +1,135 @@
+/* GameStore design system — from mockup (Amethyst & Aqua Neon) */
+
+:root {
+  --bg-darker: #06070d;
+  --bg-dark: #0a0c16;
+  --bg-card: rgba(15, 18, 36, 0.4);
+  --bg-card-hover: rgba(26, 30, 56, 0.6);
+  --bg-input: rgba(10, 12, 22, 0.8);
+  --bg-header: rgba(6, 7, 13, 0.8);
+
+  --color-primary: #a855f7;
+  --color-primary-glow: rgba(168, 85, 247, 0.15);
+  --color-secondary: #06b6d4;
+  --color-secondary-glow: rgba(6, 182, 212, 0.2);
+  --color-accent: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+
+  --border-light: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(168, 85, 247, 0.4);
+
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --text-dim: #6b7280;
+
+  --gradient-brand: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-secondary) 100%
+  );
+  --gradient-glow: linear-gradient(
+    135deg,
+    rgba(168, 85, 247, 0.5) 0%,
+    rgba(6, 182, 212, 0.5) 100%
+  );
+  --gradient-hero-text: linear-gradient(135deg, #fff 40%, #a855f7 100%);
+
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+
+  --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  --shadow-glow: 0 0 20px var(--color-primary-glow);
+  --shadow-card-hover: 0 15px 35px var(--color-primary-glow);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg-darker);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  background-image: radial-gradient(
+      circle at 10% 20%,
+      rgba(168, 85, 247, 0.05) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 90% 80%,
+      rgba(6, 182, 212, 0.05) 0%,
+      transparent 40%
+    );
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3,
+h4,
+.gamestore-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+.gamestore-theme {
+  min-height: 100vh;
+  color: var(--text-main);
+}
+
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  transition: var(--transition-smooth);
+}
+
+.gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-gradient-text {
+  background: var(--gradient-hero-text);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

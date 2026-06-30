@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "ApiResource",
+  "title": "Create API CRUD resource scaffold",
+  "type": "object",
+  "properties": {
+    "resource": {
+      "type": "string",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "Resource name (e.g. games)?"
+    }
+  },
+  "required": ["resource"]
+}

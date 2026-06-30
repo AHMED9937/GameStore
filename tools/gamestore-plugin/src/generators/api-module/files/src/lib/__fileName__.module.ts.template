@@ -1,0 +1,8 @@
+import { Module } from '@nestjs/common';
+import { <%= className %>Service } from './<%= fileName %>.service';
+
+@Module({
+  providers: [<%= className %>Service],
+  exports: [<%= className %>Service],
+})
+export class <%= className %>Module {}

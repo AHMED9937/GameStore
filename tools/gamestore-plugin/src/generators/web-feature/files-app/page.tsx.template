@@ -1,0 +1,5 @@
+import { <%= className %> } from '<%= importPath %>';
+
+export default function Page() {
+  return <<%= className %> />;
+}

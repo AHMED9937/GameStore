@@ -1,0 +1,24 @@
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class <%= className %>Repository {
+  findAll() {
+    return [];
+  }
+
+  findOne(_id: string) {
+    return null;
+  }
+
+  create() {
+    return { status: 'setup', resource: '<%= resource %>', message: 'CRUD not implemented yet' };
+  }
+
+  update(_id: string) {
+    return { status: 'setup', resource: '<%= resource %>', message: 'CRUD not implemented yet' };
+  }
+
+  remove(_id: string) {
+    return { status: 'setup', resource: '<%= resource %>', message: 'CRUD not implemented yet' };
+  }
+}

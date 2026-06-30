@@ -1,0 +1,41 @@
+{
+  "name": "gamestore-plugin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tools/gamestore-plugin/src",
+  "projectType": "library",
+  "tags": ["scope:tools,type:plugin"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/tools/gamestore-plugin",
+        "main": "tools/gamestore-plugin/src/index.ts",
+        "tsConfig": "tools/gamestore-plugin/tsconfig.lib.json",
+        "assets": [
+          "tools/gamestore-plugin/*.md",
+          {
+            "input": "./tools/gamestore-plugin/src",
+            "glob": "**/!(*.ts)",
+            "output": "./src"
+          },
+          {
+            "input": "./tools/gamestore-plugin/src",
+            "glob": "**/*.d.ts",
+            "output": "./src"
+          },
+          {
+            "input": "./tools/gamestore-plugin",
+            "glob": "generators.json",
+            "output": "."
+          },
+          {
+            "input": "./tools/gamestore-plugin",
+            "glob": "executors.json",
+            "output": "."
+          }
+        ]
+      }
+    }
+  }
+}

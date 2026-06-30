@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "IntegrationLib",
+  "title": "Create integration library shell (stripe, steam, prisma)",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "$default": { "$source": "argv", "index": 0 },
+      "x-prompt": "Integration name (stripe, steam, prisma)?"
+    }
+  },
+  "required": ["name"]
+}

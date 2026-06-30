@@ -1,0 +1,32 @@
+import { Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { <%= className %>Service } from './<%= fileName %>.service';
+
+@Controller('api/<%= resource %>')
+export class <%= className %>Controller {
+  constructor(private readonly service: <%= className %>Service) {}
+
+  @Get()
+  findAll() {
+    return this.service.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
+  }
+
+  @Post()
+  create() {
+    return this.service.create();
+  }
+
+  @Put(':id')
+  update(@Param('id') id: string) {
+    return this.service.update(id);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.service.remove(id);
+  }
+}
