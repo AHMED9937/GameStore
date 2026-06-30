@@ -445,7 +445,7 @@ Service methods return setup text (no Twitch API calls).
 
 ---
 
-### Slice AD.2.1 — `Game` schema extensions
+### Slice AD.2.1 — `Game` schema extensions (+ IGDB media gallery)
 
 **Add to `libs/api/prisma/prisma/schema.prisma`:**
 
@@ -456,13 +456,34 @@ model Game {
   releaseDate     DateTime?
   genres          String[]  @default([])
   igdbSyncedAt    DateTime?
-  igdbCoverUrl    String?   // raw IGDB URL before CDN normalize
+  igdbCoverUrl    String?
+  media           GameMedia[]
+}
+
+/// Screenshots + trailer videos synced from IGDB (Game Pass–style detail page).
+model GameMedia {
+  id        String   @id @default(cuid())
+  gameId    String
+  type      String   // screenshot | video
+  url       String   // IGDB image URL or YouTube embed URL
+  igdbId    Int?
+  title     String?  // video title from IGDB
+  sortOrder Int      @default(0)
+  game      Game     @relation(...)
 }
 ```
 
-**Migration:** `pnpm nx run api-prisma:prisma-migrate` (stop `nx serve api` on Windows first).
+**IGDB import targets (AD.5):** every imported game gets **2 screenshots** + **2 videos** by default (`IGDB_IMPORT_SCREENSHOT_LIMIT`, `IGDB_IMPORT_VIDEO_LIMIT` in `@gamestore/api/igdb`) — same pattern as [gamepass.offline-game.com](https://gamepass.offline-game.com) detail galleries.
 
-**Update seed:** optional `igdbId` on demo games (nullable OK).
+| Media | IGDB source | Stored as |
+|-------|-------------|-----------|
+| Cover | `cover` | `Game.coverImage` + `igdbCoverUrl` |
+| Screenshots (×2) | `screenshots` endpoint | `GameMedia` `type: screenshot` |
+| Videos (×2) | `game_videos` (YouTube) | `GameMedia` `type: video` |
+
+**Migration:** `pnpm nx run api-prisma:prisma-migrate-deploy` (create migration SQL manually if `migrate dev` is non-interactive).
+
+**Update seed:** `demo-game-1` gets `igdbId` + 2 screenshots + 2 videos.
 
 ---
 
@@ -672,6 +693,8 @@ IGDB_CLIENT_SECRET=
 
 - `IgdbService.searchGames(query)` — OAuth client credentials → `POST https://api.igdb.com/v4/games`
 - `IgdbService.getGameDetails(igdbId)` — cover, summary, release date, genres
+- `IgdbService.getScreenshots(igdbId, limit=2)` — IGDB `screenshots` → `GameMedia` rows
+- `IgdbService.getVideos(igdbId, limit=2)` — IGDB `game_videos` → YouTube embed URLs
 
 **Tests:** unit with mocked `fetch` (no live API in CI).
 
@@ -682,7 +705,7 @@ IGDB_CLIENT_SECRET=
 Replace setup on:
 
 - `GET /api/admin/igdb/search?q=` — proxy IGDB search (admin-only)
-- `POST /api/admin/igdb/import` — body `{ igdbId, priceBase, platform, slug? }` → upsert `Game` (draft, `publishedAt: null`)
+- `POST /api/admin/igdb/import` — body `{ igdbId, priceBase, platform, slug? }` → upsert `Game` (draft) + **2 screenshots + 2 videos** in `game_media`
 
 **Audit:** `admin.igdb.import`
 
@@ -711,7 +734,7 @@ For bulk dev seeding without UI.
 
 **Phase AD.5 exit criteria:**
 
-- [ ] Import creates `Game` with `igdbId`, `description`, `coverImage`, `releaseDate`
+- [ ] Import creates `Game` with `igdbId`, `description`, `coverImage`, `releaseDate`, **2 screenshots, 2 videos**
 - [ ] Draft game **not** on public `/shop` until published (AD.6)
 - [ ] No IGDB calls from storefront — admin only
 - [ ] **Git:** commit `feat(admin): AD.5 IGDB metadata seeder and import UI` and push

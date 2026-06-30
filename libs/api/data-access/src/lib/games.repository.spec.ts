@@ -35,6 +35,12 @@ describe('GamesRepository', () => {
 
     expect(prisma.game.findUnique).toHaveBeenCalledWith({
       where: { slug: 'demo-game-1' },
+      include: {
+        media: {
+          orderBy: { sortOrder: 'asc' },
+          where: { type: { in: ['screenshot', 'video'] } },
+        },
+      },
     });
   });
 
@@ -60,5 +66,42 @@ describe('GamesRepository', () => {
     await repo.delete('abc');
 
     expect(prisma.game.delete).toHaveBeenCalledWith({ where: { id: 'abc' } });
+  });
+
+  it('findAllAdmin returns all games with admin projection', async () => {
+    const prisma = createPrismaMock();
+    const repo = new GamesRepository(prisma as unknown as PrismaService);
+
+    await repo.findAllAdmin();
+
+    expect(prisma.game.findMany).toHaveBeenCalledWith({
+      orderBy: { title: 'asc' },
+      select: expect.objectContaining({
+        id: true,
+        publishedAt: true,
+        igdbId: true,
+        releaseDate: true,
+        genres: true,
+        media: expect.objectContaining({
+          orderBy: { sortOrder: 'asc' },
+        }),
+      }),
+    });
+  });
+
+  it('findByIdAdmin looks up by id with admin projection', async () => {
+    const prisma = createPrismaMock();
+    const repo = new GamesRepository(prisma as unknown as PrismaService);
+
+    await repo.findByIdAdmin('game-1');
+
+    expect(prisma.game.findUnique).toHaveBeenCalledWith({
+      where: { id: 'game-1' },
+      select: expect.objectContaining({
+        id: true,
+        publishedAt: true,
+        igdbId: true,
+      }),
+    });
   });
 });

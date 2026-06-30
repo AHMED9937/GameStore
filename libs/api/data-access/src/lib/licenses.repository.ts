@@ -35,7 +35,10 @@ export class LicensesRepository {
   findAll() {
     return this.prisma.license.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { game: { select: gameSummarySelect } },
+      include: {
+        game: { select: gameSummarySelect },
+        owner: { select: { email: true } },
+      },
     });
   }
 

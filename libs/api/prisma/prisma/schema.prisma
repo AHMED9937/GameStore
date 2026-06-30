@@ -20,14 +20,38 @@ model Game {
   metaDescription String?
   ogImage         String?
   publishedAt     DateTime?
+  igdbId          Int?      @unique
+  releaseDate     DateTime?
+  genres          String[]  @default([])
+  igdbSyncedAt    DateTime?
+  igdbCoverUrl    String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   pricingRegions GamePricingRegion[]
   accounts       GameAccount[]
   licenses       License[]
+  media          GameMedia[]
 
   @@map("games")
+}
+
+/// IGDB-synced gallery media (screenshots + trailer videos) for game detail pages.
+model GameMedia {
+  id        String   @id @default(cuid())
+  gameId    String
+  /// `screenshot` | `video` (YouTube embed URL from IGDB game_videos)
+  type      String
+  url       String
+  igdbId    Int?
+  title     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId, type, sortOrder])
+  @@map("game_media")
 }
 
 model GamePricingRegion {
