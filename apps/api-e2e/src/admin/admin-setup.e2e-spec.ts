@@ -46,6 +46,74 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
       message: 'Admin dashboard — not implemented yet',
     });
   });
+
+  const gamesSetupBody = {
+    status: 'setup',
+    integration: 'admin-games',
+    message: 'Admin games — not implemented yet',
+  };
+
+  it('GET /api/admin/games returns 403 for a non-admin user', async () => {
+    await request(app.getHttpServer())
+      .get('/api/admin/games')
+      .set(authAs(E2E_TOKENS.userA))
+      .expect(403);
+  });
+
+  it('GET /api/admin/games returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/games')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual(gamesSetupBody);
+  });
+
+  it('GET /api/admin/games/:id returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/games/some-id')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual(gamesSetupBody);
+  });
+
+  it('POST /api/admin/games returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/admin/games')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ title: 'Setup Game', slug: 'setup-game', platform: 'steam' })
+      .expect(201);
+
+    expect(response.body).toEqual(gamesSetupBody);
+  });
+
+  it('PUT /api/admin/games/:id returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .put('/api/admin/games/some-id')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ title: 'Updated' })
+      .expect(200);
+
+    expect(response.body).toEqual(gamesSetupBody);
+  });
+
+  it('DELETE /api/admin/games/:id returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .delete('/api/admin/games/some-id')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual(gamesSetupBody);
+  });
+
+  it('GET /api/games remains public and unchanged', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/games')
+      .expect(200);
+
+    expect(Array.isArray(response.body)).toBe(true);
+  });
 });
 
 if (!hasDatabase) {
