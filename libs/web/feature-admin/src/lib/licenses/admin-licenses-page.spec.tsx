@@ -5,7 +5,11 @@ import { ADMIN_LICENSES_SETUP_MESSAGE } from './licenses.constants';
 
 describe('AdminLicensesPage', () => {
   it('renders licenses heading and setup banner by default', () => {
-    render(<AdminLicensesPage />);
+    render(
+      <AdminLicensesPage
+        listState={{ status: 'setup', message: ADMIN_LICENSES_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Licenses' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_LICENSES_SETUP_MESSAGE,

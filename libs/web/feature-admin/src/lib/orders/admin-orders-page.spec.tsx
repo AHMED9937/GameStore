@@ -5,7 +5,11 @@ import { ADMIN_ORDERS_SETUP_MESSAGE } from './orders.constants';
 
 describe('AdminOrdersPage', () => {
   it('renders orders heading and setup banner by default', () => {
-    render(<AdminOrdersPage />);
+    render(
+      <AdminOrdersPage
+        listState={{ status: 'setup', message: ADMIN_ORDERS_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Orders' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_ORDERS_SETUP_MESSAGE,

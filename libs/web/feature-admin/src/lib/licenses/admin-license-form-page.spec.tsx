@@ -5,7 +5,11 @@ import { ADMIN_LICENSES_SETUP_MESSAGE } from './licenses.constants';
 
 describe('AdminLicenseFormPage', () => {
   it('renders issue license heading, setup banner, and disabled form', () => {
-    render(<AdminLicenseFormPage />);
+    render(
+      <AdminLicenseFormPage
+        formState={{ status: 'setup', message: ADMIN_LICENSES_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Issue license' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_LICENSES_SETUP_MESSAGE,

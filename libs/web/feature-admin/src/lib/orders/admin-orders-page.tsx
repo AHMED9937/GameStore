@@ -1,27 +1,26 @@
+'use client';
+
 import { Container } from '@gamestore/shared/ui';
+import { getAdminOrders } from '@gamestore/web/data-access';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminPageShell } from '../components/admin-page-shell';
 import type { AdminAsyncState } from '../types/admin-async-state';
+import { useAdminSetupState } from '../hooks/use-admin-resource';
 import { AdminOrdersHeader } from './admin-orders-header';
-import { ADMIN_ORDERS_SETUP_MESSAGE } from './orders.constants';
 
 export type AdminOrdersPageProps = {
   listState?: AdminAsyncState<null>;
 };
 
-const DEFAULT_LIST_STATE: AdminAsyncState<null> = {
-  status: 'setup',
-  message: ADMIN_ORDERS_SETUP_MESSAGE,
-};
+export function AdminOrdersPage({ listState }: AdminOrdersPageProps) {
+  const fetchedState = useAdminSetupState(() => getAdminOrders());
+  const state = listState ?? fetchedState;
 
-export function AdminOrdersPage({
-  listState = DEFAULT_LIST_STATE,
-}: AdminOrdersPageProps) {
   return (
     <Container>
       <AdminPageShell>
         <AdminOrdersHeader />
-        <AdminAsyncView state={listState} emptyMessage="No orders yet.">
+        <AdminAsyncView state={state} emptyMessage="No orders yet.">
           {() => null}
         </AdminAsyncView>
       </AdminPageShell>
