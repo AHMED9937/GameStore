@@ -229,6 +229,76 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
 
     expect(response.body).toEqual(accountsSetupBody);
   });
+
+  const auditSetupBody = {
+    status: 'setup',
+    integration: 'admin-audit',
+    message: 'Admin audit log — not implemented yet',
+  };
+
+  it('GET /api/admin/audit-logs returns 403 for a non-admin user', async () => {
+    await request(app.getHttpServer())
+      .get('/api/admin/audit-logs')
+      .set(authAs(E2E_TOKENS.userA))
+      .expect(403);
+  });
+
+  it('GET /api/admin/audit-logs returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/audit-logs?page=1&limit=10&action=admin.game.create')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual(auditSetupBody);
+  });
+
+  it('GET /api/audit-logs remains on the real admin audit endpoint', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/audit-logs')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toHaveProperty('items');
+    expect(response.body).toHaveProperty('total');
+  });
+
+  const igdbSearchSetupBody = {
+    status: 'setup',
+    integration: 'igdb',
+    message: 'IGDB search — not implemented yet',
+  };
+
+  const igdbImportSetupBody = {
+    status: 'setup',
+    integration: 'igdb',
+    message: 'IGDB import — not implemented yet',
+  };
+
+  it('GET /api/admin/igdb/search returns 403 for a non-admin user', async () => {
+    await request(app.getHttpServer())
+      .get('/api/admin/igdb/search?q=halo')
+      .set(authAs(E2E_TOKENS.userA))
+      .expect(403);
+  });
+
+  it('GET /api/admin/igdb/search returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/igdb/search?q=halo')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual(igdbSearchSetupBody);
+  });
+
+  it('POST /api/admin/igdb/import returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/admin/igdb/import')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ igdbId: 12345 })
+      .expect(201);
+
+    expect(response.body).toEqual(igdbImportSetupBody);
+  });
 });
 
 if (!hasDatabase) {

@@ -49,7 +49,8 @@
       "@gamestore/api/data-access": ["./libs/api/data-access/src/index.ts"],
       "@gamestore/api/auth": ["./libs/api/auth/src/index.ts"],
       "@gamestore/api/auth/sync": ["./libs/api/auth/src/sync.ts"],
-      "@gamestore/api/prisma/db": ["./libs/api/prisma/src/lib/db.ts"]
+      "@gamestore/api/prisma/db": ["./libs/api/prisma/src/lib/db.ts"],
+      "@gamestore/api/igdb": ["./libs/api/igdb/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
