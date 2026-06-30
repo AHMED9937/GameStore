@@ -20,12 +20,34 @@ const isPublicRoute = createRouteMatcher([
 ]);
 
 const isAdminRoute = createRouteMatcher(['/admin(.*)']);
+const isAdminSignInRoute = createRouteMatcher(['/admin/sign-in(.*)']);
 const isAdminSignUpRoute = createRouteMatcher(['/admin/sign-up(.*)']);
 const isSignInRoute = createRouteMatcher(['/sign-in(.*)']);
+
+function resolveAdminEntryPath(redirectUrl: string | null): string {
+  if (redirectUrl && redirectUrl.startsWith('/admin')) {
+    return redirectUrl;
+  }
+  return '/admin';
+}
 
 export default clerkMiddleware(async (auth, req) => {
   if (isAdminSignUpRoute(req)) {
     return new NextResponse(null, { status: 404 });
+  }
+
+  if (isAdminSignInRoute(req)) {
+    const { userId, sessionClaims } = await auth();
+    if (userId) {
+      const redirectUrl = req.nextUrl.searchParams.get('redirect_url');
+      if (getRoleFromSessionClaims(sessionClaims as Record<string, unknown>) === 'admin') {
+        return NextResponse.redirect(
+          new URL(resolveAdminEntryPath(redirectUrl), req.url),
+        );
+      }
+      return NextResponse.redirect(new URL('/', req.url));
+    }
+    return;
   }
 
   if (isPublicRoute(req)) {

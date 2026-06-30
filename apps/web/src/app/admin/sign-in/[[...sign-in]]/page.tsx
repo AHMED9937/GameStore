@@ -1,5 +1,6 @@
 import { SignIn } from '@clerk/nextjs';
 import { AuthShell } from '../../../../components/auth/auth-shell';
+import { buildAdminPostSignInTarget } from '../../../../lib/auth-role';
 
 type AdminSignInPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -10,10 +11,7 @@ export default async function AdminSignInPage({
   searchParams,
 }: AdminSignInPageProps) {
   const { redirect_url } = await searchParams;
-  const afterSignIn =
-    redirect_url && redirect_url.startsWith('/admin')
-      ? redirect_url
-      : '/admin';
+  const afterSignIn = buildAdminPostSignInTarget(redirect_url);
 
   return (
     <AuthShell

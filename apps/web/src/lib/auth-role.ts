@@ -22,6 +22,41 @@ export function safeAuthRedirectPath(
   return path;
 }
 
+export function safeAdminRedirectPath(
+  path: string | null | undefined,
+): string | null {
+  if (!path || !path.startsWith('/admin') || path.startsWith('//')) {
+    return null;
+  }
+  return path;
+}
+
+export function buildAuthRedirectTarget(redirectUrl?: string | null): string {
+  if (!redirectUrl) {
+    return '/auth/redirect';
+  }
+  return `/auth/redirect?redirect_url=${encodeURIComponent(redirectUrl)}`;
+}
+
+export function buildAdminPostSignInTarget(redirectUrl?: string | null): string {
+  const target = safeAdminRedirectPath(redirectUrl) ?? '/admin';
+  return buildAuthRedirectTarget(target);
+}
+
+export function resolveSignInPath(redirectUrl?: string | null): string {
+  const adminTarget = safeAdminRedirectPath(redirectUrl);
+  if (adminTarget?.startsWith('/admin')) {
+    return `/admin/sign-in?redirect_url=${encodeURIComponent(adminTarget)}`;
+  }
+
+  const userTarget = safeAuthRedirectPath(redirectUrl, false);
+  if (userTarget) {
+    return `/sign-in?redirect_url=${encodeURIComponent(userTarget)}`;
+  }
+
+  return '/sign-in';
+}
+
 export function resolvePostAuthPath(
   publicMetadata: unknown,
   redirectUrl?: string | null,

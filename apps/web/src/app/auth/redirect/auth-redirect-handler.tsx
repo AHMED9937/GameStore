@@ -3,7 +3,7 @@
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { resolvePostAuthPath } from '../../../lib/auth-role';
+import { resolvePostAuthPath, resolveSignInPath } from '../../../lib/auth-role';
 import styles from '../../../components/auth/auth.module.css';
 
 export function AuthRedirectHandler() {
@@ -20,11 +20,7 @@ export function AuthRedirectHandler() {
 
     if (!isSignedIn) {
       redirected.current = true;
-      const redirectUrl = searchParams.get('redirect_url');
-      const signInTarget = redirectUrl
-        ? `/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`
-        : '/sign-in';
-      router.replace(signInTarget);
+      router.replace(resolveSignInPath(searchParams.get('redirect_url')));
       return;
     }
 
