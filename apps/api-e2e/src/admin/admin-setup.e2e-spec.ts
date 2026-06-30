@@ -262,6 +262,21 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
     expect(response.body).toHaveProperty('total');
   });
 
+  const ordersSetupBody = {
+    status: 'setup',
+    integration: 'admin-orders',
+    message: 'Admin orders — not implemented yet',
+  };
+
+  it('GET /api/admin/orders returns setup JSON for an admin user', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/orders')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual(ordersSetupBody);
+  });
+
   const igdbSearchSetupBody = {
     status: 'setup',
     integration: 'igdb',

@@ -6,6 +6,7 @@ import { AdminLicensesController } from './licenses/admin-licenses.controller';
 import { AdminAccountsController } from './accounts/admin-accounts.controller';
 import { AdminAuditController } from './audit/admin-audit.controller';
 import { AdminIgdbController } from './igdb/admin-igdb.controller';
+import { AdminOrdersController } from './orders/admin-orders.controller';
 
 @Module({
   imports: [IgdbModule],
@@ -14,6 +15,7 @@ import { AdminIgdbController } from './igdb/admin-igdb.controller';
     AdminGamesController,
     AdminLicensesController,
     AdminAccountsController,
+    AdminOrdersController,
     AdminAuditController,
     AdminIgdbController,
   ],

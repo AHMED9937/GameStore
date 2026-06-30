@@ -5,7 +5,11 @@ import { ADMIN_IGDB_SETUP_MESSAGE } from './igdb.constants';
 
 describe('AdminIgdbPage', () => {
   it('renders IGDB heading, search shell, and setup banner by default', () => {
-    render(<AdminIgdbPage />);
+    render(
+      <AdminIgdbPage
+        resultsState={{ status: 'setup', message: ADMIN_IGDB_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'IGDB import' })).toBeTruthy();
     expect(screen.getByTestId('admin-igdb-search')).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(

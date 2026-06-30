@@ -5,7 +5,11 @@ import { ADMIN_ACCOUNTS_SETUP_MESSAGE } from './accounts.constants';
 
 describe('AdminAccountsPage', () => {
   it('renders accounts heading and setup banner by default', () => {
-    render(<AdminAccountsPage />);
+    render(
+      <AdminAccountsPage
+        listState={{ status: 'setup', message: ADMIN_ACCOUNTS_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Steam accounts' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_ACCOUNTS_SETUP_MESSAGE,

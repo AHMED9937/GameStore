@@ -3,6 +3,7 @@ import {
   buildAdminPostSignInTarget,
   buildAuthRedirectTarget,
   resolvePostAuthPath,
+  resolvePostAuthPathForRole,
   resolveSignInPath,
 } from './auth-role';
 
@@ -50,5 +51,10 @@ describe('auth redirect helpers', () => {
     expect(resolvePostAuthPath({ role: 'admin' }, '/admin/games')).toBe(
       '/admin/games',
     );
+  });
+
+  it('resolvePostAuthPathForRole sends non-admins to storefront', () => {
+    expect(resolvePostAuthPathForRole('user')).toBe('/my-games');
+    expect(resolvePostAuthPathForRole('user', '/admin')).toBe('/my-games');
   });
 });

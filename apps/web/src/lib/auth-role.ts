@@ -61,9 +61,18 @@ export function resolvePostAuthPath(
   publicMetadata: unknown,
   redirectUrl?: string | null,
 ): string {
-  const admin = isAdminPublicMetadata(publicMetadata);
-  if (admin) {
-    return safeAuthRedirectPath(redirectUrl, true) ?? '/admin';
+  return resolvePostAuthPathForRole(
+    isAdminPublicMetadata(publicMetadata) ? 'admin' : 'user',
+    redirectUrl,
+  );
+}
+
+export function resolvePostAuthPathForRole(
+  role: AppUserRole,
+  redirectUrl?: string | null,
+): string {
+  if (role === 'admin') {
+    return safeAdminRedirectPath(redirectUrl) ?? '/admin';
   }
   return safeAuthRedirectPath(redirectUrl, false) ?? '/my-games';
 }

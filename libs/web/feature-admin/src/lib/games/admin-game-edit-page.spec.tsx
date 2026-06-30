@@ -5,7 +5,12 @@ import { ADMIN_GAMES_SETUP_MESSAGE } from './games.constants';
 
 describe('AdminGameEditPage', () => {
   it('renders edit heading, setup banner, form, and delete section', () => {
-    render(<AdminGameEditPage gameId="game-123" />);
+    render(
+      <AdminGameEditPage
+        gameId="game-123"
+        formState={{ status: 'setup', message: ADMIN_GAMES_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Edit game' })).toBeTruthy();
     expect(screen.getByText(/Editing game game-123/)).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(

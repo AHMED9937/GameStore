@@ -5,7 +5,11 @@ import { ADMIN_ACCOUNTS_SETUP_MESSAGE } from './accounts.constants';
 
 describe('AdminAccountFormPage', () => {
   it('renders add account heading, setup banner, and disabled form', () => {
-    render(<AdminAccountFormPage />);
+    render(
+      <AdminAccountFormPage
+        formState={{ status: 'setup', message: ADMIN_ACCOUNTS_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Add account' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_ACCOUNTS_SETUP_MESSAGE,

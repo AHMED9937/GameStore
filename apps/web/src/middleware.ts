@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { getRoleFromSessionClaims } from './lib/auth-role';
+import { resolveUserRole } from './lib/resolve-user-role';
 
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -40,7 +40,7 @@ export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     if (userId) {
       const redirectUrl = req.nextUrl.searchParams.get('redirect_url');
-      if (getRoleFromSessionClaims(sessionClaims as Record<string, unknown>) === 'admin') {
+      if ((await resolveUserRole(userId, sessionClaims as Record<string, unknown>)) === 'admin') {
         return NextResponse.redirect(
           new URL(resolveAdminEntryPath(redirectUrl), req.url),
         );
@@ -74,7 +74,7 @@ export default clerkMiddleware(async (auth, req) => {
       return NextResponse.redirect(signIn);
     }
 
-    if (getRoleFromSessionClaims(sessionClaims as Record<string, unknown>) !== 'admin') {
+    if ((await resolveUserRole(userId, sessionClaims as Record<string, unknown>)) !== 'admin') {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return;

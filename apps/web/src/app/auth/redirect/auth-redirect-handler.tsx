@@ -3,7 +3,7 @@
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { resolvePostAuthPath, resolveSignInPath } from '../../../lib/auth-role';
+import { isAdminPublicMetadata, resolvePostAuthPathForRole, resolveSignInPath } from '../../../lib/auth-role';
 import styles from '../../../components/auth/auth.module.css';
 
 export function AuthRedirectHandler() {
@@ -37,8 +37,25 @@ export function AuthRedirectHandler() {
         // Webhook may still sync; do not block login.
       }
 
-      const target = resolvePostAuthPath(
-        user.publicMetadata,
+      let role: 'admin' | 'user' = 'user';
+      try {
+        const me = await fetch('/api/users/me');
+        if (me.ok) {
+          const body = (await me.json()) as { role?: string };
+          if (body.role === 'admin') {
+            role = 'admin';
+          }
+        }
+      } catch {
+        // Fall back to Clerk metadata on the client.
+      }
+
+      if (role !== 'admin' && isAdminPublicMetadata(user.publicMetadata)) {
+        role = 'admin';
+      }
+
+      const target = resolvePostAuthPathForRole(
+        role,
         searchParams.get('redirect_url'),
       );
       router.replace(target);

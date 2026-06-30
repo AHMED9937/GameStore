@@ -10,14 +10,15 @@ const setupBody = {
 
 describe('AdminIgdbController', () => {
   const igdb = {
+    health: vi.fn(),
     search: vi.fn().mockReturnValue(setupBody),
     importGame: vi.fn().mockReturnValue({
       ...setupBody,
       message: 'IGDB import — not implemented yet',
     }),
-  } satisfies Pick<IgdbService, 'search' | 'importGame'>;
+  } satisfies IgdbService;
 
-  const controller = new AdminIgdbController(igdb as IgdbService);
+  const controller = new AdminIgdbController(igdb);
 
   it('search delegates to IgdbService', () => {
     expect(controller.search('halo')).toEqual(setupBody);

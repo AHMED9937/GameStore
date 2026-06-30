@@ -100,3 +100,66 @@ export async function apiPost<T>(
   }
   return parseJson<T>(res);
 }
+
+export async function apiPut<T>(
+  path: string,
+  body?: unknown,
+  init?: RequestInit,
+): Promise<T> {
+  const authHeaders = await resolveAuthHeaders();
+  const res = await fetchWithTimeout(`${getBaseUrl()}${normalizePath(path)}`, {
+    ...init,
+    method: 'PUT',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...authHeaders,
+      ...init?.headers,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text());
+  }
+  return parseJson<T>(res);
+}
+
+export async function apiPatch<T>(
+  path: string,
+  body?: unknown,
+  init?: RequestInit,
+): Promise<T> {
+  const authHeaders = await resolveAuthHeaders();
+  const res = await fetchWithTimeout(`${getBaseUrl()}${normalizePath(path)}`, {
+    ...init,
+    method: 'PATCH',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...authHeaders,
+      ...init?.headers,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text());
+  }
+  return parseJson<T>(res);
+}
+
+export async function apiDelete<T>(path: string, init?: RequestInit): Promise<T> {
+  const authHeaders = await resolveAuthHeaders();
+  const res = await fetchWithTimeout(`${getBaseUrl()}${normalizePath(path)}`, {
+    ...init,
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      ...authHeaders,
+      ...init?.headers,
+    },
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, await res.text());
+  }
+  return parseJson<T>(res);
+}

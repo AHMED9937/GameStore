@@ -26,9 +26,17 @@ export type CreateGameDto = {
   publishedAt?: string | null;
 };
 
-type GameEntity = Awaited<ReturnType<GamesRepository['findBySlug']>>;
+type GameForDto = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  platform: string;
+  priceBase: { toString(): string };
+  coverImage: string | null;
+};
 
-function toDto(game: NonNullable<GameEntity>): GameDto {
+function toDto(game: GameForDto): GameDto {
   return {
     id: game.id,
     slug: game.slug,

@@ -5,7 +5,11 @@ import { ADMIN_GAMES_SETUP_MESSAGE } from './games.constants';
 
 describe('AdminGameFormPage', () => {
   it('renders new game heading, setup banner, and disabled form', () => {
-    render(<AdminGameFormPage />);
+    render(
+      <AdminGameFormPage
+        formState={{ status: 'setup', message: ADMIN_GAMES_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'New game' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_GAMES_SETUP_MESSAGE,

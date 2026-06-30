@@ -5,7 +5,11 @@ import { ADMIN_AUDIT_SETUP_MESSAGE } from './audit.constants';
 
 describe('AdminAuditPage', () => {
   it('renders audit heading, setup banner, and pagination placeholders', () => {
-    render(<AdminAuditPage />);
+    render(
+      <AdminAuditPage
+        listState={{ status: 'setup', message: ADMIN_AUDIT_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Audit log' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_AUDIT_SETUP_MESSAGE,

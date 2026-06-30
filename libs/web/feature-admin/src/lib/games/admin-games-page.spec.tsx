@@ -5,7 +5,11 @@ import { ADMIN_GAMES_SETUP_MESSAGE } from './games.constants';
 
 describe('AdminGamesPage', () => {
   it('renders games heading and setup banner by default', () => {
-    render(<AdminGamesPage />);
+    render(
+      <AdminGamesPage
+        listState={{ status: 'setup', message: ADMIN_GAMES_SETUP_MESSAGE }}
+      />,
+    );
     expect(screen.getByRole('heading', { name: 'Games' })).toBeTruthy();
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_GAMES_SETUP_MESSAGE,
