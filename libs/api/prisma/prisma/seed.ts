@@ -14,7 +14,45 @@ async function main() {
       priceBase: 9.99,
       coverImage: '/og/default.png',
       publishedAt: new Date(),
+      igdbId: 100001,
+      genres: ['Adventure', 'Sci-Fi'],
     },
+  });
+
+  await prisma.gameMedia.deleteMany({ where: { gameId: game1.id } });
+  await prisma.gameMedia.createMany({
+    data: [
+      {
+        gameId: game1.id,
+        type: 'screenshot',
+        url: '/og/default.png',
+        igdbId: 910001,
+        sortOrder: 0,
+      },
+      {
+        gameId: game1.id,
+        type: 'screenshot',
+        url: '/og/default.png',
+        igdbId: 910002,
+        sortOrder: 1,
+      },
+      {
+        gameId: game1.id,
+        type: 'video',
+        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        title: 'Launch Trailer',
+        igdbId: 920001,
+        sortOrder: 0,
+      },
+      {
+        gameId: game1.id,
+        type: 'video',
+        url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+        title: 'Gameplay Overview',
+        igdbId: 920002,
+        sortOrder: 1,
+      },
+    ],
   });
 
   const game2 = await prisma.game.upsert({
@@ -112,6 +150,7 @@ async function main() {
     games: 3,
     pricingRegions: 2,
     licenses: 2,
+    gameMedia: 4,
   });
 }
 

@@ -44,6 +44,21 @@ describe('LicensesRepository', () => {
     });
   });
 
+  it('findAll includes game summary and owner email', async () => {
+    const prisma = createPrismaMock();
+    const repo = new LicensesRepository(prisma as unknown as PrismaService);
+
+    await repo.findAll();
+
+    expect(prisma.license.findMany).toHaveBeenCalledWith({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        game: { select: { id: true, title: true, slug: true } },
+        owner: { select: { email: true } },
+      },
+    });
+  });
+
   it('revoke sets status to revoked', async () => {
     const prisma = createPrismaMock();
     const repo = new LicensesRepository(prisma as unknown as PrismaService);
