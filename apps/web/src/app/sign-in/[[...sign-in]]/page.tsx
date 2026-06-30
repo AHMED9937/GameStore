@@ -1,5 +1,6 @@
 import { SignIn } from '@clerk/nextjs';
 import { AuthShell } from '../../../components/auth/auth-shell';
+import { buildAuthRedirectTarget } from '../../../lib/auth-role';
 
 type SignInPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
@@ -7,9 +8,7 @@ type SignInPageProps = {
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
   const { redirect_url } = await searchParams;
-  const afterSignIn = redirect_url
-    ? `/auth/redirect?redirect_url=${encodeURIComponent(redirect_url)}`
-    : '/auth/redirect';
+  const afterSignIn = buildAuthRedirectTarget(redirect_url);
 
   return (
     <AuthShell

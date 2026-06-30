@@ -42,6 +42,9 @@
       "@gamestore/web/feature-contact": [
         "./libs/web/feature-contact/src/index.ts"
       ],
+      "@gamestore/web/feature-admin": [
+        "./libs/web/feature-admin/src/index.ts"
+      ],
       "@gamestore/shared/seo": ["./libs/shared/seo/src/index.ts"],
       "@gamestore/api/prisma": ["./libs/api/prisma/src/index.ts"],
       "@gamestore/api/stripe": ["./libs/api/stripe/src/index.ts"],

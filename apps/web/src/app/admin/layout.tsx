@@ -11,6 +11,8 @@ const NAV_ITEMS: Array<{ href: string; label: string; exact?: boolean }> = [
   { href: '/admin/licenses', label: 'Licenses' },
   { href: '/admin/accounts', label: 'Accounts' },
   { href: '/admin/orders', label: 'Orders' },
+  { href: '/admin/audit', label: 'Audit' },
+  { href: '/admin/igdb', label: 'IGDB' },
 ];
 
 function AdminNav() {

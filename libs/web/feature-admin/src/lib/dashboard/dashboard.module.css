@@ -1,0 +1,22 @@
+.dashboardStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.statCard {
+  padding: 1.25rem;
+}
+
+.statLabel {
+  font-size: 0.8125rem;
+  margin-bottom: 0.5rem;
+}
+
+.quickActionsCard {
+  padding: 1.25rem;
+}
+
+.recentActivity {
+  margin-top: 0.25rem;
+}

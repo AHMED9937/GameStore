@@ -1,0 +1,73 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.headerTitles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.banner {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.bannerSetup {
+  border-color: rgba(99, 179, 237, 0.35);
+  color: var(--text-muted);
+}
+
+.bannerError {
+  border-color: rgba(245, 101, 101, 0.45);
+  color: #f56565;
+}
+
+.loading {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}

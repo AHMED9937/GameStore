@@ -1,0 +1,33 @@
+.searchRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+}
+
+.searchInput {
+  flex: 1 1 16rem;
+  max-width: 28rem;
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.resultCard {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 1rem;
+  min-height: 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resultCover {
+  aspect-ratio: 3 / 4;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
