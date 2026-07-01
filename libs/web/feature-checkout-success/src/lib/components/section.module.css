@@ -2,6 +2,84 @@
   padding: 3rem 0 2rem;
 }
 
+.content {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .panel {
   padding: 1.5rem;
+}
+
+.loading {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.loadingTitle {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text-body);
+}
+
+.loadingHint {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+}
+
+.banner {
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-md);
+}
+
+.bannerError {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--text-body);
+}
+
+.errorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.shopLink,
+.myGamesLink {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.licenseRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.licenseKey {
+  flex: 1 1 12rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.06));
+  font-family: ui-monospace, monospace;
+  font-size: 0.95rem;
+  user-select: all;
+  word-break: break-all;
+}
+
+.myGamesLink {
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+.demoNote {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }

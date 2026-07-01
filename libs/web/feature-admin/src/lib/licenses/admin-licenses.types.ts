@@ -11,3 +11,9 @@ export type AdminLicenseFormValues = {
   quantity: string;
   buyerEmail: string;
 };
+
+export const EMPTY_ADMIN_LICENSE_FORM_VALUES: AdminLicenseFormValues = {
+  gameId: '',
+  quantity: '1',
+  buyerEmail: '',
+};

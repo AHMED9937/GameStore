@@ -2,14 +2,57 @@ import { describe, expect, it, vi } from 'vitest';
 import { StripeConfig } from './stripe.config';
 
 describe('StripeConfig', () => {
-  it('returns setup response for health', () => {
-    expect(StripeConfig.getHealthResponse()).toMatchObject({
-      status: 'setup',
+  it('returns misconfigured health when env vars are absent', () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', '');
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', '');
+    vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', '');
+
+    expect(StripeConfig.getHealthResponse()).toEqual({
+      status: 'misconfigured',
       integration: 'stripe',
+      env: {
+        secretKey: 'missing',
+        webhookSecret: 'missing',
+        publishableKey: 'missing',
+      },
     });
-    expect(StripeConfig.getHealthResponse().message).toMatch(
-      /not implemented yet$/,
-    );
+
+    vi.unstubAllEnvs();
+  });
+
+  it('returns ok health when all Stripe env vars are valid', () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_abc');
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_abc');
+    vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'pk_test_abc');
+
+    expect(StripeConfig.getHealthResponse()).toEqual({
+      status: 'ok',
+      integration: 'stripe',
+      env: {
+        secretKey: 'valid',
+        webhookSecret: 'valid',
+        publishableKey: 'valid',
+      },
+    });
+
+    vi.unstubAllEnvs();
+  });
+
+  it('returns misconfigured when webhook secret is missing', () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_abc');
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', '');
+    vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'pk_test_abc');
+
+    expect(StripeConfig.getHealthResponse()).toMatchObject({
+      status: 'misconfigured',
+      env: {
+        secretKey: 'valid',
+        webhookSecret: 'missing',
+        publishableKey: 'valid',
+      },
+    });
+
+    vi.unstubAllEnvs();
   });
 
   it('validates secret key format without calling Stripe', () => {
@@ -28,6 +71,17 @@ describe('StripeConfig', () => {
     expect(StripeConfig.validatePublishableKey('')).toBe('missing');
     expect(StripeConfig.validatePublishableKey('pk_test_abc')).toBe('valid');
     expect(StripeConfig.validatePublishableKey('bad')).toBe('invalid');
+  });
+
+  it('allows checkout when secret and publishable keys are valid without webhook', () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_abc');
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', '');
+    vi.stubEnv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'pk_test_abc');
+
+    expect(StripeConfig.isCheckoutConfigured()).toBe(true);
+    expect(StripeConfig.isEnvConfigured()).toBe(false);
+
+    vi.unstubAllEnvs();
   });
 
   it('reads env vars and reports status without Stripe API calls', () => {

@@ -19,7 +19,14 @@ export default defineConfig(() => ({
     reporters: ['default'],
     testTimeout: 30_000,
     hookTimeout: 30_000,
-    env: { ...env, ...process.env },
+    env: {
+      ...env,
+      ...process.env,
+      STEAM_ENCRYPTION_KEY:
+        process.env.STEAM_ENCRYPTION_KEY?.trim() ||
+        env.STEAM_ENCRYPTION_KEY?.trim() ||
+        'e'.repeat(64),
+    },
     coverage: {
       reportsDirectory: '../../coverage/apps/api-e2e',
       provider: 'v8' as const,

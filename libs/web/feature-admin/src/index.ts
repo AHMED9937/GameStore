@@ -27,7 +27,7 @@ export type {
   AdminAccountFormValues,
 } from './lib/accounts/admin-accounts.types';
 export { AdminOrdersPage } from './lib/orders/admin-orders-page';
-export { ADMIN_ORDERS_SETUP_MESSAGE } from './lib/orders/orders.constants';
+export type { AdminOrderListItem } from './lib/orders/admin-orders.types';
 export { AdminAuditPage } from './lib/audit/admin-audit-page';
 export { ADMIN_AUDIT_SETUP_MESSAGE } from './lib/audit/audit.constants';
 export type { AdminAuditLogItem } from './lib/audit/admin-audit.types';

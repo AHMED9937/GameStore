@@ -1,23 +1,50 @@
-import { Controller, Get, Param } from '@nestjs/common';
-import { Roles } from '@gamestore/api/auth';
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+} from '@nestjs/common';
+import {
+  CurrentUser,
+  Public,
+  Roles,
+  type AuthUser,
+} from '@gamestore/api/auth';
+import { OrdersService } from './orders.service';
 
-const setupResponse = {
-  status: 'setup' as const,
-  integration: 'orders',
-  message: 'Orders — not implemented yet',
+type MutableResponse = {
+  status(code: number): void;
 };
 
-/** Setup only — no Order model yet; ownership checks land with Phase 7 Order.ownerId */
-@Roles('admin')
 @Controller('orders')
 export class OrdersController {
-  @Get()
-  findAll() {
-    return setupResponse;
+  constructor(private readonly orders: OrdersService) {}
+
+  @Public()
+  @Get('by-session/:sessionId')
+  async findBySession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser() user: AuthUser | undefined,
+    @Res({ passthrough: true }) response: MutableResponse,
+  ) {
+    const result = await this.orders.getCheckoutBySession(sessionId, user);
+
+    if (result.status === 'pending') {
+      response.status(202);
+    }
+
+    return result;
   }
 
+  @Roles('admin')
+  @Get()
+  findAll() {
+    return this.orders.findAll();
+  }
+
+  @Roles('admin')
   @Get(':id')
-  findOne(@Param('id') _id: string) {
-    return setupResponse;
+  findOne(@Param('id') id: string) {
+    return this.orders.findOne(id);
   }
 }

@@ -1,9 +1,5 @@
 import { Container, Heading } from '@gamestore/shared/ui';
-import { ActivationSteps } from './components/activation-steps';
-import { CredentialsPanel } from './components/credentials-panel';
-import { LicenseKeyForm } from './components/license-key-form';
-import { MyLicensesPanel } from './components/my-licenses-panel';
-import { SteamGuardPanel } from './components/steam-guard-panel';
+import { MyGamesFlow } from './components/my-games-flow';
 import { ValidatedLicenseProvider } from './components/validated-license-context';
 import styles from './components/section.module.css';
 
@@ -16,11 +12,7 @@ export function MyGamesPage() {
         </Container>
       </section>
       <ValidatedLicenseProvider>
-        <MyLicensesPanel />
-        <LicenseKeyForm />
-        <ActivationSteps />
-        <CredentialsPanel />
-        <SteamGuardPanel />
+        <MyGamesFlow />
       </ValidatedLicenseProvider>
     </>
   );

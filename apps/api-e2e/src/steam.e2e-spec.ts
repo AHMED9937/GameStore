@@ -15,6 +15,7 @@ describe.skipIf(!hasDatabase)('Steam routes', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
+    process.env.STEAM_ENCRYPTION_KEY = 'c'.repeat(64);
     app = await createE2eApp();
     await seedE2eUsers(app);
   });
@@ -23,30 +24,26 @@ describe.skipIf(!hasDatabase)('Steam routes', () => {
     await closeE2eApp(app);
   });
 
-  it('GET /api/steam/health returns setup JSON', async () => {
+  it('GET /api/steam/health returns configured status', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/steam/health')
       .expect(200);
 
     expect(response.body).toMatchObject({
-      status: 'setup',
+      status: 'ok',
       integration: 'steam',
+      encryption: 'valid',
     });
-    expect(response.body.message).toMatch(/not implemented yet$/);
   });
 
-  it('POST /api/steam/guard-code returns setup JSON', async () => {
+  it('POST /api/steam/guard-code requires licenseKey when configured', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/steam/guard-code')
       .set(authAs(E2E_TOKENS.userA))
-      .send({ licenseKey: 'DEMO-KEY-0001' })
-      .expect(201);
+      .send({})
+      .expect(400);
 
-    expect(response.body).toEqual({
-      status: 'setup',
-      integration: 'steam',
-      message: 'Steam Guard — not implemented yet',
-    });
+    expect(response.body.message).toMatch(/licenseKey/i);
   });
 });
 

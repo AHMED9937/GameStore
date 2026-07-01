@@ -21,8 +21,13 @@ import { HealthController } from './health/health.controller';
 import { LicensesController } from './licenses/licenses.controller';
 import { LicensesService } from './licenses/licenses.service';
 import { OrdersController } from './orders/orders.controller';
+import { OrdersService } from './orders/orders.service';
 import { PaymentsController } from './payments/payments.controller';
+import { PaymentsService } from './payments/payments.service';
+import { PaymentsWebhookController } from './payments/payments-webhook.controller';
+import { PaymentFulfillmentService } from './payments/payment-fulfillment.service';
 import { SteamController } from './steam/steam.controller';
+import { SteamGuardAppService } from './steam/steam-guard-app.service';
 import { AdminModule } from './admin/admin.module';
 
 @Module({
@@ -44,6 +49,7 @@ import { AdminModule } from './admin/admin.module';
     LicensesController,
     OrdersController,
     PaymentsController,
+    PaymentsWebhookController,
     SteamController,
   ],
   providers: [
@@ -52,6 +58,10 @@ import { AdminModule } from './admin/admin.module';
     GameAccountsService,
     GamesService,
     LicensesService,
+    OrdersService,
+    PaymentsService,
+    PaymentFulfillmentService,
+    SteamGuardAppService,
     {
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,
