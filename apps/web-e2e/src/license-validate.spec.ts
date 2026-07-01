@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 test.describe('license validate', () => {
-  test('validates DEMO-KEY-0001 and shows game title', async ({ page }) => {
+  test('validates DEMO-KEY-0001 and shows game picker', async ({ page }) => {
     test.skip(!hasDatabase, 'DATABASE_URL is not set');
 
     await page.goto('/my-games');
@@ -16,8 +16,11 @@ test.describe('license validate', () => {
       ),
       page.getByRole('button', { name: 'Validate license' }).click(),
     ]);
+    await expect(page.getByTestId('license-game-picker')).toBeVisible();
     await expect(page.getByText('Stellar Odyssey')).toBeVisible();
-    await expect(page.getByText(/status:\s*available/i)).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Access Steam account' }),
+    ).toBeVisible();
   });
 
   test('shows error for invalid license key', async ({ page }) => {

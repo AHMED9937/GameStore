@@ -1,6 +1,17 @@
 import { apiPost } from './api-client';
-import type { SetupResponse } from './licenses.api';
 
-export async function createCheckout(): Promise<SetupResponse> {
-  return apiPost<SetupResponse>('/payments/checkout');
+export type CreateCheckoutInput = {
+  gameId?: string;
+  slug?: string;
+};
+
+export type CreateCheckoutResult = {
+  sessionId: string;
+  url: string;
+};
+
+export async function createCheckout(
+  input: CreateCheckoutInput,
+): Promise<CreateCheckoutResult> {
+  return apiPost<CreateCheckoutResult>('/payments/checkout', input);
 }

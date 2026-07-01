@@ -10,6 +10,18 @@
   max-width: 20rem;
 }
 
+.filterSelect {
+  flex: 1 1 12rem;
+  max-width: 20rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  color: var(--text-main);
+  padding: 0.625rem 1rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+}
+
 .form {
   display: flex;
   flex-direction: column;

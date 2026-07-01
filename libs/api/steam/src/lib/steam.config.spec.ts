@@ -49,6 +49,7 @@ describe('SteamConfig', () => {
       'Steam — configured, not implemented yet',
     );
     vi.unstubAllEnvs();
+    vi.stubEnv('STEAM_ENCRYPTION_KEY', '');
 
     expect(SteamConfig.getHealthResponse().message).toBe(
       'Steam — not configured, not implemented yet',

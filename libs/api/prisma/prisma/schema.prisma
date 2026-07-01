@@ -25,6 +25,8 @@ model Game {
   genres          String[]  @default([])
   igdbSyncedAt    DateTime?
   igdbCoverUrl    String?
+  requirementsMin         String? @db.Text
+  requirementsRecommended String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -32,6 +34,7 @@ model Game {
   accounts       GameAccount[]
   licenses       License[]
   media          GameMedia[]
+  orders         Order[]
 
   @@map("games")
 }
@@ -100,6 +103,7 @@ model User {
 
   licenses  License[]
   auditLogs AuditLog[]
+  orders    Order[]
 
   @@map("users")
 }
@@ -137,8 +141,32 @@ model License {
   game    Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
   account GameAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
   owner   User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  order   Order?
 
   @@index([gameId, status])
   @@index([ownerId])
   @@map("licenses")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  gameId          String
+  ownerId         String?
+  licenseId       String?  @unique
+  stripeSessionId String   @unique
+  stripePaymentId String?
+  amount          Decimal  @db.Decimal(10, 2)
+  currency        String   @default("USD") @db.VarChar(3)
+  status          String   @default("pending")
+  buyerEmail      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  game    Game     @relation(fields: [gameId], references: [id], onDelete: Restrict)
+  license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
+  owner   User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([gameId, status])
+  @@index([ownerId])
+  @@map("orders")
 }

@@ -1,8 +1,13 @@
 import { apiPost } from './api-client';
-import type { SetupResponse } from './licenses.api';
+
+export type SteamGuardCodeResponse = {
+  code: string;
+  expiresInSeconds: number;
+  sharedSecret: string;
+};
 
 export async function requestSteamGuardCode(
-  licenseKey?: string,
-): Promise<SetupResponse> {
-  return apiPost<SetupResponse>('/steam/guard-code', { licenseKey });
+  licenseKey: string,
+): Promise<SteamGuardCodeResponse> {
+  return apiPost<SteamGuardCodeResponse>('/steam/guard-code', { licenseKey });
 }

@@ -11,16 +11,18 @@ import {
 import {
   ApiError,
   fetchMyLicenses,
+  validateLicense,
   type UserLicenseSummary,
 } from '@gamestore/web/data-access';
 import { useValidatedLicense } from './validated-license-context';
 import styles from './section.module.css';
 
 export function MyLicensesPanel() {
-  const { setLicenseKey } = useValidatedLicense();
+  const { setValidatedLicense, setStep } = useValidatedLicense();
   const [licenses, setLicenses] = useState<UserLicenseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectingKey, setSelectingKey] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,9 +37,16 @@ export function MyLicensesPanel() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof ApiError ? err.message : 'Could not load your licenses',
-          );
+          if (err instanceof ApiError && err.status === 401) {
+            setError(null);
+            setLicenses([]);
+          } else {
+            setError(
+              err instanceof ApiError
+                ? err.message
+                : 'Could not load your licenses',
+            );
+          }
         }
       } finally {
         if (!cancelled) {
@@ -52,6 +61,26 @@ export function MyLicensesPanel() {
     };
   }, []);
 
+  async function handleSelect(licenseKey: string) {
+    setSelectingKey(licenseKey);
+    setError(null);
+    try {
+      const response = await validateLicense(licenseKey);
+      setValidatedLicense({
+        licenseKey: response.licenseKey,
+        status: response.status,
+        game: response.game,
+      });
+      setStep('pick-game');
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : 'Could not load license',
+      );
+    } finally {
+      setSelectingKey(null);
+    }
+  }
+
   if (loading) {
     return (
       <section className={styles.sectionTight}>
@@ -62,33 +91,15 @@ export function MyLicensesPanel() {
     );
   }
 
-  if (error) {
-    return (
-      <section className={styles.sectionTight}>
-        <Container>
-          <Text tone="muted">{error}</Text>
-        </Container>
-      </section>
-    );
-  }
-
   if (licenses.length === 0) {
-    return (
-      <section className={styles.sectionTight}>
-        <Container>
-          <Text tone="dim">
-            No licenses linked to your account yet. Keys from checkout will appear
-            here after purchase.
-          </Text>
-        </Container>
-      </section>
-    );
+    return null;
   }
 
   return (
     <section className={styles.sectionTight}>
       <Container>
         <Heading level="h2">Your licenses</Heading>
+        {error ? <Text tone="muted">{error}</Text> : null}
         <div className={styles.licenseList}>
           {licenses.map((license) => (
             <Card key={license.id} className={styles.panel}>
@@ -103,9 +114,10 @@ export function MyLicensesPanel() {
                 </div>
                 <Button
                   variant="secondary"
-                  onClick={() => setLicenseKey(license.licenseKey)}
+                  disabled={selectingKey === license.licenseKey}
+                  onClick={() => void handleSelect(license.licenseKey)}
                 >
-                  Activate
+                  {selectingKey === license.licenseKey ? 'Loading…' : 'Select'}
                 </Button>
               </div>
             </Card>

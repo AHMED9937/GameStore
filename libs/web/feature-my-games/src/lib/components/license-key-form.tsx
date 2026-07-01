@@ -12,62 +12,65 @@ import {
 import {
   ApiError,
   validateLicense,
-  type LicenseValidation,
 } from '@gamestore/web/data-access';
 import { useValidatedLicense } from './validated-license-context';
 import styles from './section.module.css';
 
 export function LicenseKeyForm() {
-  const { licenseKey: selectedKey, setLicenseKey } = useValidatedLicense();
+  const { licenseKey: selectedKey, setValidatedLicense, setStep } =
+    useValidatedLicense();
   const [key, setKey] = useState('');
-  const [result, setResult] = useState<LicenseValidation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const runValidate = useCallback(async (licenseKey: string) => {
-    const trimmed = licenseKey.trim();
-    if (!trimmed) {
-      setError('Enter a license key');
-      setResult(null);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const response = await validateLicense(trimmed);
-      setResult(response);
-      setLicenseKey(response.licenseKey);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
-        setError('License not found');
-      } else if (err instanceof ApiError && err.status === 403) {
-        const body = err.body.toLowerCase();
-        if (body.includes('sign in')) {
-          setError('Sign in to access this license');
-        } else if (body.includes('revoked')) {
-          setError('License has been revoked');
-        } else {
-          setError('You do not own this license');
-        }
-      } else {
-        setError(
-          err instanceof ApiError ? err.message : 'License validation failed',
-        );
+  const runValidate = useCallback(
+    async (licenseKey: string) => {
+      const trimmed = licenseKey.trim();
+      if (!trimmed) {
+        setError('Enter a license key');
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [setLicenseKey]);
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await validateLicense(trimmed);
+        setValidatedLicense({
+          licenseKey: response.licenseKey,
+          status: response.status,
+          game: response.game,
+        });
+        setStep('pick-game');
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          setError('License not found');
+        } else if (err instanceof ApiError && err.status === 403) {
+          const body = err.body.toLowerCase();
+          if (body.includes('sign in')) {
+            setError('Sign in to access this license');
+          } else if (body.includes('revoked')) {
+            setError('License has been revoked');
+          } else {
+            setError('You do not own this license');
+          }
+        } else {
+          setError(
+            err instanceof ApiError ? err.message : 'License validation failed',
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setValidatedLicense, setStep],
+  );
 
   useEffect(() => {
     if (selectedKey && selectedKey !== key) {
       setKey(selectedKey);
-      void runValidate(selectedKey);
     }
-  }, [selectedKey, key, runValidate]);
+  }, [selectedKey, key]);
 
   async function handleValidate() {
     await runValidate(key);
@@ -97,17 +100,10 @@ export function LicenseKeyForm() {
             >
               {loading ? 'Validating…' : 'Validate license'}
             </Button>
-            {result ? (
-              <div className={styles.setupMessage}>
-                <Text tone="muted">
-                  <strong>{result.game.title}</strong> — status: {result.status}
-                </Text>
-              </div>
-            ) : null}
             {error ? (
               <Text tone="muted">{error}</Text>
             ) : (
-              <Text tone="dim">Enter a key from your purchase email.</Text>
+              <Text tone="dim">Enter a key from your purchase or email.</Text>
             )}
           </div>
         </Card>

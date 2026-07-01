@@ -16,5 +16,10 @@ export function buildForwardHeaders(request: Headers): Headers {
     headers.set('authorization', authorization);
   }
 
+  const stripeSignature = request.get('stripe-signature');
+  if (stripeSignature) {
+    headers.set('stripe-signature', stripeSignature);
+  }
+
   return headers;
 }

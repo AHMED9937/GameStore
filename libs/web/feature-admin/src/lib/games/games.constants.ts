@@ -4,6 +4,8 @@ export const ADMIN_GAME_COLUMNS = [
   { key: 'title', header: 'Title' },
   { key: 'slug', header: 'Slug' },
   { key: 'platform', header: 'Platform' },
+  { key: 'price', header: 'Price' },
+  { key: 'accounts', header: 'Pool' },
   { key: 'status', header: 'Status' },
   { key: 'actions', header: 'Actions' },
 ] as const;

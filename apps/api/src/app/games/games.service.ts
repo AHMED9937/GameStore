@@ -16,6 +16,22 @@ export type GameDto = {
   coverImage: string | null;
 };
 
+export type GameMediaDto = {
+  id: string;
+  type: string;
+  url: string;
+  title: string | null;
+  sortOrder: number;
+};
+
+export type GameDetailDto = GameDto & {
+  genres: string[];
+  releaseDate: string | null;
+  requirementsMin: string | null;
+  requirementsRecommended: string | null;
+  media: GameMediaDto[];
+};
+
 export type CreateGameDto = {
   title: string;
   slug: string;
@@ -24,6 +40,10 @@ export type CreateGameDto = {
   description?: string;
   coverImage?: string;
   publishedAt?: string | null;
+  genres?: string[];
+  releaseDate?: string | null;
+  requirementsMin?: string | null;
+  requirementsRecommended?: string | null;
 };
 
 type GameForDto = {
@@ -34,6 +54,20 @@ type GameForDto = {
   platform: string;
   priceBase: { toString(): string };
   coverImage: string | null;
+};
+
+type GameForDetailDto = GameForDto & {
+  genres: string[];
+  releaseDate: Date | null;
+  requirementsMin: string | null;
+  requirementsRecommended: string | null;
+  media: Array<{
+    id: string;
+    type: string;
+    url: string;
+    title: string | null;
+    sortOrder: number;
+  }>;
 };
 
 function toDto(game: GameForDto): GameDto {
@@ -48,6 +82,23 @@ function toDto(game: GameForDto): GameDto {
   };
 }
 
+function toDetailDto(game: GameForDetailDto): GameDetailDto {
+  return {
+    ...toDto(game),
+    genres: game.genres,
+    releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
+    requirementsMin: game.requirementsMin,
+    requirementsRecommended: game.requirementsRecommended,
+    media: game.media.map((item) => ({
+      id: item.id,
+      type: item.type,
+      url: item.url,
+      title: item.title,
+      sortOrder: item.sortOrder,
+    })),
+  };
+}
+
 @Injectable()
 export class GamesService {
   constructor(private readonly games: GamesRepository) {}
@@ -57,12 +108,12 @@ export class GamesService {
     return games.map(toDto);
   }
 
-  async findBySlug(slug: string): Promise<GameDto> {
+  async findBySlug(slug: string): Promise<GameDetailDto> {
     const game = await this.games.findBySlug(slug);
     if (!game) {
       throw new NotFoundException(`No game found for slug "${slug}"`);
     }
-    return toDto(game);
+    return toDetailDto(game);
   }
 
   async create(dto: CreateGameDto): Promise<GameDto> {

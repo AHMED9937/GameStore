@@ -1,6 +1,18 @@
 import { apiGet } from './api-client';
-import type { SetupResponse } from './admin.types';
+
+export type AdminOrderRecord = {
+  id: string;
+  status: string;
+  amount: string;
+  currency: string;
+  buyerEmail: string | null;
+  ownerEmail: string | null;
+  gameTitle: string;
+  gameSlug: string;
+  licenseKeyMasked: string | null;
+  createdAt: string;
+};
 
 export function getAdminOrders() {
-  return apiGet<SetupResponse>('/admin/orders');
+  return apiGet<AdminOrderRecord[]>('/admin/orders');
 }

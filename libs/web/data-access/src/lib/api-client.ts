@@ -1,3 +1,5 @@
+/// <reference path="./clerk-window.d.ts" />
+
 export class ApiError extends Error {
   readonly status: number;
   readonly body: string;
@@ -51,9 +53,10 @@ async function resolveAuthHeaders(): Promise<Record<string, string>> {
 async function fetchWithTimeout(
   input: string,
   init?: RequestInit,
+  timeoutMs = 15_000,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 800);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     return await fetch(input, { ...init, signal: controller.signal });
   } finally {

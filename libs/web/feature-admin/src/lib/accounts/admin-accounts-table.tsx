@@ -5,9 +5,15 @@ import { ADMIN_ACCOUNT_COLUMNS } from './accounts.constants';
 
 export type AdminAccountsTableProps = {
   accounts: AdminAccountListItem[];
+  deactivatingId?: string | null;
+  onDeactivate?: (accountId: string) => void;
 };
 
-export function AdminAccountsTable({ accounts }: AdminAccountsTableProps) {
+export function AdminAccountsTable({
+  accounts,
+  deactivatingId = null,
+  onDeactivate,
+}: AdminAccountsTableProps) {
   return (
     <div data-testid="admin-accounts-table">
       <AdminTable columns={[...ADMIN_ACCOUNT_COLUMNS]} caption="Admin Steam account pool">
@@ -24,8 +30,13 @@ export function AdminAccountsTable({ accounts }: AdminAccountsTableProps) {
               </Badge>
             </td>
             <td>
-              <Button type="button" variant="secondary" disabled>
-                Deactivate
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!account.isActive || !onDeactivate || deactivatingId === account.id}
+                onClick={() => onDeactivate?.(account.id)}
+              >
+                {deactivatingId === account.id ? 'Saving…' : 'Deactivate'}
               </Button>
             </td>
           </tr>
