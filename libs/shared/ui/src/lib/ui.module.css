@@ -94,7 +94,7 @@
 }
 
 .input::placeholder {
-  color: var(--text-dim);
+  color: var(--text-muted);
 }
 
 .input:focus {
@@ -145,13 +145,14 @@
 
 .textMuted {
   composes: text;
-  color: var(--text-muted);
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
 }
 
 .textDim {
   composes: text;
-  color: var(--text-dim);
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
 }
 
 .textAccent {
@@ -219,7 +220,9 @@
 .emptyState {
   text-align: center;
   padding: 3rem 1.5rem;
-  color: var(--text-muted);
+  color: var(--text-body);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
   border: 1px dashed var(--border-light);
   border-radius: var(--radius-lg);
   background: var(--bg-card);

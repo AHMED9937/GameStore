@@ -12,6 +12,22 @@ export type Game = {
   coverImage: string | null;
 };
 
+export type GameMedia = {
+  id: string;
+  type: string;
+  url: string;
+  title: string | null;
+  sortOrder: number;
+};
+
+export type GameDetail = Game & {
+  genres: string[];
+  releaseDate: string | null;
+  requirementsMin: string | null;
+  requirementsRecommended: string | null;
+  media: GameMedia[];
+};
+
 export function formatGamePrice(priceBase: string): string {
   const value = Number(priceBase);
   if (Number.isNaN(value)) {
@@ -27,6 +43,6 @@ export const getGames = cache(async (): Promise<Game[]> => {
   return apiGet<Game[]>('/games');
 });
 
-export async function getGameBySlug(slug: string): Promise<Game> {
-  return apiGet<Game>(`/games/${slug}`);
+export async function getGameBySlug(slug: string): Promise<GameDetail> {
+  return apiGet<GameDetail>(`/games/${slug}`);
 }
