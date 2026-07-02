@@ -35,6 +35,10 @@ export class PaymentFulfillmentService {
   async handleCheckoutSessionCompleted(
     session: Stripe.Checkout.Session,
   ): Promise<FulfillmentResult> {
+    if (session.mode === 'subscription') {
+      return { action: 'ignored' };
+    }
+
     if (session.payment_status !== 'paid') {
       return { action: 'pending_payment' };
     }

@@ -5,6 +5,11 @@ import {
 } from '@nestjs/common';
 import { GamesRepository, GameAccountsRepository } from '@gamestore/api/data-access';
 import { GameAccountsService } from '../../game-accounts/game-accounts.service';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
 
 export type AdminAccountDto = {
   id: string;
@@ -120,6 +125,13 @@ export class AdminAccountsService {
   async remove(id: string): Promise<{ id: string; deleted: true }> {
     await this.gameAccounts.findOne(id);
     return this.gameAccounts.remove(id);
+  }
+
+  async bulkDeactivate(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.deactivate(id);
+    });
   }
 
   private mapAdminAccountDto(

@@ -23,6 +23,7 @@ describe('AdminAccountsController', () => {
     deactivate: vi.fn().mockResolvedValue({ ...sampleAccount, isActive: false }),
     reactivate: vi.fn().mockResolvedValue(sampleAccount),
     remove: vi.fn().mockResolvedValue({ id: 'account-1', deleted: true as const }),
+    bulkDeactivate: vi.fn().mockResolvedValue({ succeeded: ['account-1'], failed: [] }),
   } satisfies AdminAccountsService;
 
   const auditLogService = {
@@ -113,6 +114,20 @@ describe('AdminAccountsController', () => {
       expect.objectContaining({
         action: 'admin.account.delete',
         resourceId: 'account-1',
+      }),
+    );
+  });
+
+  it('bulkDeactivate records bulk audit log', async () => {
+    await controller.bulkDeactivate(
+      { ids: ['account-1'] },
+      adminUser,
+      request as never,
+    );
+    expect(accounts.bulkDeactivate).toHaveBeenCalledWith(['account-1']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.bulk_deactivate',
       }),
     );
   });

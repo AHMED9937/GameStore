@@ -46,6 +46,8 @@ export type UserLicenseSummary = {
   id: string;
   licenseKey: string;
   status: string;
+  source: string;
+  expiresAt: string | null;
   game: { id: string; title: string; slug: string };
 };
 
@@ -147,8 +149,17 @@ export class LicensesService {
     return this.toActivationResponse(activated, activated.account);
   }
 
-  findMine(user: AuthUser): Promise<UserLicenseSummary[]> {
-    return this.licenses.findByOwnerId(user.id);
+  async findMine(user: AuthUser): Promise<UserLicenseSummary[]> {
+    const rows = await this.licenses.findByOwnerId(user.id);
+
+    return rows.map((row) => ({
+      id: row.id,
+      licenseKey: row.licenseKey,
+      status: row.status,
+      source: row.source,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
+      game: row.game,
+    }));
   }
 
   findAll() {

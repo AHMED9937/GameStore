@@ -26,6 +26,25 @@ export class SubscriptionPlansRepository {
     });
   }
 
+  findActive() {
+    return this.prisma.subscriptionPlan.findMany({
+      where: { isActive: true },
+      orderBy: [{ interval: 'asc' }, { intervalCount: 'asc' }],
+      include: {
+        games: {
+          include: {
+            game: {
+              select: {
+                ...gameSummarySelect,
+                coverImage: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
   findById(id: string) {
     return this.prisma.subscriptionPlan.findUnique({
       where: { id },

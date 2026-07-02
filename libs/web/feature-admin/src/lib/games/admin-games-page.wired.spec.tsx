@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { getAdminGames } from '@gamestore/web/data-access';
 import { AdminGamesPage } from './admin-games-page';
@@ -39,5 +39,39 @@ describe('AdminGamesPage wired', () => {
         'Admin access required',
       );
     });
+  });
+
+  it('shows bulk toolbar when a row is selected', async () => {
+    vi.mocked(getAdminGames).mockResolvedValue([
+      {
+        id: 'g1',
+        title: 'Demo Game',
+        slug: 'demo-game',
+        platform: 'PC',
+        priceBase: '29.99',
+        published: true,
+        igdbId: 100001,
+        accountSummary: { total: 1, active: 1, hasActivePool: true },
+        description: 'A long enough description for the wired bulk selection test.',
+        coverImage: '/cover.png',
+        genres: ['Adventure'],
+        publishedAt: '2025-01-01T00:00:00.000Z',
+        releaseDate: null,
+        requirementsMin: null,
+        requirementsRecommended: null,
+        media: [],
+      },
+    ]);
+
+    render(<AdminGamesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-row-checkbox-g1')).toBeTruthy();
+    });
+
+    expect(screen.queryByTestId('admin-bulk-toolbar')).toBeNull();
+    fireEvent.click(screen.getByTestId('admin-row-checkbox-g1'));
+    expect(screen.getByTestId('admin-bulk-toolbar')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Delete selected' })).toBeTruthy();
   });
 });

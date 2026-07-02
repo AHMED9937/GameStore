@@ -130,4 +130,28 @@ describe('AdminLicensesService', () => {
     });
     expect(licenses.remove).toHaveBeenCalledWith('license-1');
   });
+
+  it('bulkRevoke delegates per id', async () => {
+    await expect(service.bulkRevoke(['license-1', 'license-2'])).resolves.toEqual({
+      succeeded: ['license-1', 'license-2'],
+      failed: [],
+    });
+    expect(licenses.revoke).toHaveBeenCalledTimes(2);
+  });
+
+  it('bulkDelete collects failures for activated licenses', async () => {
+    const { BadRequestException } = await import('@nestjs/common');
+    licenses.remove
+      .mockResolvedValueOnce({ id: 'license-1', deleted: true })
+      .mockRejectedValueOnce(
+        new BadRequestException('Cannot delete an activated license'),
+      );
+
+    const result = await service.bulkDelete(['license-1', 'license-2']);
+
+    expect(result.succeeded).toEqual(['license-1']);
+    expect(result.failed).toEqual([
+      { id: 'license-2', reason: 'Cannot delete an activated license' },
+    ]);
+  });
 });

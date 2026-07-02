@@ -259,6 +259,59 @@ describe.skipIf(!hasDatabase)('Admin games API', () => {
     );
   });
 
+  it('POST /api/admin/games/bulk-unpublish and bulk-delete remove draft games', async () => {
+    const ts = Date.now();
+    const slugA = `e2e-bulk-game-a-${ts}`;
+    const slugB = `e2e-bulk-game-b-${ts}`;
+
+    const createDraft = async (slug: string, title: string) => {
+      const response = await request(app.getHttpServer())
+        .post('/api/admin/games')
+        .set(authAs(E2E_TOKENS.admin))
+        .send({
+          title,
+          slug,
+          platform: 'steam',
+          priceBase: 5.99,
+          genres: ['Adventure'],
+          description: LONG_DESCRIPTION,
+          coverImage: '/og/default.png',
+        })
+        .expect(201);
+      return response.body.id as string;
+    };
+
+    const bulkIdA = await createDraft(slugA, 'E2E Bulk Game A');
+    const bulkIdB = await createDraft(slugB, 'E2E Bulk Game B');
+
+    const unpublishResponse = await request(app.getHttpServer())
+      .post('/api/admin/games/bulk-unpublish')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [bulkIdA, bulkIdB] })
+      .expect(200);
+
+    expect(unpublishResponse.body).toEqual({
+      succeeded: [bulkIdA, bulkIdB],
+      failed: [],
+    });
+
+    const deleteResponse = await request(app.getHttpServer())
+      .post('/api/admin/games/bulk-delete')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [bulkIdA, bulkIdB] })
+      .expect(200);
+
+    expect(deleteResponse.body).toEqual({
+      succeeded: [bulkIdA, bulkIdB],
+      failed: [],
+    });
+
+    await request(app.getHttpServer())
+      .get(`/api/admin/games/${bulkIdA}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(404);
+  });
+
   it('DELETE /api/admin/games/:id removes the game', async () => {
     expect(createdGameId).toBeTruthy();
     const deletedId = createdGameId;

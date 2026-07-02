@@ -1,4 +1,5 @@
-import { apiGet } from './api-client';
+import { apiGet, apiPost } from './api-client';
+import type { BulkActionResult } from './admin.types';
 
 export type AdminOrderRecord = {
   id: string;
@@ -17,4 +18,8 @@ export type AdminOrderRecord = {
 
 export function getAdminOrders() {
   return apiGet<AdminOrderRecord[]>('/admin/orders');
+}
+
+export function bulkDeleteAdminOrders(ids: string[]) {
+  return apiPost<BulkActionResult>('/admin/orders/bulk-delete', { ids });
 }

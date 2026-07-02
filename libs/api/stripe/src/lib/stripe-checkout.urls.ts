@@ -3,6 +3,15 @@ export function resolveSiteUrl(siteUrl?: string): string {
   return base.replace(/\/$/, '');
 }
 
+export function buildSubscriptionCheckoutUrls(planSlug: string, siteUrl?: string) {
+  const base = resolveSiteUrl(siteUrl);
+
+  return {
+    successUrl: `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${base}/subscriptions?plan=${encodeURIComponent(planSlug)}&cancelled=1`,
+  };
+}
+
 export function buildCheckoutUrls(gameSlug: string, siteUrl?: string) {
   const base = resolveSiteUrl(siteUrl);
 

@@ -41,6 +41,21 @@
   flex-wrap: wrap;
 }
 
+.licenseMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.subscriptionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .pickerCard {
   display: flex;
   gap: 1.25rem;

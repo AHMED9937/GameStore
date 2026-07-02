@@ -18,6 +18,7 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
   let app: INestApplication;
   let steamGameId = '';
   let createdAccountId = '';
+  let secondAccountId = '';
   const slug = `e2e-admin-accounts-${Date.now()}`;
 
   beforeAll(async () => {
@@ -149,6 +150,45 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
     expect(response.body.isActive).toBe(true);
   });
 
+  it('POST /api/admin/accounts/bulk-deactivate marks multiple accounts inactive', async () => {
+    const secondResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        gameId: steamGameId,
+        username: `pool-${slug}-second`,
+        password: TEST_PASSWORD,
+        sharedSecret: TEST_SHARED_SECRET,
+        region: 'global',
+      })
+      .expect(201);
+
+    secondAccountId = secondResponse.body.id;
+
+    const bulkResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts/bulk-deactivate')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [createdAccountId, secondAccountId] })
+      .expect(200);
+
+    expect(bulkResponse.body).toEqual({
+      succeeded: [createdAccountId, secondAccountId],
+      failed: [],
+    });
+
+    const listResponse = await request(app.getHttpServer())
+      .get(`/api/admin/accounts?gameId=${steamGameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    for (const account of listResponse.body.filter(
+      (row: { id: string }) =>
+        row.id === createdAccountId || row.id === secondAccountId,
+    )) {
+      expect(account.isActive).toBe(false);
+    }
+  });
+
   it('DELETE /api/admin/accounts/:id removes the pool account', async () => {
     const response = await request(app.getHttpServer())
       .delete(`/api/admin/accounts/${createdAccountId}`)
@@ -166,6 +206,14 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
       .expect(404);
 
     createdAccountId = '';
+
+    if (secondAccountId) {
+      await request(app.getHttpServer())
+        .delete(`/api/admin/accounts/${secondAccountId}`)
+        .set(authAs(E2E_TOKENS.admin))
+        .catch(() => undefined);
+      secondAccountId = '';
+    }
   });
 
   it('POST /api/admin/accounts returns 400 for non-Steam games', async () => {

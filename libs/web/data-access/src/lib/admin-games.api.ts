@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
-import type { SetupResponse } from './admin.types';
+import type { BulkActionResult, SetupResponse } from './admin.types';
 
 export type AdminGameMediaRecord = {
   id: string;
@@ -88,5 +88,19 @@ export function updateAdminGame(id: string, body: Partial<AdminGameInput>) {
 export function deleteAdminGame(id: string) {
   return apiDelete<SetupResponse | { id: string; deleted: true }>(
     `/admin/games/${id}`,
+  );
+}
+
+export function bulkUnpublishAdminGames(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/games/bulk-unpublish',
+    { ids },
+  );
+}
+
+export function bulkDeleteAdminGames(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/games/bulk-delete',
+    { ids },
   );
 }

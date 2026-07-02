@@ -29,6 +29,8 @@ describe('AdminGamesController', () => {
     create: vi.fn().mockResolvedValue(sampleGame),
     update: vi.fn().mockResolvedValue({ ...sampleGame, published: true }),
     remove: vi.fn().mockResolvedValue({ id: 'game-1', deleted: true as const }),
+    bulkUnpublish: vi.fn().mockResolvedValue({ succeeded: ['game-1'], failed: [] }),
+    bulkDelete: vi.fn().mockResolvedValue({ succeeded: ['game-1'], failed: [] }),
     getReadiness: vi.fn().mockResolvedValue({
       ready: false,
       canPublish: false,
@@ -93,6 +95,20 @@ describe('AdminGamesController', () => {
       expect.objectContaining({
         action: 'admin.game.delete',
         resourceId: 'game-1',
+      }),
+    );
+  });
+
+  it('bulkUnpublish records bulk audit', async () => {
+    await controller.bulkUnpublish(
+      { ids: ['game-1', 'game-2'] },
+      adminUser,
+      request as never,
+    );
+    expect(adminGames.bulkUnpublish).toHaveBeenCalledWith(['game-1', 'game-2']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.game.bulk_unpublish',
       }),
     );
   });

@@ -26,6 +26,11 @@ import { PaymentsController } from './payments/payments.controller';
 import { PaymentsService } from './payments/payments.service';
 import { PaymentsWebhookController } from './payments/payments-webhook.controller';
 import { PaymentFulfillmentService } from './payments/payment-fulfillment.service';
+import { SubscriptionFulfillmentService } from './payments/subscription-fulfillment.service';
+import { SubscriptionPlansController } from './subscription-plans/subscription-plans.controller';
+import { SubscriptionPlansService } from './subscription-plans/subscription-plans.service';
+import { SubscriptionsController } from './subscriptions/subscriptions.controller';
+import { SubscriptionsService } from './subscriptions/subscriptions.service';
 import { SteamController } from './steam/steam.controller';
 import { SteamGuardAppService } from './steam/steam-guard-app.service';
 import { AdminModule } from './admin/admin.module';
@@ -50,6 +55,8 @@ import { AdminModule } from './admin/admin.module';
     OrdersController,
     PaymentsController,
     PaymentsWebhookController,
+    SubscriptionPlansController,
+    SubscriptionsController,
     SteamController,
   ],
   providers: [
@@ -61,6 +68,9 @@ import { AdminModule } from './admin/admin.module';
     OrdersService,
     PaymentsService,
     PaymentFulfillmentService,
+    SubscriptionFulfillmentService,
+    SubscriptionPlansService,
+    SubscriptionsService,
     SteamGuardAppService,
     {
       provide: APP_GUARD,

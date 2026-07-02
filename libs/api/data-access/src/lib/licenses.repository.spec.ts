@@ -43,6 +43,8 @@ describe('LicensesRepository', () => {
         id: true,
         licenseKey: true,
         status: true,
+        source: true,
+        expiresAt: true,
         game: { select: { id: true, title: true, slug: true, coverImage: true } },
       },
     });

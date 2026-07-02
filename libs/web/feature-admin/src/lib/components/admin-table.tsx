@@ -3,7 +3,7 @@ import styles from './admin-components.module.css';
 
 export type AdminTableColumn = {
   key: string;
-  header: string;
+  header: ReactNode;
 };
 
 export type AdminTableProps = {

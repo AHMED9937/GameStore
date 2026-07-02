@@ -3,12 +3,14 @@ import Stripe from 'stripe';
 import { StripeConfig } from './stripe.config';
 import {
   buildCheckoutUrls,
+  buildSubscriptionCheckoutUrls,
   priceToUnitAmount,
   resolveStripeProductImage,
 } from './stripe-checkout.urls';
 import type {
   CreateCheckoutSessionInput,
   CreateCheckoutSessionResult,
+  CreateSubscriptionCheckoutSessionInput,
 } from './stripe-checkout.types';
 import { StripeMisconfiguredError } from './stripe-misconfigured.error';
 
@@ -68,6 +70,51 @@ export class StripeService {
       sessionId: session.id,
       url: session.url,
     };
+  }
+
+  async createSubscriptionCheckoutSession(
+    input: CreateSubscriptionCheckoutSessionInput,
+  ): Promise<CreateCheckoutSessionResult> {
+    const client = this.getClient();
+    const { successUrl, cancelUrl } = buildSubscriptionCheckoutUrls(input.planSlug);
+
+    const session = await client.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [
+        {
+          quantity: 1,
+          price: input.stripePriceId,
+        },
+      ],
+      metadata: {
+        planId: input.planId,
+        planSlug: input.planSlug,
+        userId: input.userId,
+      },
+      subscription_data: {
+        metadata: {
+          planId: input.planId,
+          planSlug: input.planSlug,
+          userId: input.userId,
+        },
+      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
+    });
+
+    if (!session.id || !session.url) {
+      throw new Error('Stripe subscription checkout session missing id or url');
+    }
+
+    return {
+      sessionId: session.id,
+      url: session.url,
+    };
+  }
+
+  async retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+    return this.getClient().subscriptions.retrieve(subscriptionId);
   }
 
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {

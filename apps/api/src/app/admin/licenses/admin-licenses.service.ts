@@ -10,6 +10,11 @@ import {
 } from '@gamestore/api/data-access';
 import { Prisma } from '@prisma/client';
 import { LicensesService } from '../../licenses/licenses.service';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
 
 export type AdminLicenseListItemDto = {
   id: string;
@@ -146,6 +151,20 @@ export class AdminLicensesService {
 
   async remove(id: string): Promise<{ id: string; deleted: true }> {
     return this.licenses.remove(id);
+  }
+
+  async bulkRevoke(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.revoke(id);
+    });
+  }
+
+  async bulkDelete(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.remove(id);
+    });
   }
 
   private async createLicense(input: {

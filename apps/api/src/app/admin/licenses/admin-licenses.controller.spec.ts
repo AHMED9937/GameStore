@@ -51,6 +51,8 @@ describe('AdminLicensesController', () => {
       activatedAt: null,
     }),
     remove: vi.fn().mockResolvedValue({ id: 'license-1', deleted: true as const }),
+    bulkRevoke: vi.fn().mockResolvedValue({ succeeded: ['license-1'], failed: [] }),
+    bulkDelete: vi.fn().mockResolvedValue({ succeeded: ['license-1'], failed: [] }),
   } satisfies AdminLicensesService;
 
   const auditLogService = {
@@ -143,6 +145,20 @@ describe('AdminLicensesController', () => {
       expect.objectContaining({
         action: 'admin.license.delete',
         resourceId: 'license-1',
+      }),
+    );
+  });
+
+  it('bulkRevoke records bulk audit log', async () => {
+    await controller.bulkRevoke(
+      { ids: ['license-1'] },
+      adminUser,
+      request as never,
+    );
+    expect(licenses.bulkRevoke).toHaveBeenCalledWith(['license-1']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.license.bulk_revoke',
       }),
     );
   });
