@@ -50,7 +50,7 @@ describe('OrdersRepository', () => {
       where: { stripeSessionId: 'cs_test_abc' },
       include: {
         game: { select: { id: true, title: true, slug: true } },
-        license: { select: { id: true, licenseKey: true, status: true } },
+        license: { select: { id: true, licenseKey: true, status: true, source: true } },
       },
     });
   });
@@ -77,7 +77,7 @@ describe('OrdersRepository', () => {
       },
       include: {
         game: { select: { id: true, title: true, slug: true } },
-        license: { select: { id: true, licenseKey: true, status: true } },
+        license: { select: { id: true, licenseKey: true, status: true, source: true } },
       },
     });
   });

@@ -25,8 +25,19 @@ describe('AdminLicensesController', () => {
     findOne: vi.fn().mockResolvedValue({
       ...sampleLicense,
       gameTitle: 'Demo Game',
+      buyerCountry: null,
       ownerEmail: null,
       createdAt: '2024-01-01T00:00:00.000Z',
+      activatedAt: null,
+    }),
+    update: vi.fn().mockResolvedValue({
+      ...sampleLicense,
+      buyerEmail: 'updated@example.com',
+      gameTitle: 'Demo Game',
+      buyerCountry: 'US',
+      ownerEmail: null,
+      createdAt: '2024-01-01T00:00:00.000Z',
+      activatedAt: null,
     }),
     generateKey: vi.fn().mockResolvedValue(sampleLicense),
     create: vi.fn().mockResolvedValue([sampleLicense]),
@@ -34,9 +45,12 @@ describe('AdminLicensesController', () => {
       ...sampleLicense,
       status: 'revoked',
       gameTitle: 'Demo Game',
+      buyerCountry: null,
       ownerEmail: null,
       createdAt: '2024-01-01T00:00:00.000Z',
+      activatedAt: null,
     }),
+    remove: vi.fn().mockResolvedValue({ id: 'license-1', deleted: true as const }),
   } satisfies AdminLicensesService;
 
   const auditLogService = {
@@ -95,6 +109,39 @@ describe('AdminLicensesController', () => {
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.license.revoke',
+        resourceId: 'license-1',
+      }),
+    );
+  });
+
+  it('update records audit log', async () => {
+    const body = { buyerEmail: 'updated@example.com', buyerCountry: 'US' };
+    await expect(
+      controller.update('license-1', body, adminUser, request as never),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'license-1',
+        buyerEmail: 'updated@example.com',
+        buyerCountry: 'US',
+      }),
+    );
+    expect(licenses.update).toHaveBeenCalledWith('license-1', body);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.license.update',
+        resourceId: 'license-1',
+      }),
+    );
+  });
+
+  it('remove records audit log', async () => {
+    await expect(
+      controller.remove('license-1', adminUser, request as never),
+    ).resolves.toEqual({ id: 'license-1', deleted: true });
+    expect(licenses.remove).toHaveBeenCalledWith('license-1');
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.license.delete',
         resourceId: 'license-1',
       }),
     );

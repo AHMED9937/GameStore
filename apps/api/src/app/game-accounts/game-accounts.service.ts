@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -14,6 +15,15 @@ export type CreateGameAccountDto = {
   passwordEncrypted?: string;
   sharedSecret: string;
   region?: string;
+  maxActiveUsers?: number;
+};
+
+export type UpdateGameAccountDto = {
+  username?: string;
+  region?: string;
+  password?: string;
+  sharedSecret?: string;
+  maxActiveUsers?: number;
 };
 
 @Injectable()
@@ -45,6 +55,9 @@ export class GameAccountsService {
       passwordEncrypted,
       sharedSecret,
       region: dto.region,
+      ...(dto.maxActiveUsers !== undefined
+        ? { maxActiveUsers: dto.maxActiveUsers }
+        : {}),
       game: { connect: { id: dto.gameId } },
     });
   }
@@ -52,6 +65,97 @@ export class GameAccountsService {
   async deactivate(id: string) {
     await this.findOne(id);
     return this.accounts.deactivate(id);
+  }
+
+  async update(id: string, dto: UpdateGameAccountDto) {
+    await this.findOne(id);
+
+    const data: {
+      username?: string;
+      region?: string;
+      passwordEncrypted?: string;
+      sharedSecret?: string;
+      maxActiveUsers?: number;
+      lockedUntil?: null;
+      guardLockedByLicenseId?: null;
+    } = {};
+
+    if (dto.username?.trim()) {
+      data.username = dto.username.trim();
+    }
+    if (dto.region?.trim()) {
+      data.region = dto.region.trim();
+    }
+
+    let credentialsRotated = false;
+    if (dto.password?.trim()) {
+      if (!this.crypto.isConfigured()) {
+        throw new BadRequestException(
+          'STEAM encryption is not configured; cannot rotate password',
+        );
+      }
+      data.passwordEncrypted = this.crypto.encrypt(dto.password.trim());
+      credentialsRotated = true;
+    }
+    if (dto.sharedSecret?.trim()) {
+      data.sharedSecret = this.resolveSharedSecret(dto.sharedSecret);
+      credentialsRotated = true;
+    }
+    if (dto.maxActiveUsers !== undefined) {
+      if (!Number.isInteger(dto.maxActiveUsers) || dto.maxActiveUsers < 1) {
+        throw new BadRequestException('maxActiveUsers must be a positive integer');
+      }
+      data.maxActiveUsers = dto.maxActiveUsers;
+    }
+
+    if (
+      !data.username &&
+      !data.region &&
+      !data.passwordEncrypted &&
+      !data.sharedSecret &&
+      data.maxActiveUsers === undefined
+    ) {
+      throw new BadRequestException('At least one field must be provided');
+    }
+
+    if (credentialsRotated) {
+      data.lockedUntil = null;
+      data.guardLockedByLicenseId = null;
+    }
+
+    return this.accounts.update(id, data);
+  }
+
+  async reactivate(id: string) {
+    const account = await this.findOne(id);
+    if (account.isActive) {
+      return account;
+    }
+    if (account.activeUsersCount >= account.maxActiveUsers) {
+      throw new ConflictException(
+        'Pool account has reached the active user cap and cannot be reactivated',
+      );
+    }
+    return this.accounts.reactivate(id);
+  }
+
+  async remove(id: string) {
+    const account = await this.findOne(id);
+    if (account.activeUsersCount > 0) {
+      throw new BadRequestException(
+        'Cannot delete a pool account with active license assignments',
+      );
+    }
+
+    const activatedLicenses = await this.accounts.countActivatedLicenses(id);
+    if (activatedLicenses > 0) {
+      throw new BadRequestException(
+        'Cannot delete a pool account linked to activated licenses',
+      );
+    }
+
+    await this.accounts.delete(id);
+    return { id, deleted: true as const };
   }
 
   private resolvePasswordEncrypted(dto: CreateGameAccountDto): string {

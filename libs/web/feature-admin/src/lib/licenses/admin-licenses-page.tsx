@@ -30,6 +30,8 @@ function toListItem(license: AdminLicenseListRecord): AdminLicenseListItem {
     gameTitle: license.gameTitle,
     ownerEmail: license.ownerEmail,
     status: license.status,
+    source: license.source,
+    expiresAt: license.expiresAt,
   };
 }
 

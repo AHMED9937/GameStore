@@ -21,8 +21,8 @@ export function SteamGuardLiveCode({ licenseKey }: SteamGuardLiveCodeProps) {
         </p>
       )}
       {expiresInSeconds !== null && code ? (
-        <p className={styles.guardMeta}>
-          Refreshes in ~{expiresInSeconds}s
+        <p className={styles.guardMeta} data-testid="steam-guard-countdown">
+          New code in {expiresInSeconds}s
         </p>
       ) : null}
       {error ? <p className={styles.guardError}>{error}</p> : null}

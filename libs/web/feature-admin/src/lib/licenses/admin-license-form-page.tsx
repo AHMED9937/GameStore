@@ -44,6 +44,7 @@ export function AdminLicenseFormPage({ formState }: AdminLicenseFormPageProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [issuedKeys, setIssuedKeys] = useState<string[]>([]);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const controlledValues =
     formState?.status === 'success' ? formState.data : EMPTY_ADMIN_LICENSE_FORM_VALUES;
 
@@ -89,6 +90,16 @@ export function AdminLicenseFormPage({ formState }: AdminLicenseFormPageProps) {
     },
     [isControlled, values],
   );
+
+  const handleCopyKey = useCallback(async (key: string) => {
+    try {
+      await navigator.clipboard.writeText(key);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch {
+      setCopiedKey(null);
+    }
+  }, []);
 
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -142,8 +153,15 @@ export function AdminLicenseFormPage({ formState }: AdminLicenseFormPageProps) {
               <Text>Issued {issuedKeys.length} license key(s):</Text>
               <ul>
                 {issuedKeys.map((key) => (
-                  <li key={key}>
+                  <li key={key} className={styles.keyResultItem}>
                     <code>{key}</code>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => void handleCopyKey(key)}
+                    >
+                      {copiedKey === key ? 'Copied!' : 'Copy'}
+                    </Button>
                   </li>
                 ))}
               </ul>

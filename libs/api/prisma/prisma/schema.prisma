@@ -30,11 +30,12 @@ model Game {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  pricingRegions GamePricingRegion[]
-  accounts       GameAccount[]
-  licenses       License[]
-  media          GameMedia[]
-  orders         Order[]
+  pricingRegions       GamePricingRegion[]
+  accounts             GameAccount[]
+  licenses             License[]
+  media                GameMedia[]
+  orders               Order[]
+  subscriptionPlanGames SubscriptionPlanGame[]
 
   @@map("games")
 }
@@ -79,9 +80,11 @@ model GameAccount {
   sharedSecret      String
   region            String    @default("global")
   activeUsersCount  Int       @default(0)
+  maxActiveUsers    Int       @default(50)
   isActive          Boolean   @default(true)
-  lockedUntil       DateTime?
-  lastHealthCheck   DateTime?
+  lockedUntil              DateTime?
+  guardLockedByLicenseId   String?
+  lastHealthCheck          DateTime?
   createdAt         DateTime  @default(now())
 
   game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -101,9 +104,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  licenses  License[]
-  auditLogs AuditLog[]
-  orders    Order[]
+  licenses      License[]
+  auditLogs     AuditLog[]
+  orders        Order[]
+  subscriptions UserSubscription[]
 
   @@map("users")
 }
@@ -127,24 +131,33 @@ model AuditLog {
 }
 
 model License {
-  id           String    @id @default(cuid())
-  licenseKey   String    @unique
-  gameId       String
-  accountId    String?
-  ownerId      String?
-  status       String    @default("available")
-  buyerEmail   String?
-  buyerCountry String?   @db.VarChar(2)
-  activatedAt  DateTime?
-  createdAt    DateTime  @default(now())
+  id             String    @id @default(cuid())
+  licenseKey     String    @unique
+  gameId         String
+  accountId      String?
+  ownerId        String?
+  subscriptionId String?
+  source         String    @default("admin")
+  status         String    @default("available")
+  buyerEmail     String?
+  buyerCountry   String?   @db.VarChar(2)
+  validFrom      DateTime  @default(now())
+  expiresAt      DateTime?
+  activatedAt    DateTime?
+  createdAt      DateTime  @default(now())
 
-  game    Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  account GameAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  owner   User?        @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  order   Order?
+  game         Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  account      GameAccount?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  owner        User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  subscription UserSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  order        Order?
 
+  @@unique([subscriptionId, gameId, ownerId], name: "subscription_game_owner")
   @@index([gameId, status])
   @@index([ownerId])
+  @@index([subscriptionId])
+  @@index([expiresAt])
+  @@index([source, status])
   @@map("licenses")
 }
 
@@ -155,6 +168,7 @@ model Order {
   licenseId       String?  @unique
   stripeSessionId String   @unique
   stripePaymentId String?
+  orderType       String   @default("one_time")
   amount          Decimal  @db.Decimal(10, 2)
   currency        String   @default("USD") @db.VarChar(3)
   status          String   @default("pending")
@@ -169,4 +183,53 @@ model Order {
   @@index([gameId, status])
   @@index([ownerId])
   @@map("orders")
+}
+
+model SubscriptionPlan {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  stripePriceId String   @unique
+  interval      String
+  intervalCount Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  games         SubscriptionPlanGame[]
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model SubscriptionPlanGame {
+  planId String
+  gameId String
+
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  game Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([planId, gameId])
+  @@map("subscription_plan_games")
+}
+
+model UserSubscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  planId               String
+  stripeSubscriptionId String   @unique
+  stripeCustomerId     String?
+  status               String
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  licenses License[]
+
+  @@index([userId, status])
+  @@map("user_subscriptions")
 }

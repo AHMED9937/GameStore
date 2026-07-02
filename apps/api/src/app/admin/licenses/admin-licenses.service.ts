@@ -17,6 +17,8 @@ export type AdminLicenseListItemDto = {
   gameTitle: string;
   ownerEmail: string | null;
   status: string;
+  source: string;
+  expiresAt: string | null;
 };
 
 export type AdminLicenseDetailDto = {
@@ -25,9 +27,21 @@ export type AdminLicenseDetailDto = {
   gameId: string;
   gameTitle: string;
   status: string;
+  source: string;
+  subscriptionId: string | null;
+  validFrom: string;
+  expiresAt: string | null;
   buyerEmail: string | null;
+  buyerCountry: string | null;
   ownerEmail: string | null;
   createdAt: string;
+  activatedAt: string | null;
+};
+
+export type UpdateAdminLicenseDto = {
+  buyerEmail?: string;
+  buyerCountry?: string;
+  expiresAt?: string | null;
 };
 
 export type AdminLicenseCreatedDto = {
@@ -67,22 +81,23 @@ export class AdminLicensesService {
       gameTitle: row.game.title,
       ownerEmail: row.owner?.email ?? row.buyerEmail ?? null,
       status: row.status,
+      source: row.source,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
     }));
   }
 
   async findOne(id: string): Promise<AdminLicenseDetailDto> {
     const license = await this.licenses.findOne(id);
 
-    return {
-      id: license.id,
-      licenseKey: license.licenseKey,
-      gameId: license.gameId,
-      gameTitle: license.game.title,
-      status: license.status,
-      buyerEmail: license.buyerEmail,
-      ownerEmail: license.owner?.email ?? null,
-      createdAt: license.createdAt.toISOString(),
-    };
+    return this.toDetailDto(license);
+  }
+
+  async update(
+    id: string,
+    dto: UpdateAdminLicenseDto,
+  ): Promise<AdminLicenseDetailDto> {
+    const license = await this.licenses.update(id, dto);
+    return this.toDetailDto(license);
   }
 
   async generateKey(
@@ -129,6 +144,10 @@ export class AdminLicensesService {
     return this.findOne(id);
   }
 
+  async remove(id: string): Promise<{ id: string; deleted: true }> {
+    return this.licenses.remove(id);
+  }
+
   private async createLicense(input: {
     gameId: string;
     licenseKey: string;
@@ -169,5 +188,39 @@ export class AdminLicensesService {
     if (!game) {
       throw new NotFoundException(`No game found with id "${gameId}"`);
     }
+  }
+
+  private toDetailDto(license: {
+    id: string;
+    licenseKey: string;
+    gameId: string;
+    status: string;
+    source: string;
+    subscriptionId: string | null;
+    validFrom: Date;
+    expiresAt: Date | null;
+    buyerEmail: string | null;
+    buyerCountry: string | null;
+    createdAt: Date;
+    activatedAt: Date | null;
+    game: { title: string };
+    owner: { email: string } | null;
+  }): AdminLicenseDetailDto {
+    return {
+      id: license.id,
+      licenseKey: license.licenseKey,
+      gameId: license.gameId,
+      gameTitle: license.game.title,
+      status: license.status,
+      source: license.source,
+      subscriptionId: license.subscriptionId,
+      validFrom: license.validFrom.toISOString(),
+      expiresAt: license.expiresAt?.toISOString() ?? null,
+      buyerEmail: license.buyerEmail,
+      buyerCountry: license.buyerCountry,
+      ownerEmail: license.owner?.email ?? null,
+      createdAt: license.createdAt.toISOString(),
+      activatedAt: license.activatedAt?.toISOString() ?? null,
+    };
   }
 }

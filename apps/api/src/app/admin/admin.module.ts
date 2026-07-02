@@ -20,6 +20,8 @@ import { AdminIgdbController } from './igdb/admin-igdb.controller';
 import { AdminIgdbImportService } from './igdb/admin-igdb-import.service';
 import { AdminOrdersController } from './orders/admin-orders.controller';
 import { AdminOrdersService } from './orders/admin-orders.service';
+import { AdminSubscriptionPlansController } from './subscription-plans/admin-subscription-plans.controller';
+import { AdminSubscriptionPlansService } from './subscription-plans/admin-subscription-plans.service';
 
 @Module({
   imports: [AuthModule, DataAccessModule, PrismaModule, IgdbModule, SteamModule],
@@ -30,6 +32,7 @@ import { AdminOrdersService } from './orders/admin-orders.service';
     AdminLicensesController,
     AdminAccountsController,
     AdminOrdersController,
+    AdminSubscriptionPlansController,
     AdminAuditController,
     AdminIgdbController,
   ],
@@ -42,6 +45,7 @@ import { AdminOrdersService } from './orders/admin-orders.service';
     LicensesService,
     AdminIgdbImportService,
     AdminOrdersService,
+    AdminSubscriptionPlansService,
   ],
 })
 export class AdminModule {}

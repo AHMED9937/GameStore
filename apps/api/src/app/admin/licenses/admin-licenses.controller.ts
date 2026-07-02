@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
   Post,
+  Put,
   Req,
 } from '@nestjs/common';
 import {
@@ -20,6 +22,7 @@ import {
   AdminLicensesService,
   type CreateAdminLicenseDto,
   type GenerateAdminLicenseDto,
+  type UpdateAdminLicenseDto,
 } from './admin-licenses.service';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
@@ -88,6 +91,31 @@ export class AdminLicensesController {
     return licenses.length === 1 ? licenses[0] : { licenses };
   }
 
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAdminLicenseDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const license = await this.licenses.update(id, body);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.license.update',
+      resource: 'license',
+      resourceId: id,
+      metadata: {
+        licenseKeyHint: licenseKeyAuditHint(license.licenseKey),
+        ...(body.buyerEmail !== undefined ? { buyerEmail: body.buyerEmail } : {}),
+        ...(body.buyerCountry !== undefined
+          ? { buyerCountry: body.buyerCountry }
+          : {}),
+      },
+    });
+    return license;
+  }
+
   @Post(':id/revoke')
   @HttpCode(200)
   async revoke(
@@ -105,5 +133,22 @@ export class AdminLicensesController {
       metadata: { status: license.status },
     });
     return license;
+  }
+
+  @Delete(':id')
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.licenses.remove(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.license.delete',
+      resource: 'license',
+      resourceId: id,
+    });
+    return result;
   }
 }

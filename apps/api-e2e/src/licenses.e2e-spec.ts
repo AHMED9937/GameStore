@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PrismaService } from '@gamestore/api/prisma';
 import {
   authAs,
   closeE2eApp,
@@ -14,6 +15,7 @@ const hasDatabase = Boolean(process.env.DATABASE_URL);
 describe.skipIf(!hasDatabase)('Licenses API', () => {
   let app: INestApplication;
   let createdGameId: string;
+  let expiredLicenseId: string | undefined;
 
   beforeAll(async () => {
     app = await createE2eApp();
@@ -21,6 +23,12 @@ describe.skipIf(!hasDatabase)('Licenses API', () => {
   });
 
   afterAll(async () => {
+    if (app && expiredLicenseId) {
+      const prisma = app.get(PrismaService);
+      await prisma.license
+        .delete({ where: { id: expiredLicenseId } })
+        .catch(() => undefined);
+    }
     if (createdGameId) {
       await request(app.getHttpServer())
         .delete(`/api/games/${createdGameId}`)
@@ -62,6 +70,38 @@ describe.skipIf(!hasDatabase)('Licenses API', () => {
       .post('/api/licenses/validate')
       .send({ licenseKey: '' })
       .expect(400);
+  });
+
+  it('POST /api/licenses/validate rejects expired licenses', async () => {
+    const slug = `e2e-expired-lic-${Date.now()}`;
+    const gameResponse = await request(app.getHttpServer())
+      .post('/api/games')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        title: 'Expired License E2E Game',
+        slug,
+        platform: 'steam',
+        priceBase: 1.99,
+        publishedAt: '2026-01-01T00:00:00.000Z',
+      })
+      .expect(201);
+
+    const prisma = app.get(PrismaService);
+    const licenseKey = `E2E-EXPIRED-${Date.now()}`;
+    const license = await prisma.license.create({
+      data: {
+        licenseKey,
+        gameId: gameResponse.body.id,
+        status: 'available',
+        expiresAt: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
+    expiredLicenseId = license.id;
+
+    await request(app.getHttpServer())
+      .post('/api/licenses/validate')
+      .send({ licenseKey })
+      .expect(403);
   });
 
   it('POST /api/licenses/:id/revoke returns 403 on validate', async () => {

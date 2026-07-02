@@ -6,7 +6,7 @@ export const ADMIN_ACCOUNT_COLUMNS = [
   { key: 'username', header: 'Username' },
   { key: 'platform', header: 'Platform' },
   { key: 'region', header: 'Region' },
-  { key: 'activeUsers', header: 'Active users' },
+  { key: 'capacity', header: 'Capacity' },
   { key: 'status', header: 'Status' },
   { key: 'actions', header: 'Actions' },
 ] as const;

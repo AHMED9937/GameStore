@@ -19,7 +19,10 @@ describe('AdminAccountsController', () => {
     findAll: vi.fn().mockResolvedValue([sampleAccount]),
     findOne: vi.fn().mockResolvedValue(sampleAccount),
     create: vi.fn().mockResolvedValue(sampleAccount),
+    update: vi.fn().mockResolvedValue({ ...sampleAccount, username: 'pool_user_2' }),
     deactivate: vi.fn().mockResolvedValue({ ...sampleAccount, isActive: false }),
+    reactivate: vi.fn().mockResolvedValue(sampleAccount),
+    remove: vi.fn().mockResolvedValue({ id: 'account-1', deleted: true as const }),
   } satisfies AdminAccountsService;
 
   const auditLogService = {
@@ -68,6 +71,47 @@ describe('AdminAccountsController', () => {
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.account.deactivate',
+        resourceId: 'account-1',
+      }),
+    );
+  });
+
+  it('update records audit log', async () => {
+    const body = { username: 'pool_user_2', region: 'eu' };
+
+    await expect(
+      controller.update('account-1', body, adminUser, request as never),
+    ).resolves.toEqual({ ...sampleAccount, username: 'pool_user_2' });
+    expect(accounts.update).toHaveBeenCalledWith('account-1', body);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.update',
+        resourceId: 'account-1',
+      }),
+    );
+  });
+
+  it('reactivate records audit log', async () => {
+    await expect(
+      controller.reactivate('account-1', adminUser, request as never),
+    ).resolves.toEqual(sampleAccount);
+    expect(accounts.reactivate).toHaveBeenCalledWith('account-1');
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.reactivate',
+        resourceId: 'account-1',
+      }),
+    );
+  });
+
+  it('remove records audit log', async () => {
+    await expect(
+      controller.remove('account-1', adminUser, request as never),
+    ).resolves.toEqual({ id: 'account-1', deleted: true });
+    expect(accounts.remove).toHaveBeenCalledWith('account-1');
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.delete',
         resourceId: 'account-1',
       }),
     );

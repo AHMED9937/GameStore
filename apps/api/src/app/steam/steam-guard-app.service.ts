@@ -58,11 +58,11 @@ export class SteamGuardAppService {
 
     const account = license.account;
     const now = new Date();
-    const isOwnerRefresh =
+    const isSameLicenseRefresh =
       Boolean(account.lockedUntil && account.lockedUntil > now) &&
-      license.ownerId === user.id;
+      account.guardLockedByLicenseId === license.id;
 
-    if (account.lockedUntil && account.lockedUntil > now && !isOwnerRefresh) {
+    if (account.lockedUntil && account.lockedUntil > now && !isSameLicenseRefresh) {
       const retryAfterSeconds = Math.ceil(
         (account.lockedUntil.getTime() - now.getTime()) / 1000,
       );
@@ -76,12 +76,15 @@ export class SteamGuardAppService {
       account.sharedSecret,
     );
 
-    if (!isOwnerRefresh) {
+    if (!isSameLicenseRefresh) {
       const cooldownMinutes = SteamConfig.readCooldownMinutes();
       const lockedUntil = new Date(now.getTime() + cooldownMinutes * 60_000);
       await this.prisma.gameAccount.update({
         where: { id: account.id },
-        data: { lockedUntil },
+        data: {
+          lockedUntil,
+          guardLockedByLicenseId: license.id,
+        },
       });
     }
 

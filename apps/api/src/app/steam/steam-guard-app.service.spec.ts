@@ -44,6 +44,7 @@ describe('SteamGuardAppService cooldown', () => {
             id: 'account-1',
             sharedSecret,
             lockedUntil,
+            guardLockedByLicenseId: 'license-1',
           },
         }),
       },
@@ -85,6 +86,7 @@ describe('SteamGuardAppService cooldown', () => {
             id: 'account-1',
             sharedSecret,
             lockedUntil,
+            guardLockedByLicenseId: 'license-1',
           },
         }),
       },
@@ -142,7 +144,10 @@ describe('SteamGuardAppService cooldown', () => {
     expect(result.code).toMatch(/^[A-Z0-9]{5}$/);
     expect(update).toHaveBeenCalledWith({
       where: { id: 'account-1' },
-      data: { lockedUntil: expect.any(Date) },
+      data: {
+        lockedUntil: expect.any(Date),
+        guardLockedByLicenseId: 'license-1',
+      },
     });
   });
 });

@@ -12,6 +12,7 @@ const licenseSummarySelect = {
   id: true,
   licenseKey: true,
   status: true,
+  source: true,
 } satisfies Prisma.LicenseSelect;
 
 export type CreatePendingOrderInput = {

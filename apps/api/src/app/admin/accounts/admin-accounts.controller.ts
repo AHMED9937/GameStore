@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
+  Put,
   Query,
   Req,
 } from '@nestjs/common';
@@ -18,6 +20,7 @@ import {
 import {
   AdminAccountsService,
   type CreateAdminAccountDto,
+  type UpdateAdminAccountDto,
 } from './admin-accounts.service';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
@@ -73,5 +76,62 @@ export class AdminAccountsController {
       resourceId: id,
     });
     return account;
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAdminAccountDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.update(id, body);
+    const fieldsChanged = Object.keys(body).filter(
+      (key) => body[key as keyof UpdateAdminAccountDto] !== undefined,
+    );
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.update',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: { username: account.username, fieldsChanged },
+    });
+    return account;
+  }
+
+  @Post(':id/reactivate')
+  async reactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.reactivate(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.reactivate',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: { username: account.username },
+    });
+    return account;
+  }
+
+  @Delete(':id')
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.accounts.remove(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.delete',
+      resource: 'game_account',
+      resourceId: id,
+    });
+    return result;
   }
 }

@@ -36,6 +36,12 @@ export type CreateLicenseDto = {
   ownerId?: string;
 };
 
+export type UpdateLicenseDto = {
+  buyerEmail?: string;
+  buyerCountry?: string;
+  expiresAt?: string | null;
+};
+
 export type UserLicenseSummary = {
   id: string;
   licenseKey: string;
@@ -67,6 +73,7 @@ export class LicensesService {
     if (license.status === 'revoked') {
       throw new ForbiddenException('License has been revoked');
     }
+    this.assertNotExpired(license.expiresAt);
 
     assertOwnedResourceAccess(
       user,
@@ -103,6 +110,7 @@ export class LicensesService {
     if (license.status === 'revoked') {
       throw new ForbiddenException('License has been revoked');
     }
+    this.assertNotExpired(license.expiresAt);
 
     if (license.status === 'activated') {
       this.assertActivateOwnership(license.ownerId, user);
@@ -169,6 +177,58 @@ export class LicensesService {
   async revoke(id: string) {
     await this.findOne(id);
     return this.licenses.revoke(id);
+  }
+
+  async update(id: string, dto: UpdateLicenseDto) {
+    const license = await this.findOne(id);
+    if (license.status !== 'available') {
+      throw new BadRequestException(
+        'Only available licenses can be updated',
+      );
+    }
+
+    const buyerEmail =
+      dto.buyerEmail === undefined
+        ? undefined
+        : dto.buyerEmail.trim() || null;
+    const buyerCountry =
+      dto.buyerCountry === undefined
+        ? undefined
+        : dto.buyerCountry.trim().toUpperCase() || null;
+    const expiresAt =
+      dto.expiresAt === undefined
+        ? undefined
+        : dto.expiresAt === null || dto.expiresAt.trim() === ''
+          ? null
+          : new Date(dto.expiresAt);
+
+    if (expiresAt instanceof Date && Number.isNaN(expiresAt.getTime())) {
+      throw new BadRequestException('expiresAt must be a valid ISO date');
+    }
+
+    return this.licenses.update(id, {
+      ...(buyerEmail !== undefined ? { buyerEmail } : {}),
+      ...(buyerCountry !== undefined ? { buyerCountry } : {}),
+      ...(expiresAt !== undefined ? { expiresAt } : {}),
+    });
+  }
+
+  async remove(id: string) {
+    const license = await this.findOne(id);
+    if (license.status === 'activated') {
+      throw new BadRequestException(
+        'Cannot delete an activated license',
+      );
+    }
+
+    await this.licenses.delete(id);
+    return { id, deleted: true as const };
+  }
+
+  private assertNotExpired(expiresAt: Date | null | undefined): void {
+    if (expiresAt && expiresAt.getTime() <= Date.now()) {
+      throw new ForbiddenException('License has expired');
+    }
   }
 
   private assertActivateOwnership(

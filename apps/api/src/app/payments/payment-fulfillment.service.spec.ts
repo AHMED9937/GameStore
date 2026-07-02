@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OrdersRepository } from '@gamestore/api/data-access';
+import type {
+  GameAccountsRepository,
+  OrdersRepository,
+} from '@gamestore/api/data-access';
 import type { PrismaService } from '@gamestore/api/prisma';
 import { PaymentFulfillmentService } from './payment-fulfillment.service';
 
@@ -18,6 +21,10 @@ describe('PaymentFulfillmentService', () => {
     markFailed: vi.fn(),
   } as unknown as OrdersRepository;
 
+  const gameAccounts = {
+    findAvailableForGame: vi.fn(),
+  } as unknown as GameAccountsRepository;
+
   const prisma = {
     license: {
       create: vi.fn(),
@@ -28,10 +35,13 @@ describe('PaymentFulfillmentService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new PaymentFulfillmentService(prisma, orders);
+    service = new PaymentFulfillmentService(prisma, orders, gameAccounts);
     vi.mocked(orders.findByStripeSessionId).mockResolvedValue(
       pendingOrder as never,
     );
+    vi.mocked(gameAccounts.findAvailableForGame).mockResolvedValue({
+      id: 'acct-1',
+    } as never);
     vi.mocked(prisma.license.create).mockResolvedValue({
       id: 'lic-1',
       licenseKey: 'GS-ABCD-EF01-2345',
@@ -42,7 +52,7 @@ describe('PaymentFulfillmentService', () => {
     } as never);
   });
 
-  it('fulfills a paid checkout session with a new license', async () => {
+  it('fulfills a paid checkout session with a purchase license', async () => {
     const result = await service.handleCheckoutSessionCompleted({
       id: 'cs_test_abc',
       payment_status: 'paid',
@@ -57,6 +67,19 @@ describe('PaymentFulfillmentService', () => {
       orderId: 'order-1',
       licenseId: 'lic-1',
     });
+    expect(gameAccounts.findAvailableForGame).toHaveBeenCalledWith('game-1');
+    expect(prisma.license.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        licenseKey: expect.stringMatching(/^GS-/),
+        status: 'available',
+        source: 'purchase',
+        expiresAt: null,
+        buyerEmail: 'buyer@example.com',
+        validFrom: expect.any(Date),
+        game: { connect: { id: 'game-1' } },
+        owner: { connect: { id: 'user-1' } },
+      }),
+    });
     expect(orders.markCompleted).toHaveBeenCalledWith('order-1', {
       licenseId: 'lic-1',
       stripePaymentId: 'pi_test',
@@ -64,6 +87,23 @@ describe('PaymentFulfillmentService', () => {
       amount: 19.99,
       ownerId: 'user-1',
     });
+  });
+
+  it('still fulfills when no pool account is available', async () => {
+    vi.mocked(gameAccounts.findAvailableForGame).mockResolvedValue(null);
+
+    const warnSpy = vi.spyOn(service['logger'], 'warn');
+
+    const result = await service.handleCheckoutSessionCompleted({
+      id: 'cs_test_abc',
+      payment_status: 'paid',
+      metadata: { gameId: 'game-1', userId: 'user-1' },
+    } as never);
+
+    expect(result.action).toBe('fulfilled');
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('No available pool account for game game-1'),
+    );
   });
 
   it('is idempotent when the order is already completed', async () => {
@@ -84,6 +124,7 @@ describe('PaymentFulfillmentService', () => {
       licenseId: 'lic-existing',
     });
     expect(prisma.license.create).not.toHaveBeenCalled();
+    expect(gameAccounts.findAvailableForGame).not.toHaveBeenCalled();
   });
 
   it('marks pending orders failed on session expiry', async () => {

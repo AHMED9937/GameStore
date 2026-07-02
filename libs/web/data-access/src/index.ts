@@ -7,6 +7,7 @@ export * from './lib/admin-games-media.api';
 export * from './lib/admin-licenses.api';
 export * from './lib/admin-accounts.api';
 export * from './lib/admin-orders.api';
+export * from './lib/admin-subscription-plans.api';
 export * from './lib/admin-audit.api';
 export * from './lib/admin-igdb.api';
 export * from './lib/games.api';
