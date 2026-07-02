@@ -45,7 +45,9 @@ describe('AdminGamesPage', () => {
               title: 'Demo Game',
               slug: 'demo-game',
               platform: 'PC',
+              priceBase: '29.99',
               published: true,
+              igdbId: 100001,
             },
           ],
         }}

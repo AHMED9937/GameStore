@@ -7,6 +7,7 @@ function createPrismaMock() {
     game: {
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'new' }),
       update: vi.fn().mockResolvedValue({ id: 'updated' }),
       delete: vi.fn().mockResolvedValue({ id: 'deleted' }),
@@ -27,18 +28,19 @@ describe('GamesRepository', () => {
     });
   });
 
-  it('findBySlug looks up a unique slug', async () => {
+  it('findBySlug looks up a published slug with media', async () => {
     const prisma = createPrismaMock();
+    prisma.game.findFirst = vi.fn().mockResolvedValue(null);
     const repo = new GamesRepository(prisma as unknown as PrismaService);
 
     await repo.findBySlug('demo-game-1');
 
-    expect(prisma.game.findUnique).toHaveBeenCalledWith({
-      where: { slug: 'demo-game-1' },
+    expect(prisma.game.findFirst).toHaveBeenCalledWith({
+      where: { slug: 'demo-game-1', publishedAt: { not: null } },
       include: {
         media: {
           orderBy: { sortOrder: 'asc' },
-          where: { type: { in: ['screenshot', 'video'] } },
+          where: { type: { in: ['screenshot', 'video', 'activation'] } },
         },
       },
     });

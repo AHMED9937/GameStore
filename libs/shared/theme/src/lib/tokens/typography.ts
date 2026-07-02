@@ -10,10 +10,10 @@ export const typography = {
     extrabold: 800,
   },
   sizes: {
-    xs: '0.6875rem',
-    sm: '0.875rem',
+    xs: '0.75rem',
+    sm: '0.9375rem',
     base: '1rem',
-    md: '0.9375rem',
+    md: '1.0625rem',
     lg: '1.125rem',
     xl: '1.25rem',
     '2xl': '1.5rem',
@@ -22,9 +22,10 @@ export const typography = {
   },
   lineHeights: {
     tight: 1.1,
-    snug: 1.3,
+    snug: 1.35,
     normal: 1.5,
-    relaxed: 1.6,
+    body: 1.65,
+    prose: 1.8,
   },
   letterSpacing: {
     tight: '-0.02em',
