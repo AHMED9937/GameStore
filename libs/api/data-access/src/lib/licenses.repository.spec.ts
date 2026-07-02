@@ -9,6 +9,7 @@ function createPrismaMock() {
       findMany: vi.fn().mockResolvedValue([]),
       create: vi.fn().mockResolvedValue({ id: 'new' }),
       update: vi.fn().mockResolvedValue({ id: 'updated' }),
+      delete: vi.fn().mockResolvedValue({ id: 'deleted' }),
     },
   };
 }
@@ -22,7 +23,10 @@ describe('LicensesRepository', () => {
 
     expect(prisma.license.findUnique).toHaveBeenCalledWith({
       where: { licenseKey: 'DEMO-KEY-0001' },
-      include: { game: { select: { id: true, title: true, slug: true } } },
+      include: {
+        game: { select: { id: true, title: true, slug: true, coverImage: true } },
+        account: true,
+      },
     });
   });
 
@@ -39,7 +43,7 @@ describe('LicensesRepository', () => {
         id: true,
         licenseKey: true,
         status: true,
-        game: { select: { id: true, title: true, slug: true } },
+        game: { select: { id: true, title: true, slug: true, coverImage: true } },
       },
     });
   });
@@ -53,7 +57,7 @@ describe('LicensesRepository', () => {
     expect(prisma.license.findMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'desc' },
       include: {
-        game: { select: { id: true, title: true, slug: true } },
+        game: { select: { id: true, title: true, slug: true, coverImage: true } },
         owner: { select: { email: true } },
       },
     });
@@ -68,6 +72,40 @@ describe('LicensesRepository', () => {
     expect(prisma.license.update).toHaveBeenCalledWith({
       where: { id: 'lic-1' },
       data: { status: 'revoked' },
+    });
+  });
+
+  it('update patches buyer metadata and includes relations', async () => {
+    const prisma = createPrismaMock();
+    const repo = new LicensesRepository(prisma as unknown as PrismaService);
+
+    await repo.update('lic-1', {
+      buyerEmail: 'buyer@example.com',
+      buyerCountry: 'US',
+    });
+
+    expect(prisma.license.update).toHaveBeenCalledWith({
+      where: { id: 'lic-1' },
+      data: {
+        buyerEmail: 'buyer@example.com',
+        buyerCountry: 'US',
+      },
+      include: {
+        game: { select: { id: true, title: true, slug: true, coverImage: true } },
+        owner: { select: { email: true } },
+      },
+    });
+  });
+
+  it('delete removes the license row', async () => {
+    const prisma = createPrismaMock();
+    const repo = new LicensesRepository(prisma as unknown as PrismaService);
+
+    await repo.delete('lic-1');
+
+    expect(prisma.license.delete).toHaveBeenCalledWith({
+      where: { id: 'lic-1' },
+      select: { id: true },
     });
   });
 });

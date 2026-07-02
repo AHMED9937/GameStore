@@ -205,9 +205,12 @@ describe.skipIf(!hasDatabase)('Stripe payment routes', () => {
       license: {
         licenseKey: expect.stringMatching(/^GS-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/),
         status: 'available',
+        source: 'purchase',
+        expiresAt: null,
         gameId: order.gameId,
       },
     });
+    expect(fulfilled?.license?.validFrom).toBeInstanceOf(Date);
 
     fulfilledLicenseId = fulfilled?.license?.id;
 

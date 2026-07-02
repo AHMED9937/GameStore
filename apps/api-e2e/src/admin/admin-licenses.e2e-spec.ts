@@ -31,12 +31,6 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
   });
 
   afterAll(async () => {
-    if (createdLicenseId) {
-      await request(app.getHttpServer())
-        .post(`/api/admin/licenses/${createdLicenseId}/revoke`)
-        .set(authAs(E2E_TOKENS.admin))
-        .catch(() => undefined);
-    }
     await closeE2eApp(app);
   });
 
@@ -92,6 +86,21 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
     });
   });
 
+  it('PUT /api/admin/licenses/:id updates buyer metadata for available license', async () => {
+    const response = await request(app.getHttpServer())
+      .put(`/api/admin/licenses/${createdLicenseId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ buyerEmail: 'updated-buyer@example.com', buyerCountry: 'us' })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: createdLicenseId,
+      buyerEmail: 'updated-buyer@example.com',
+      buyerCountry: 'US',
+      status: 'available',
+    });
+  });
+
   it('POST /api/licenses/validate accepts the generated key', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/licenses/validate')
@@ -111,6 +120,30 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
       .expect(200);
 
     expect(response.body.status).toBe('revoked');
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/licenses/${createdLicenseId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ buyerEmail: 'blocked@example.com' })
+      .expect(400);
+  });
+
+  it('DELETE /api/admin/licenses/:id removes a revoked license', async () => {
+    const response = await request(app.getHttpServer())
+      .delete(`/api/admin/licenses/${createdLicenseId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual({
+      id: createdLicenseId,
+      deleted: true,
+    });
+
+    await request(app.getHttpServer())
+      .get(`/api/admin/licenses/${createdLicenseId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(404);
+
     createdLicenseId = '';
   });
 });

@@ -4,6 +4,8 @@ export type AdminLicenseListItem = {
   gameTitle: string;
   ownerEmail: string | null;
   status: string;
+  source: string;
+  expiresAt: string | null;
 };
 
 export type AdminLicenseFormValues = {

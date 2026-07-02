@@ -13,6 +13,12 @@ describe('AdminLicensesService', () => {
         gameId: 'game-1',
         status: 'available',
         buyerEmail: 'buyer@example.com',
+        buyerCountry: null,
+        source: 'admin',
+        subscriptionId: null,
+        validFrom: new Date('2024-01-01T00:00:00.000Z'),
+        expiresAt: null,
+        activatedAt: null,
         createdAt: new Date('2024-01-01T00:00:00.000Z'),
         game: { id: 'game-1', title: 'Demo Game', slug: 'demo-game', coverImage: null },
         owner: null,
@@ -24,6 +30,12 @@ describe('AdminLicensesService', () => {
       gameId: 'game-1',
       status: 'available',
       buyerEmail: 'buyer@example.com',
+      buyerCountry: null,
+      source: 'admin',
+      subscriptionId: null,
+      validFrom: new Date('2024-01-01T00:00:00.000Z'),
+      expiresAt: null,
+      activatedAt: null,
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
       game: { id: 'game-1', title: 'Demo Game', slug: 'demo-game', coverImage: null },
       owner: null,
@@ -36,6 +48,23 @@ describe('AdminLicensesService', () => {
       buyerEmail: null,
     }),
     revoke: vi.fn().mockResolvedValue({ id: 'license-1', status: 'revoked' }),
+    update: vi.fn().mockResolvedValue({
+      id: 'license-1',
+      licenseKey: 'GS-ABCD-EF12-3456',
+      gameId: 'game-1',
+      status: 'available',
+      buyerEmail: 'updated@example.com',
+      buyerCountry: 'US',
+      source: 'admin',
+      subscriptionId: null,
+      validFrom: new Date('2024-01-01T00:00:00.000Z'),
+      expiresAt: null,
+      activatedAt: null,
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+      game: { id: 'game-1', title: 'Demo Game', slug: 'demo-game', coverImage: null },
+      owner: null,
+    }),
+    remove: vi.fn().mockResolvedValue({ id: 'license-1', deleted: true }),
   } satisfies LicensesService;
 
   const games = {
@@ -55,6 +84,8 @@ describe('AdminLicensesService', () => {
         gameTitle: 'Demo Game',
         ownerEmail: 'buyer@example.com',
         status: 'available',
+        source: 'admin',
+        expiresAt: null,
       },
     ]);
   });
@@ -71,5 +102,32 @@ describe('AdminLicensesService', () => {
     await expect(service.generateKey({ gameId: 'missing' })).rejects.toBeInstanceOf(
       NotFoundException,
     );
+  });
+
+  it('update delegates to licenses service and maps detail dto', async () => {
+    const result = await service.update('license-1', {
+      buyerEmail: 'updated@example.com',
+      buyerCountry: 'US',
+    });
+
+    expect(licenses.update).toHaveBeenCalledWith('license-1', {
+      buyerEmail: 'updated@example.com',
+      buyerCountry: 'US',
+    });
+    expect(result).toMatchObject({
+      id: 'license-1',
+      buyerEmail: 'updated@example.com',
+      buyerCountry: 'US',
+      gameTitle: 'Demo Game',
+      source: 'admin',
+    });
+  });
+
+  it('remove delegates to licenses service', async () => {
+    await expect(service.remove('license-1')).resolves.toEqual({
+      id: 'license-1',
+      deleted: true,
+    });
+    expect(licenses.remove).toHaveBeenCalledWith('license-1');
   });
 });

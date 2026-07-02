@@ -7,6 +7,7 @@ import {
 export type AdminOrderListItemDto = {
   id: string;
   status: string;
+  orderType: string;
   amount: string;
   currency: string;
   buyerEmail: string | null;
@@ -14,6 +15,7 @@ export type AdminOrderListItemDto = {
   gameTitle: string;
   gameSlug: string;
   licenseKeyMasked: string | null;
+  licenseSource: string | null;
   createdAt: string;
 };
 
@@ -27,6 +29,7 @@ export class AdminOrdersService {
     return rows.map((order) => ({
       id: order.id,
       status: order.status,
+      orderType: order.orderType,
       amount: order.amount.toString(),
       currency: order.currency,
       buyerEmail: order.buyerEmail,
@@ -36,6 +39,7 @@ export class AdminOrdersService {
       licenseKeyMasked: order.license
         ? maskLicenseKey(order.license.licenseKey)
         : null,
+      licenseSource: order.license?.source ?? null,
       createdAt: order.createdAt.toISOString(),
     }));
   }

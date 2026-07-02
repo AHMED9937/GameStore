@@ -7,6 +7,7 @@ import {
   deactivateAdminAccount,
   getAdminAccounts,
   isSetupResponse,
+  reactivateAdminAccount,
   type AdminAccountRecord,
 } from '@gamestore/web/data-access';
 import { AdminAsyncView } from '../components/admin-async-view';
@@ -31,6 +32,7 @@ function toListItem(account: AdminAccountRecord): AdminAccountListItem {
     platform: account.platform,
     region: account.region,
     activeUsersCount: account.activeUsersCount,
+    maxActiveUsers: account.maxActiveUsers,
     isActive: account.isActive,
   };
 }
@@ -45,6 +47,7 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
   const isControlled = listState !== undefined;
   const [gameId, setGameId] = useState('');
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<AdminAccountListItem[]>([]);
 
@@ -67,6 +70,9 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
       if (isControlled) {
         return;
       }
+      if (!window.confirm('Deactivate this pool account?')) {
+        return;
+      }
       setDeactivatingId(accountId);
       setActionError(null);
       try {
@@ -79,6 +85,31 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
         setActionError(apiErrorMessage(error));
       } finally {
         setDeactivatingId(null);
+      }
+    },
+    [gameId, isControlled],
+  );
+
+  const handleReactivate = useCallback(
+    async (accountId: string) => {
+      if (isControlled) {
+        return;
+      }
+      if (!window.confirm('Reactivate this pool account?')) {
+        return;
+      }
+      setReactivatingId(accountId);
+      setActionError(null);
+      try {
+        await reactivateAdminAccount(accountId);
+        const result = await getAdminAccounts(gameId || undefined);
+        if (!isSetupResponse(result)) {
+          setAccounts(parseAccountsList(result));
+        }
+      } catch (error: unknown) {
+        setActionError(apiErrorMessage(error));
+      } finally {
+        setReactivatingId(null);
       }
     },
     [gameId, isControlled],
@@ -109,7 +140,9 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
               <AdminAccountsTable
                 accounts={tableAccounts.length > 0 ? tableAccounts : items}
                 deactivatingId={deactivatingId}
+                reactivatingId={reactivatingId}
                 onDeactivate={isControlled ? undefined : handleDeactivate}
+                onReactivate={isControlled ? undefined : handleReactivate}
               />
             )
           }

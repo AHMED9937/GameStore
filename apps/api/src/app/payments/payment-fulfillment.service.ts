@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
 import {
+  GameAccountsRepository,
   generateLicenseKey,
   OrdersRepository,
 } from '@gamestore/api/data-access';
@@ -28,6 +29,7 @@ export class PaymentFulfillmentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly orders: OrdersRepository,
+    private readonly gameAccounts: GameAccountsRepository,
   ) {}
 
   async handleCheckoutSessionCompleted(
@@ -72,7 +74,15 @@ export class PaymentFulfillmentService {
         ? session.amount_total / 100
         : undefined;
 
-    const license = await this.createLicenseWithRetry(gameId, buyerEmail, ownerId);
+    await this.warnIfNoPoolCapacity(gameId);
+
+    const validFrom = new Date();
+    const license = await this.createLicenseWithRetry(
+      gameId,
+      buyerEmail,
+      ownerId,
+      validFrom,
+    );
 
     await this.orders.markCompleted(order.id, {
       licenseId: license.id,
@@ -99,10 +109,20 @@ export class PaymentFulfillmentService {
     return { action: 'marked_failed', orderId: order.id };
   }
 
+  private async warnIfNoPoolCapacity(gameId: string): Promise<void> {
+    const poolAccount = await this.gameAccounts.findAvailableForGame(gameId);
+    if (!poolAccount) {
+      this.logger.warn(
+        `No available pool account for game ${gameId} — license will be issued but activation may fail`,
+      );
+    }
+  }
+
   private async createLicenseWithRetry(
     gameId: string,
     buyerEmail?: string,
     ownerId?: string,
+    validFrom: Date = new Date(),
   ) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
@@ -110,6 +130,9 @@ export class PaymentFulfillmentService {
           data: {
             licenseKey: generateLicenseKey(),
             status: 'available',
+            source: 'purchase',
+            validFrom,
+            expiresAt: null,
             buyerEmail,
             game: { connect: { id: gameId } },
             ...(ownerId ? { owner: { connect: { id: ownerId } } } : {}),

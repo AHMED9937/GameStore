@@ -97,4 +97,28 @@ export class LicensesRepository {
       data: { status: 'revoked' },
     });
   }
+
+  update(
+    id: string,
+    data: Pick<
+      Prisma.LicenseUpdateInput,
+      'buyerEmail' | 'buyerCountry' | 'expiresAt'
+    >,
+  ) {
+    return this.prisma.license.update({
+      where: { id },
+      data,
+      include: {
+        game: { select: gameSummarySelect },
+        owner: { select: { email: true } },
+      },
+    });
+  }
+
+  delete(id: string) {
+    return this.prisma.license.delete({
+      where: { id },
+      select: { id: true },
+    });
+  }
 }

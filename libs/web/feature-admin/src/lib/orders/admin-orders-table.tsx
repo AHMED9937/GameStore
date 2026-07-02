@@ -48,6 +48,10 @@ function formatDate(iso: string): string {
   }
 }
 
+function formatOrderType(orderType: string): string {
+  return orderType === 'subscription' ? 'Subscription' : 'One-time';
+}
+
 export function AdminOrdersTable({ orders }: AdminOrdersTableProps) {
   return (
     <div data-testid="admin-orders-table">
@@ -55,6 +59,9 @@ export function AdminOrdersTable({ orders }: AdminOrdersTableProps) {
         {orders.map((order) => (
           <tr key={order.id}>
             <td>{order.gameTitle}</td>
+            <td>
+              <Badge variant="default">{formatOrderType(order.orderType)}</Badge>
+            </td>
             <td>{formatAmount(order.amount, order.currency)}</td>
             <td>{order.buyerEmail ?? order.ownerEmail ?? '—'}</td>
             <td>
@@ -64,7 +71,12 @@ export function AdminOrdersTable({ orders }: AdminOrdersTableProps) {
             </td>
             <td>
               {order.licenseKeyMasked ? (
-                <code>{order.licenseKeyMasked}</code>
+                <span>
+                  <code>{order.licenseKeyMasked}</code>
+                  {order.licenseSource ? (
+                    <span> ({order.licenseSource})</span>
+                  ) : null}
+                </span>
               ) : (
                 '—'
               )}

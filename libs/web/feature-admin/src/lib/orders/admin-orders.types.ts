@@ -1,6 +1,7 @@
 export type AdminOrderListItem = {
   id: string;
   status: string;
+  orderType: string;
   amount: string;
   currency: string;
   buyerEmail: string | null;
@@ -8,5 +9,6 @@ export type AdminOrderListItem = {
   gameTitle: string;
   gameSlug: string;
   licenseKeyMasked: string | null;
+  licenseSource: string | null;
   createdAt: string;
 };

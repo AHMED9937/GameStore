@@ -46,6 +46,8 @@ describe('AdminLicensesPage', () => {
               gameTitle: 'Demo Game',
               ownerEmail: 'player@example.com',
               status: 'assigned',
+              source: 'admin',
+              expiresAt: null,
             },
           ],
         }}
@@ -53,6 +55,9 @@ describe('AdminLicensesPage', () => {
     );
     expect(screen.getByTestId('admin-licenses-table')).toBeTruthy();
     expect(screen.getByText('GS-****-ABCD')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Edit' }).getAttribute('href')).toBe(
+      '/admin/licenses/lic-1',
+    );
     expect(screen.getByRole('button', { name: 'Revoke' }).hasAttribute('disabled')).toBe(
       true,
     );

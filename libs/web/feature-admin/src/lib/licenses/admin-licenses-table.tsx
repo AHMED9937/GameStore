@@ -1,7 +1,9 @@
+import Link from 'next/link';
 import { Badge, Button } from '@gamestore/shared/ui';
 import { AdminTable } from '../components/admin-table';
 import type { AdminLicenseListItem } from './admin-licenses.types';
 import { ADMIN_LICENSE_COLUMNS } from './licenses.constants';
+import styles from './licenses.module.css';
 
 export type AdminLicensesTableProps = {
   licenses: AdminLicenseListItem[];
@@ -21,6 +23,19 @@ function statusVariant(
   return 'default';
 }
 
+function formatExpiresAt(expiresAt: string | null): string {
+  if (!expiresAt) {
+    return 'Lifetime';
+  }
+  try {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
+      new Date(expiresAt),
+    );
+  } catch {
+    return expiresAt;
+  }
+}
+
 export function AdminLicensesTable({
   licenses,
   revokingId = null,
@@ -35,23 +50,32 @@ export function AdminLicensesTable({
               <code>{license.licenseKeyMasked}</code>
             </td>
             <td>{license.gameTitle}</td>
+            <td>{license.source}</td>
             <td>{license.ownerEmail ?? '—'}</td>
             <td>
               <Badge variant={statusVariant(license.status)}>{license.status}</Badge>
             </td>
+            <td>{formatExpiresAt(license.expiresAt)}</td>
             <td>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={
-                  license.status === 'revoked' ||
-                  !onRevoke ||
-                  revokingId === license.id
-                }
-                onClick={() => onRevoke?.(license.id)}
-              >
-                {revokingId === license.id ? 'Saving…' : 'Revoke'}
-              </Button>
+              <div className={styles.tableActions}>
+                <Link href={`/admin/licenses/${license.id}`}>
+                  <Button type="button" variant="secondary">
+                    Edit
+                  </Button>
+                </Link>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={
+                    license.status === 'revoked' ||
+                    !onRevoke ||
+                    revokingId === license.id
+                  }
+                  onClick={() => onRevoke?.(license.id)}
+                >
+                  {revokingId === license.id ? 'Saving…' : 'Revoke'}
+                </Button>
+              </div>
             </td>
           </tr>
         ))}

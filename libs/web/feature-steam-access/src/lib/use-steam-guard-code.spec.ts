@@ -3,9 +3,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestSteamGuardCode } from '@gamestore/web/data-access';
 import { useSteamGuardCode } from './use-steam-guard-code';
 
-vi.mock('@gamestore/web/data-access', () => ({
-  requestSteamGuardCode: vi.fn(),
+vi.mock('./steam-guard-totp', () => ({
+  generateSteamGuardCode: vi.fn().mockResolvedValue('AB12C'),
+  secondsUntilNextTotpWindow: vi.fn().mockReturnValue(25),
 }));
+
+vi.mock('@gamestore/web/data-access', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@gamestore/web/data-access')>();
+  return {
+    ...actual,
+    requestSteamGuardCode: vi.fn(),
+  };
+});
 
 describe('useSteamGuardCode', () => {
   beforeEach(() => {
@@ -24,11 +33,10 @@ describe('useSteamGuardCode', () => {
     const { result } = renderHook(() => useSteamGuardCode('GS-TEST-KEY'));
 
     await waitFor(() => {
-      expect(result.current.code).toMatch(/^[A-Z0-9]{5}$/);
+      expect(result.current.code).toBe('AB12C');
     });
 
     expect(requestSteamGuardCode).toHaveBeenCalledWith('GS-TEST-KEY');
-    expect(result.current.expiresInSeconds).toBeGreaterThan(0);
-    expect(result.current.expiresInSeconds).toBeLessThanOrEqual(30);
+    expect(result.current.expiresInSeconds).toBe(25);
   });
 });

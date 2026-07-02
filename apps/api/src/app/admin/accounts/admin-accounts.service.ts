@@ -14,6 +14,7 @@ export type AdminAccountDto = {
   platform: string;
   region: string;
   activeUsersCount: number;
+  maxActiveUsers: number;
   isActive: boolean;
 };
 
@@ -23,6 +24,15 @@ export type CreateAdminAccountDto = {
   password: string;
   sharedSecret: string;
   region?: string;
+  maxActiveUsers?: number;
+};
+
+export type UpdateAdminAccountDto = {
+  username?: string;
+  region?: string;
+  password?: string;
+  sharedSecret?: string;
+  maxActiveUsers?: number;
 };
 
 @Injectable()
@@ -43,32 +53,16 @@ export class AdminAccountsService {
       );
       const titleByGameId = Object.fromEntries(titles);
 
-      return rows.map((row) => ({
-        id: row.id,
-        gameId: row.gameId,
-        gameTitle: titleByGameId[row.gameId] ?? 'Unknown',
-        username: row.username,
-        platform: row.platform,
-        region: row.region ?? 'global',
-        activeUsersCount: row.activeUsersCount,
-        isActive: row.isActive,
-      }));
+      return rows.map((row) =>
+        this.mapAdminAccountDto(row, titleByGameId[row.gameId] ?? 'Unknown'),
+      );
     });
   }
 
   async findOne(id: string): Promise<AdminAccountDto> {
     const account = await this.gameAccounts.findOne(id);
     const game = await this.games.findById(account.gameId);
-    return {
-      id: account.id,
-      gameId: account.gameId,
-      gameTitle: game?.title ?? 'Unknown',
-      username: account.username,
-      platform: account.platform,
-      region: account.region ?? 'global',
-      activeUsersCount: account.activeUsersCount,
-      isActive: account.isActive,
-    };
+    return this.mapAdminAccountDto(account, game?.title ?? 'Unknown');
   }
 
   async create(dto: CreateAdminAccountDto): Promise<AdminAccountDto> {
@@ -82,39 +76,74 @@ export class AdminAccountsService {
       );
     }
 
-    return this.gameAccounts.create({
+    const account = await this.gameAccounts.create({
       gameId: dto.gameId,
       platform: 'steam',
       username: dto.username,
       password: dto.password,
       sharedSecret: dto.sharedSecret,
       region: dto.region,
-    }).then(async (account) => {
-      const game = await this.games.findById(account.gameId);
-      return {
-        id: account.id,
-        gameId: account.gameId,
-        gameTitle: game?.title ?? 'Unknown',
-        username: account.username,
-        platform: account.platform,
-        region: account.region ?? 'global',
-        activeUsersCount: account.activeUsersCount,
-        isActive: account.isActive,
-      };
+      maxActiveUsers: dto.maxActiveUsers,
     });
+
+    return this.mapAdminAccountDto(account, game.title);
   }
 
   async deactivate(id: string): Promise<AdminAccountDto> {
     const account = await this.gameAccounts.deactivate(id);
     const game = await this.games.findById(account.gameId);
+    return this.mapAdminAccountDto(account, game?.title ?? 'Unknown');
+  }
+
+  async update(id: string, dto: UpdateAdminAccountDto): Promise<AdminAccountDto> {
+    const existing = await this.gameAccounts.findOne(id);
+    const game = await this.games.findById(existing.gameId);
+    if (!game) {
+      throw new NotFoundException(`No game found with id "${existing.gameId}"`);
+    }
+    if (game.platform !== 'steam') {
+      throw new BadRequestException(
+        'Pool accounts can only be updated for Steam games in this phase',
+      );
+    }
+
+    const account = await this.gameAccounts.update(id, dto);
+    return this.mapAdminAccountDto(account, game.title);
+  }
+
+  async reactivate(id: string): Promise<AdminAccountDto> {
+    const account = await this.gameAccounts.reactivate(id);
+    const game = await this.games.findById(account.gameId);
+    return this.mapAdminAccountDto(account, game?.title ?? 'Unknown');
+  }
+
+  async remove(id: string): Promise<{ id: string; deleted: true }> {
+    await this.gameAccounts.findOne(id);
+    return this.gameAccounts.remove(id);
+  }
+
+  private mapAdminAccountDto(
+    account: {
+      id: string;
+      gameId: string;
+      username: string;
+      platform: string;
+      region: string | null;
+      activeUsersCount: number;
+      maxActiveUsers: number;
+      isActive: boolean;
+    },
+    gameTitle: string,
+  ): AdminAccountDto {
     return {
       id: account.id,
       gameId: account.gameId,
-      gameTitle: game?.title ?? 'Unknown',
+      gameTitle,
       username: account.username,
       platform: account.platform,
       region: account.region ?? 'global',
       activeUsersCount: account.activeUsersCount,
+      maxActiveUsers: account.maxActiveUsers,
       isActive: account.isActive,
     };
   }
