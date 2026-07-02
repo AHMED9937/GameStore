@@ -47,6 +47,7 @@ describe('AdminAccountsPage', () => {
               platform: 'Steam',
               region: 'global',
               activeUsersCount: 3,
+              maxActiveUsers: 50,
               isActive: true,
             },
           ],
@@ -54,7 +55,8 @@ describe('AdminAccountsPage', () => {
       />,
     );
     expect(screen.getByTestId('admin-accounts-table')).toBeTruthy();
-    expect(screen.getByText('pool_user_01')).toBeTruthy();
+    expect(screen.getByText('3 / 50')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Edit' })).toBeTruthy();
     expect(screen.queryByText(/password/i)).toBeNull();
     expect(
       screen.getByRole('button', { name: 'Deactivate' }).hasAttribute('disabled'),

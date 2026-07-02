@@ -8,4 +8,24 @@ export class IgdbConfig {
       message: `IGDB ${action} — not implemented yet`,
     };
   }
+
+  static isConfigured(): boolean {
+    return Boolean(this.clientId() && this.clientSecret());
+  }
+
+  static clientId(): string | undefined {
+    return process.env['IGDB_CLIENT_ID'] || undefined;
+  }
+
+  static clientSecret(): string | undefined {
+    return process.env['IGDB_CLIENT_SECRET'] || undefined;
+  }
+
+  static tokenUrl(): string {
+    return 'https://id.twitch.tv/oauth2/token';
+  }
+
+  static apiBaseUrl(): string {
+    return 'https://api.igdb.com/v4';
+  }
 }

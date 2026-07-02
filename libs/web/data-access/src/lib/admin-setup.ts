@@ -30,6 +30,13 @@ export function apiErrorMessage(error: unknown, fallback = 'Request failed'): st
     return error.body || fallback;
   }
 
+  if (
+    (error instanceof DOMException && error.name === 'AbortError') ||
+    (error instanceof Error && /aborted/i.test(error.message))
+  ) {
+    return 'Request timed out. Try again.';
+  }
+
   if (error instanceof Error && error.message) {
     return error.message;
   }

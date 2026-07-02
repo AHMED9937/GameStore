@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AdminLicenseFormPage } from './admin-license-form-page';
 import { ADMIN_LICENSES_SETUP_MESSAGE } from './licenses.constants';
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 describe('AdminLicenseFormPage', () => {
   it('renders issue license heading, setup banner, and disabled form', () => {

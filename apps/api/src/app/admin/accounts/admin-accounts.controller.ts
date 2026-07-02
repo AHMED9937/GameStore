@@ -1,32 +1,137 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { Roles } from '@gamestore/api/auth';
-import { adminSetupResponse } from '../admin-setup';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+} from '@nestjs/common';
+import {
+  AuditLogService,
+  CurrentUser,
+  Roles,
+  auditContextFromRequest,
+  recordAudit,
+  type AuthUser,
+} from '@gamestore/api/auth';
+import {
+  AdminAccountsService,
+  type CreateAdminAccountDto,
+  type UpdateAdminAccountDto,
+} from './admin-accounts.service';
 
-const ACCOUNTS_SETUP = adminSetupResponse(
-  'admin-accounts',
-  'Admin accounts — not implemented yet',
-);
+type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
 @Roles('admin')
 @Controller('admin/accounts')
 export class AdminAccountsController {
+  constructor(
+    private readonly accounts: AdminAccountsService,
+    private readonly auditLogService: AuditLogService,
+  ) {}
+
   @Get()
-  findAll() {
-    return ACCOUNTS_SETUP;
+  findAll(@Query('gameId') gameId?: string) {
+    return this.accounts.findAll(gameId);
   }
 
   @Get(':id')
-  findOne(@Param('id') _id: string) {
-    return ACCOUNTS_SETUP;
+  findOne(@Param('id') id: string) {
+    return this.accounts.findOne(id);
   }
 
   @Post()
-  create(@Body() _body: unknown) {
-    return ACCOUNTS_SETUP;
+  async create(
+    @Body() body: CreateAdminAccountDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.create(body);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.create',
+      resource: 'game_account',
+      resourceId: account.id,
+      metadata: { gameId: body.gameId, username: body.username },
+    });
+    return account;
   }
 
   @Post(':id/deactivate')
-  deactivate(@Param('id') _id: string) {
-    return ACCOUNTS_SETUP;
+  async deactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.deactivate(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.deactivate',
+      resource: 'game_account',
+      resourceId: id,
+    });
+    return account;
+  }
+
+  @Put(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateAdminAccountDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.update(id, body);
+    const fieldsChanged = Object.keys(body).filter(
+      (key) => body[key as keyof UpdateAdminAccountDto] !== undefined,
+    );
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.update',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: { username: account.username, fieldsChanged },
+    });
+    return account;
+  }
+
+  @Post(':id/reactivate')
+  async reactivate(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.reactivate(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.reactivate',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: { username: account.username },
+    });
+    return account;
+  }
+
+  @Delete(':id')
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.accounts.remove(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.delete',
+      resource: 'game_account',
+      resourceId: id,
+    });
+    return result;
   }
 }

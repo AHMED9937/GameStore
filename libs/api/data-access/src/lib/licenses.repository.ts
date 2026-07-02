@@ -6,6 +6,7 @@ const gameSummarySelect = {
   id: true,
   title: true,
   slug: true,
+  coverImage: true,
 } satisfies Prisma.GameSelect;
 
 @Injectable()
@@ -15,7 +16,41 @@ export class LicensesRepository {
   findByKey(licenseKey: string) {
     return this.prisma.license.findUnique({
       where: { licenseKey },
-      include: { game: { select: gameSummarySelect } },
+      include: {
+        game: { select: gameSummarySelect },
+        account: true,
+      },
+    });
+  }
+
+  findByKeyForActivation(licenseKey: string) {
+    return this.findByKey(licenseKey);
+  }
+
+  activateLicense(params: {
+    licenseId: string;
+    accountId: string;
+    ownerId: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.gameAccount.update({
+        where: { id: params.accountId },
+        data: { activeUsersCount: { increment: 1 } },
+      });
+
+      return tx.license.update({
+        where: { id: params.licenseId },
+        data: {
+          accountId: params.accountId,
+          ownerId: params.ownerId,
+          status: 'activated',
+          activatedAt: new Date(),
+        },
+        include: {
+          game: { select: gameSummarySelect },
+          account: true,
+        },
+      });
     });
   }
 
@@ -45,7 +80,10 @@ export class LicensesRepository {
   findById(id: string) {
     return this.prisma.license.findUnique({
       where: { id },
-      include: { game: { select: gameSummarySelect } },
+      include: {
+        game: { select: gameSummarySelect },
+        owner: { select: { email: true } },
+      },
     });
   }
 
@@ -57,6 +95,30 @@ export class LicensesRepository {
     return this.prisma.license.update({
       where: { id },
       data: { status: 'revoked' },
+    });
+  }
+
+  update(
+    id: string,
+    data: Pick<
+      Prisma.LicenseUpdateInput,
+      'buyerEmail' | 'buyerCountry' | 'expiresAt'
+    >,
+  ) {
+    return this.prisma.license.update({
+      where: { id },
+      data,
+      include: {
+        game: { select: gameSummarySelect },
+        owner: { select: { email: true } },
+      },
+    });
+  }
+
+  delete(id: string) {
+    return this.prisma.license.delete({
+      where: { id },
+      select: { id: true },
     });
   }
 }

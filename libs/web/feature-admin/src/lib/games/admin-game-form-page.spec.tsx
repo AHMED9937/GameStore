@@ -1,10 +1,14 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AdminGameFormPage } from './admin-game-form-page';
 import { ADMIN_GAMES_SETUP_MESSAGE } from './games.constants';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 describe('AdminGameFormPage', () => {
-  it('renders new game heading, setup banner, and disabled form', () => {
+  it('renders new game heading, setup banner, and tabbed form shell', () => {
     render(
       <AdminGameFormPage
         formState={{ status: 'setup', message: ADMIN_GAMES_SETUP_MESSAGE }}
@@ -15,6 +19,7 @@ describe('AdminGameFormPage', () => {
       ADMIN_GAMES_SETUP_MESSAGE,
     );
     expect(screen.getByLabelText('Game details')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Storefront' })).toBeTruthy();
     expect(screen.getByTestId('admin-game-form-actions')).toBeTruthy();
   });
 

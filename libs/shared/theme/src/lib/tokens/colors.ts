@@ -2,7 +2,7 @@
 export const colors = {
   bgDarker: '#06070d',
   bgDark: '#0a0c16',
-  bgCard: 'rgba(15, 18, 36, 0.4)',
+  bgCard: 'rgba(15, 18, 36, 0.62)',
   bgCardHover: 'rgba(26, 30, 56, 0.6)',
   bgInput: 'rgba(10, 12, 22, 0.8)',
   bgHeader: 'rgba(6, 7, 13, 0.8)',
@@ -19,8 +19,9 @@ export const colors = {
   borderHover: 'rgba(168, 85, 247, 0.4)',
 
   textMain: '#f3f4f6',
-  textMuted: '#9ca3af',
-  textDim: '#6b7280',
+  textBody: '#e2e8f0',
+  textMuted: '#b8c0cc',
+  textDim: '#94a3b8',
 
   white: '#ffffff',
   steam: '#1b2838',
@@ -55,6 +56,7 @@ export const cssVarMap: Record<string, string> = {
   '--border-light': colors.borderLight,
   '--border-hover': colors.borderHover,
   '--text-main': colors.textMain,
+  '--text-body': colors.textBody,
   '--text-muted': colors.textMuted,
   '--text-dim': colors.textDim,
   '--gradient-brand': gradients.brand,

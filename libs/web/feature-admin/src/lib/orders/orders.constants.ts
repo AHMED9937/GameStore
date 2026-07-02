@@ -1,1 +1,9 @@
-export const ADMIN_ORDERS_SETUP_MESSAGE = 'Admin orders — not implemented yet';
+export const ADMIN_ORDER_COLUMNS = [
+  { key: 'game', header: 'Game' },
+  { key: 'type', header: 'Type' },
+  { key: 'amount', header: 'Amount' },
+  { key: 'buyer', header: 'Buyer' },
+  { key: 'status', header: 'Status' },
+  { key: 'license', header: 'License' },
+  { key: 'created', header: 'Created' },
+] as const;
