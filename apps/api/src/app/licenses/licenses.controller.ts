@@ -56,6 +56,31 @@ export class LicensesController {
     return result;
   }
 
+  @Post('activate')
+  @HttpCode(200)
+  async activate(
+    @Body() body: { licenseKey?: string },
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const licenseKey = body?.licenseKey ?? '';
+    const result = await this.licenses.activate(licenseKey, user);
+
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'license.activate',
+      resource: 'license',
+      resourceId: result.game.id,
+      metadata: {
+        licenseKeyHint: licenseKeyAuditHint(licenseKey),
+        gameSlug: result.game.slug,
+      },
+    });
+
+    return result;
+  }
+
   @Get('mine')
   findMine(@CurrentUser() user: AuthUser) {
     return this.licenses.findMine(user);

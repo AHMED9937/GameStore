@@ -40,3 +40,46 @@
   gap: 1rem;
   flex-wrap: wrap;
 }
+
+.pickerCard {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.pickerCover {
+  width: 140px;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.06));
+}
+
+.pickerBody {
+  flex: 1 1 12rem;
+}
+
+.credentialsHeader {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.shopLink {
+  display: inline-block;
+  margin-top: 1.5rem;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.signInLink {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}

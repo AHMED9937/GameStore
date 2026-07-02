@@ -6,6 +6,14 @@ export type StripeEnvStatus = {
   publishableKey: StripeEnvFieldStatus;
 };
 
+export type StripeHealthStatus = 'ok' | 'misconfigured';
+
+export type StripeHealthResponse = {
+  status: StripeHealthStatus;
+  integration: 'stripe';
+  env: StripeEnvStatus;
+};
+
 export class StripeConfig {
   static integration = 'stripe';
 
@@ -40,17 +48,28 @@ export class StripeConfig {
     return /^pk_(test|live)_/.test(value) ? 'valid' : 'invalid';
   }
 
-  static getHealthResponse() {
-    const { secretKey, publishableKey } = this.getEnvStatus();
-    const configured =
-      secretKey === 'valid' && publishableKey === 'valid';
+  static isEnvConfigured(env: StripeEnvStatus = this.getEnvStatus()): boolean {
+    return (
+      env.secretKey === 'valid' &&
+      env.publishableKey === 'valid' &&
+      env.webhookSecret === 'valid'
+    );
+  }
+
+  /** Checkout sessions only need secret + publishable keys; webhooks are separate. */
+  static isCheckoutConfigured(
+    env: StripeEnvStatus = this.getEnvStatus(),
+  ): boolean {
+    return env.secretKey === 'valid' && env.publishableKey === 'valid';
+  }
+
+  static getHealthResponse(): StripeHealthResponse {
+    const env = this.getEnvStatus();
 
     return {
-      status: 'setup' as const,
+      status: this.isEnvConfigured(env) ? 'ok' : 'misconfigured',
       integration: 'stripe',
-      message: configured
-        ? 'Stripe — configured, not implemented yet'
-        : 'Stripe — not configured, not implemented yet',
+      env,
     };
   }
 

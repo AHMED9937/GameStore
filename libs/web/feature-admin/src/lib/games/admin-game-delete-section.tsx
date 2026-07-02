@@ -1,7 +1,17 @@
 import { Button, Heading, Text } from '@gamestore/shared/ui';
 import styles from './games.module.css';
 
-export function AdminGameDeleteSection() {
+export type AdminGameDeleteSectionProps = {
+  disabled?: boolean;
+  deleting?: boolean;
+  onDelete?: () => void;
+};
+
+export function AdminGameDeleteSection({
+  disabled = true,
+  deleting = false,
+  onDelete,
+}: AdminGameDeleteSectionProps) {
   return (
     <section
       className={styles.deleteSection}
@@ -14,8 +24,13 @@ export function AdminGameDeleteSection() {
       <Text tone="muted" style={{ marginBottom: '0.75rem' }}>
         Permanently remove this game from the catalog. This action cannot be undone.
       </Text>
-      <Button type="button" variant="secondary" disabled>
-        Delete game
+      <Button
+        type="button"
+        variant="secondary"
+        disabled={disabled || deleting}
+        onClick={onDelete}
+      >
+        {deleting ? 'Deleting…' : 'Delete game'}
       </Button>
     </section>
   );

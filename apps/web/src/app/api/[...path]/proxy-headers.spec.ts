@@ -20,4 +20,20 @@ describe('proxy-headers', () => {
     const forwarded = buildForwardHeaders(new Headers({ accept: 'application/json' }));
     expect(forwarded.get('authorization')).toBeNull();
   });
+
+  it('forwards stripe-signature for Stripe webhook proxying', () => {
+    const incoming = new Headers({
+      'content-type': 'application/json',
+      'stripe-signature': 't=123,v1=abc',
+    });
+
+    const forwarded = buildForwardHeaders(incoming);
+
+    expect(forwarded.get('stripe-signature')).toBe('t=123,v1=abc');
+  });
+
+  it('omits stripe-signature when not present', () => {
+    const forwarded = buildForwardHeaders(new Headers({ accept: 'application/json' }));
+    expect(forwarded.get('stripe-signature')).toBeNull();
+  });
 });

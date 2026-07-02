@@ -9,15 +9,16 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
-import { SteamAccountService, SteamGuardService } from '@gamestore/api/steam';
+import { SteamAccountService } from '@gamestore/api/steam';
 import { buildSteamGuardThrottle } from '../../security/throttle.config';
+import { SteamGuardAppService } from './steam-guard-app.service';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
 @Controller('steam')
 export class SteamController {
   constructor(
-    private readonly steamGuard: SteamGuardService,
+    private readonly steamGuardApp: SteamGuardAppService,
     private readonly steamAccount: SteamAccountService,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -29,15 +30,18 @@ export class SteamController {
     return this.steamAccount.health();
   }
 
-  /** Body accepted for Phase 6 — ignored until Guard is implemented */
+  /** Requires activated license + owner match */
   @Throttle(buildSteamGuardThrottle())
   @Post('guard-code')
-  guardCode(
+  async guardCode(
     @Body() body: { licenseKey?: string },
     @CurrentUser() user: AuthUser,
     @Req() request: AuditRequest,
   ) {
-    const response = this.steamGuard.requestGuardCode();
+    const response = await this.steamGuardApp.requestGuardCode(
+      body.licenseKey,
+      user,
+    );
 
     recordAudit(this.auditLogService, {
       ...auditContextFromRequest(request),

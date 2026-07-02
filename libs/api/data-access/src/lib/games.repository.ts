@@ -28,6 +28,8 @@ const adminGameSelect = {
   genres: true,
   igdbSyncedAt: true,
   igdbCoverUrl: true,
+  requirementsMin: true,
+  requirementsRecommended: true,
   createdAt: true,
   updatedAt: true,
   media: {
@@ -62,12 +64,12 @@ export class GamesRepository {
   }
 
   findBySlug(slug: string) {
-    return this.prisma.game.findUnique({
-      where: { slug },
+    return this.prisma.game.findFirst({
+      where: { slug, publishedAt: { not: null } },
       include: {
         media: {
           orderBy: { sortOrder: 'asc' },
-          where: { type: { in: ['screenshot', 'video'] } },
+          where: { type: { in: ['screenshot', 'video', 'activation'] } },
         },
       },
     });

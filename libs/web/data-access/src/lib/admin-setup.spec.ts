@@ -18,4 +18,10 @@ describe('admin-setup helpers', () => {
     expect(apiErrorMessage(new ApiError(403, 'Forbidden'))).toBe('Admin access required');
     expect(apiErrorMessage(new ApiError(401, 'Unauthorized'))).toBe('Sign in required');
   });
+
+  it('apiErrorMessage maps abort errors to timeout copy', () => {
+    expect(
+      apiErrorMessage(new DOMException('signal is aborted without reason', 'AbortError')),
+    ).toBe('Request timed out. Try again.');
+  });
 });

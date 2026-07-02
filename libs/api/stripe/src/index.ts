@@ -1,8 +1,20 @@
 export * from './lib/stripe.service';
 export * from './lib/stripe.module';
-export * from './lib/stripe-webhook.controller';
 export { StripeConfig } from './lib/stripe.config';
+export { StripeMisconfiguredError } from './lib/stripe-misconfigured.error';
+export {
+  buildCheckoutUrls,
+  priceToUnitAmount,
+  resolveSiteUrl,
+  resolveStripeProductImage,
+} from './lib/stripe-checkout.urls';
+export type {
+  CreateCheckoutSessionInput,
+  CreateCheckoutSessionResult,
+} from './lib/stripe-checkout.types';
 export type {
   StripeEnvFieldStatus,
   StripeEnvStatus,
+  StripeHealthResponse,
+  StripeHealthStatus,
 } from './lib/stripe.config';
