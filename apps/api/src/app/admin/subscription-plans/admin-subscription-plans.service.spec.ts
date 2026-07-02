@@ -112,6 +112,16 @@ describe('AdminSubscriptionPlansService', () => {
     });
   });
 
+  it('bulkDelete removes each plan', async () => {
+    vi.mocked(plans.delete).mockClear();
+
+    await expect(service.bulkDelete(['plan-1', 'plan-2'])).resolves.toEqual({
+      succeeded: ['plan-1', 'plan-2'],
+      failed: [],
+    });
+    expect(plans.delete).toHaveBeenCalledTimes(2);
+  });
+
   it('findOne rejects unknown ids', async () => {
     plans.findById.mockResolvedValueOnce(null);
 

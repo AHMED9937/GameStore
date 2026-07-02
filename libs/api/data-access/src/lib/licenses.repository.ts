@@ -62,6 +62,8 @@ export class LicensesRepository {
         id: true,
         licenseKey: true,
         status: true,
+        source: true,
+        expiresAt: true,
         game: { select: gameSummarySelect },
       },
     });

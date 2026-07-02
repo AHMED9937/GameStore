@@ -107,4 +107,8 @@ export class OrdersRepository {
       data: { status: 'failed' },
     });
   }
+
+  deleteById(id: string) {
+    return this.prisma.order.delete({ where: { id } });
+  }
 }

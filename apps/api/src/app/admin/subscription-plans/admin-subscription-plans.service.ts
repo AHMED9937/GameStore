@@ -9,6 +9,11 @@ import {
   SubscriptionPlansRepository,
 } from '@gamestore/api/data-access';
 import { Prisma } from '@prisma/client';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
 
 export type AdminSubscriptionPlanGameDto = {
   id: string;
@@ -199,6 +204,13 @@ export class AdminSubscriptionPlansService {
       }
       throw error;
     }
+  }
+
+  async bulkDelete(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.remove(id);
+    });
   }
 
   private async resolveGameIds(gameIds: string[] | undefined): Promise<string[]> {

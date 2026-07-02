@@ -1,8 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   OrdersRepository,
   maskLicenseKey,
 } from '@gamestore/api/data-access';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
 
 export type AdminOrderListItemDto = {
   id: string;
@@ -42,5 +51,24 @@ export class AdminOrdersService {
       licenseSource: order.license?.source ?? null,
       createdAt: order.createdAt.toISOString(),
     }));
+  }
+
+  async bulkDelete(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      const order = await this.orders.findById(id);
+      if (!order) {
+        throw new NotFoundException(`No order found with id "${id}"`);
+      }
+      if (order.status === 'completed') {
+        throw new BadRequestException('Cannot delete completed order');
+      }
+      if (order.status !== 'pending' && order.status !== 'failed') {
+        throw new BadRequestException(
+          `Cannot delete order with status "${order.status}"`,
+        );
+      }
+      await this.orders.deleteById(id);
+    });
   }
 }

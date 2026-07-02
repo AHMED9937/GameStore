@@ -15,6 +15,7 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
   let app: INestApplication;
   let gameId = '';
   let createdLicenseId = '';
+  let secondLicenseId = '';
   let createdLicenseKey = '';
 
   beforeAll(async () => {
@@ -113,30 +114,47 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
     });
   });
 
-  it('POST /api/admin/licenses/:id/revoke marks license revoked', async () => {
+  it('POST /api/admin/licenses/generate-key creates a second license for bulk actions', async () => {
     const response = await request(app.getHttpServer())
-      .post(`/api/admin/licenses/${createdLicenseId}/revoke`)
+      .post('/api/admin/licenses/generate-key')
       .set(authAs(E2E_TOKENS.admin))
-      .expect(200);
+      .send({ gameId })
+      .expect(201);
 
-    expect(response.body.status).toBe('revoked');
-
-    await request(app.getHttpServer())
-      .put(`/api/admin/licenses/${createdLicenseId}`)
-      .set(authAs(E2E_TOKENS.admin))
-      .send({ buyerEmail: 'blocked@example.com' })
-      .expect(400);
+    secondLicenseId = response.body.id;
+    expect(response.body.status).toBe('available');
   });
 
-  it('DELETE /api/admin/licenses/:id removes a revoked license', async () => {
+  it('POST /api/admin/licenses/bulk-revoke revokes multiple licenses', async () => {
     const response = await request(app.getHttpServer())
-      .delete(`/api/admin/licenses/${createdLicenseId}`)
+      .post('/api/admin/licenses/bulk-revoke')
       .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [createdLicenseId, secondLicenseId] })
       .expect(200);
 
     expect(response.body).toEqual({
-      id: createdLicenseId,
-      deleted: true,
+      succeeded: [createdLicenseId, secondLicenseId],
+      failed: [],
+    });
+
+    const detail = await request(app.getHttpServer())
+      .get(`/api/admin/licenses/${createdLicenseId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(detail.body.status).toBe('revoked');
+  });
+
+  it('POST /api/admin/licenses/bulk-delete removes revoked licenses', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/admin/licenses/bulk-delete')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [createdLicenseId, secondLicenseId] })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      succeeded: [createdLicenseId, secondLicenseId],
+      failed: [],
     });
 
     await request(app.getHttpServer())
@@ -145,6 +163,7 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
       .expect(404);
 
     createdLicenseId = '';
+    secondLicenseId = '';
   });
 });
 

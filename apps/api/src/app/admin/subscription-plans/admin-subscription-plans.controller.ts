@@ -17,6 +17,7 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
+import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import {
   AdminSubscriptionPlansService,
   type CreateAdminSubscriptionPlanDto,
@@ -36,6 +37,29 @@ export class AdminSubscriptionPlansController {
   @Get()
   findAll() {
     return this.plans.findAll();
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(200)
+  async bulkDelete(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.plans.bulkDelete(body.ids);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.subscription_plan.bulk_delete',
+      resource: 'subscription_plan',
+      resourceId: null,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
   }
 
   @Get(':id')

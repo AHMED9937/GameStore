@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@gamestore/api/auth';
-import type { GamesRepository, OrdersRepository } from '@gamestore/api/data-access';
+import type { GamesRepository, OrdersRepository, SubscriptionPlansRepository } from '@gamestore/api/data-access';
 import { StripeConfig, type StripeService } from '@gamestore/api/stripe';
 import { PaymentsService } from './payments.service';
 
@@ -37,15 +37,20 @@ describe('PaymentsService', () => {
     createPending: vi.fn(),
   } as unknown as OrdersRepository;
 
+  const plans = {
+    findBySlug: vi.fn(),
+  } as unknown as SubscriptionPlansRepository;
+
   const stripe = {
     createCheckoutSession: vi.fn(),
+    createSubscriptionCheckoutSession: vi.fn(),
   } as unknown as StripeService;
 
   let service: PaymentsService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new PaymentsService(games, orders, stripe);
+    service = new PaymentsService(games, orders, plans, stripe);
 
     vi.spyOn(StripeConfig, 'isCheckoutConfigured').mockReturnValue(true);
     vi.mocked(games.findBySlug).mockResolvedValue(publishedGame as never);
@@ -111,5 +116,35 @@ describe('PaymentsService', () => {
     await expect(
       service.createCheckout({ slug: 'demo-game-1' }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('creates a subscription checkout session for an active plan', async () => {
+    vi.mocked(plans.findBySlug).mockResolvedValue({
+      id: 'plan-1',
+      slug: 'all-access-monthly',
+      name: 'All Access',
+      stripePriceId: 'price_test_monthly',
+      isActive: true,
+      games: [{ gameId: 'game-1' }],
+    } as never);
+    vi.mocked(stripe.createSubscriptionCheckoutSession).mockResolvedValue({
+      sessionId: 'cs_sub_test',
+      url: 'https://checkout.stripe.com/pay/cs_sub_test',
+    });
+
+    const result = await service.createSubscriptionCheckout(
+      { planSlug: 'all-access-monthly' },
+      user,
+    );
+
+    expect(stripe.createSubscriptionCheckoutSession).toHaveBeenCalledWith({
+      planId: 'plan-1',
+      planSlug: 'all-access-monthly',
+      planName: 'All Access',
+      stripePriceId: 'price_test_monthly',
+      userId: 'user-a',
+      customerEmail: 'buyer@example.com',
+    });
+    expect(result.sessionId).toBe('cs_sub_test');
   });
 });

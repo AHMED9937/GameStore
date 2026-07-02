@@ -12,3 +12,12 @@ export type CreateCheckoutSessionResult = {
   sessionId: string;
   url: string;
 };
+
+export type CreateSubscriptionCheckoutSessionInput = {
+  planId: string;
+  planSlug: string;
+  planName: string;
+  stripePriceId: string;
+  userId: string;
+  customerEmail?: string;
+};

@@ -8,6 +8,11 @@ import { GamesRepository } from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
 import { Prisma } from '@prisma/client';
 import type { CreateGameDto } from '../../games/games.service';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
 import type {
   AdminGameAccountSummary,
   AdminGameMediaDto,
@@ -164,6 +169,20 @@ export class AdminGamesService {
       }
       throw error;
     }
+  }
+
+  async bulkUnpublish(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.update(id, { published: false });
+    });
+  }
+
+  async bulkDelete(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.remove(id);
+    });
   }
 
   async getReadiness(id: string): Promise<AdminGameReadinessDto> {

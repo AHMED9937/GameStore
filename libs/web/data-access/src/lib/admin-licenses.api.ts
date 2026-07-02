@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
-import type { SetupResponse } from './admin.types';
+import type { BulkActionResult, SetupResponse } from './admin.types';
 
 export type AdminLicenseRecord = {
   id: string;
@@ -81,5 +81,19 @@ export function updateAdminLicense(id: string, body: UpdateAdminLicenseInput) {
 export function deleteAdminLicense(id: string) {
   return apiDelete<SetupResponse | { id: string; deleted: true }>(
     `/admin/licenses/${id}`,
+  );
+}
+
+export function bulkRevokeAdminLicenses(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/licenses/bulk-revoke',
+    { ids },
+  );
+}
+
+export function bulkDeleteAdminLicenses(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/licenses/bulk-delete',
+    { ids },
   );
 }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { StripeService } from './stripe.service';
 
 const sessionsCreate = vi.fn();
+const subscriptionsRetrieve = vi.fn();
 
 vi.mock('stripe', () => ({
   default: class StripeMock {
@@ -9,6 +10,10 @@ vi.mock('stripe', () => ({
       sessions: {
         create: sessionsCreate,
       },
+    };
+
+    subscriptions = {
+      retrieve: subscriptionsRetrieve,
     };
 
     constructor(_key: string, _options?: unknown) {}
@@ -152,6 +157,45 @@ describe('StripeService', () => {
       }),
     );
     expect(sessionsCreate.mock.calls[0][0]).not.toHaveProperty('customer_email');
+
+    vi.unstubAllEnvs();
+  });
+
+  it('createSubscriptionCheckoutSession calls Stripe with recurring price', async () => {
+    const result = await service.createSubscriptionCheckoutSession({
+      planId: 'plan-1',
+      planSlug: 'all-access-monthly',
+      planName: 'All Access',
+      stripePriceId: 'price_test_monthly',
+      userId: 'user-1',
+      customerEmail: 'buyer@example.com',
+    });
+
+    expect(sessionsCreate).toHaveBeenCalledWith({
+      mode: 'subscription',
+      line_items: [{ quantity: 1, price: 'price_test_monthly' }],
+      metadata: {
+        planId: 'plan-1',
+        planSlug: 'all-access-monthly',
+        userId: 'user-1',
+      },
+      subscription_data: {
+        metadata: {
+          planId: 'plan-1',
+          planSlug: 'all-access-monthly',
+          userId: 'user-1',
+        },
+      },
+      success_url:
+        'http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}',
+      cancel_url:
+        'http://localhost:3000/subscriptions?plan=all-access-monthly&cancelled=1',
+      customer_email: 'buyer@example.com',
+    });
+    expect(result).toEqual({
+      sessionId: 'cs_test_session',
+      url: 'https://checkout.stripe.com/pay/cs_test_session',
+    });
 
     vi.unstubAllEnvs();
   });

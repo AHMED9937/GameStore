@@ -13,5 +13,7 @@ export * from './lib/admin-igdb.api';
 export * from './lib/games.api';
 export * from './lib/licenses.api';
 export * from './lib/payments.api';
+export * from './lib/subscription-plans.api';
+export * from './lib/subscriptions.api';
 export * from './lib/orders.api';
 export * from './lib/steam.api';

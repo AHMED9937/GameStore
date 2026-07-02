@@ -3,6 +3,7 @@
 import { LicenseGamePicker } from './license-game-picker';
 import { LicenseKeyForm } from './license-key-form';
 import { MyLicensesPanel } from './my-licenses-panel';
+import { MySubscriptionsPanel } from './my-subscriptions-panel';
 import { SteamCredentialsView } from './steam-credentials-view';
 import { useValidatedLicense } from './validated-license-context';
 import styles from './section.module.css';
@@ -37,6 +38,7 @@ export function MyGamesFlow() {
 
   return (
     <>
+      <MySubscriptionsPanel />
       <MyLicensesPanel />
       <LicenseKeyForm />
       <EnterStepHelp />

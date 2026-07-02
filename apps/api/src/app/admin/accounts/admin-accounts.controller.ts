@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Put,
@@ -17,6 +18,7 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
+import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import {
   AdminAccountsService,
   type CreateAdminAccountDto,
@@ -36,6 +38,29 @@ export class AdminAccountsController {
   @Get()
   findAll(@Query('gameId') gameId?: string) {
     return this.accounts.findAll(gameId);
+  }
+
+  @Post('bulk-deactivate')
+  @HttpCode(200)
+  async bulkDeactivate(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.accounts.bulkDeactivate(body.ids);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.bulk_deactivate',
+      resource: 'game_account',
+      resourceId: null,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
   }
 
   @Get(':id')

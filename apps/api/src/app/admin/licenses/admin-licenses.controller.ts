@@ -18,6 +18,7 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
+import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import {
   AdminLicensesService,
   type CreateAdminLicenseDto,
@@ -38,6 +39,52 @@ export class AdminLicensesController {
   @Get()
   findAll() {
     return this.licenses.findAll();
+  }
+
+  @Post('bulk-revoke')
+  @HttpCode(200)
+  async bulkRevoke(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.licenses.bulkRevoke(body.ids);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.license.bulk_revoke',
+      resource: 'license',
+      resourceId: null,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(200)
+  async bulkDelete(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.licenses.bulkDelete(body.ids);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.license.bulk_delete',
+      resource: 'license',
+      resourceId: null,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
   }
 
   @Post('generate-key')

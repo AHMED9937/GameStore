@@ -4,6 +4,7 @@ export { StripeConfig } from './lib/stripe.config';
 export { StripeMisconfiguredError } from './lib/stripe-misconfigured.error';
 export {
   buildCheckoutUrls,
+  buildSubscriptionCheckoutUrls,
   priceToUnitAmount,
   resolveSiteUrl,
   resolveStripeProductImage,
@@ -11,6 +12,7 @@ export {
 export type {
   CreateCheckoutSessionInput,
   CreateCheckoutSessionResult,
+  CreateSubscriptionCheckoutSessionInput,
 } from './lib/stripe-checkout.types';
 export type {
   StripeEnvFieldStatus,

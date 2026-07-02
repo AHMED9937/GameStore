@@ -17,6 +17,7 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
+import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import {
   AdminGamesService,
   type AdminCreateGameDto,
@@ -36,6 +37,56 @@ export class AdminGamesController {
   @Get()
   findAll() {
     return this.adminGames.findAll();
+  }
+
+  @Post('bulk-unpublish')
+  @HttpCode(200)
+  async bulkUnpublish(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.adminGames.bulkUnpublish(body.ids);
+    const audit = auditContextFromRequest(request);
+    recordAudit(this.auditLogService, {
+      userId: user.id,
+      action: 'admin.game.bulk_unpublish',
+      resource: 'game',
+      resourceId: null,
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(200)
+  async bulkDelete(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.adminGames.bulkDelete(body.ids);
+    const audit = auditContextFromRequest(request);
+    recordAudit(this.auditLogService, {
+      userId: user.id,
+      action: 'admin.game.bulk_delete',
+      resource: 'game',
+      resourceId: null,
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
   }
 
   @Get(':id/readiness')

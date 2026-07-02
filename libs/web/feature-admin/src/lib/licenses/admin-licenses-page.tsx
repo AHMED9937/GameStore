@@ -1,18 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Container, Text } from '@gamestore/shared/ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Container } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
+  bulkDeleteAdminLicenses,
+  bulkRevokeAdminLicenses,
   getAdminLicenses,
   isSetupResponse,
   revokeAdminLicense,
   type AdminLicenseListRecord,
+  type BulkActionResult,
 } from '@gamestore/web/data-access';
 import { AdminAsyncView } from '../components/admin-async-view';
+import { AdminBulkToolbar } from '../components/admin-bulk-toolbar';
 import { AdminPageShell } from '../components/admin-page-shell';
+import { useAdminRowSelection } from '../components/use-admin-row-selection';
 import type { AdminAsyncState } from '../types/admin-async-state';
 import { useAdminListState } from '../hooks/use-admin-resource';
+import { formatBulkActionSummary } from '../utils/bulk-action-summary';
 import { AdminLicensesEmpty } from './admin-licenses-empty';
 import { AdminLicensesFilters } from './admin-licenses-filters';
 import { AdminLicensesHeader } from './admin-licenses-header';
@@ -41,12 +47,18 @@ function parseLicensesList(data: unknown): AdminLicenseListItem[] {
     : [];
 }
 
+function canSelectLicense(license: AdminLicenseListItem): boolean {
+  return license.status !== 'revoked' || license.status !== 'activated';
+}
+
 export function AdminLicensesPage({ listState }: AdminLicensesPageProps) {
   const isControlled = listState !== undefined;
   const [gameQuery, setGameQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [licenses, setLicenses] = useState<AdminLicenseListItem[]>([]);
 
   const fetchedState = useAdminListState(() => getAdminLicenses(), parseLicensesList);
@@ -71,6 +83,95 @@ export function AdminLicensesPage({ listState }: AdminLicensesPageProps) {
     return matchesGame && matchesStatus;
   });
 
+  const tableLicenses = filteredLicenses.length > 0 ? filteredLicenses : sourceLicenses;
+  const licenseById = useMemo(
+    () => new Map(tableLicenses.map((license) => [license.id, license])),
+    [tableLicenses],
+  );
+
+  const selection = useAdminRowSelection({
+    rowIds: tableLicenses.map((license) => license.id),
+    isRowSelectable: (id) => {
+      const license = licenseById.get(id);
+      return license ? canSelectLicense(license) : false;
+    },
+  });
+
+  const refreshList = useCallback(async () => {
+    if (isControlled) {
+      return;
+    }
+    const result = await getAdminLicenses();
+    if (!isSetupResponse(result)) {
+      setLicenses(parseLicensesList(result));
+    }
+  }, [isControlled]);
+
+  const handleBulkResult = useCallback(
+    async (result: BulkActionResult, verb: string) => {
+      setActionMessage(formatBulkActionSummary(result, verb));
+      selection.clearSelection();
+      await refreshList();
+    },
+    [refreshList, selection],
+  );
+
+  const handleBulkRevoke = useCallback(async () => {
+    if (isControlled || selection.selectedIds.length === 0) {
+      return;
+    }
+    if (
+      !window.confirm(
+        `Revoke ${selection.selectedIds.length} selected license(s)?`,
+      )
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      const result = await bulkRevokeAdminLicenses(selection.selectedIds);
+      if (isSetupResponse(result)) {
+        setActionError(result.message);
+        return;
+      }
+      await handleBulkResult(result, 'revoked');
+    } catch (error: unknown) {
+      setActionError(apiErrorMessage(error));
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [handleBulkResult, isControlled, selection.selectedIds, selection]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (isControlled || selection.selectedIds.length === 0) {
+      return;
+    }
+    if (
+      !window.confirm(
+        `Delete ${selection.selectedIds.length} selected license(s)? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    setActionError(null);
+    setActionMessage(null);
+    try {
+      const result = await bulkDeleteAdminLicenses(selection.selectedIds);
+      if (isSetupResponse(result)) {
+        setActionError(result.message);
+        return;
+      }
+      await handleBulkResult(result, 'deleted');
+    } catch (error: unknown) {
+      setActionError(apiErrorMessage(error));
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [handleBulkResult, isControlled, selection.selectedIds, selection]);
+
   const handleRevoke = useCallback(
     async (licenseId: string) => {
       if (isControlled) {
@@ -84,20 +185,15 @@ export function AdminLicensesPage({ listState }: AdminLicensesPageProps) {
       setActionError(null);
       try {
         await revokeAdminLicense(licenseId);
-        const result = await getAdminLicenses();
-        if (!isSetupResponse(result)) {
-          setLicenses(parseLicensesList(result));
-        }
+        await refreshList();
       } catch (error: unknown) {
         setActionError(apiErrorMessage(error));
       } finally {
         setRevokingId(null);
       }
     },
-    [isControlled],
+    [isControlled, refreshList],
   );
-
-  const tableLicenses = filteredLicenses.length > 0 ? filteredLicenses : sourceLicenses;
 
   return (
     <Container>
@@ -115,16 +211,53 @@ export function AdminLicensesPage({ listState }: AdminLicensesPageProps) {
             {actionError}
           </p>
         ) : null}
+        {actionMessage ? (
+          <p data-testid="admin-licenses-action-message">{actionMessage}</p>
+        ) : null}
         <AdminAsyncView state={state} emptyMessage="No licenses issued yet.">
           {(items) =>
             items.length === 0 ? (
               <AdminLicensesEmpty />
             ) : (
-              <AdminLicensesTable
-                licenses={tableLicenses.length > 0 ? tableLicenses : items}
-                revokingId={revokingId}
-                onRevoke={isControlled ? undefined : handleRevoke}
-              />
+              <>
+                {!isControlled ? (
+                  <AdminBulkToolbar
+                    selectedCount={selection.selectedCount}
+                    onClear={selection.clearSelection}
+                    disabled={bulkLoading}
+                  >
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={bulkLoading}
+                      onClick={() => void handleBulkRevoke()}
+                    >
+                      Revoke selected
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={bulkLoading}
+                      onClick={() => void handleBulkDelete()}
+                    >
+                      Delete selected
+                    </Button>
+                  </AdminBulkToolbar>
+                ) : null}
+                <AdminLicensesTable
+                  licenses={tableLicenses.length > 0 ? tableLicenses : items}
+                  revokingId={revokingId}
+                  onRevoke={isControlled ? undefined : handleRevoke}
+                  selection={
+                    isControlled
+                      ? undefined
+                      : {
+                          ...selection,
+                          disabled: bulkLoading,
+                        }
+                  }
+                />
+              </>
             )
           }
         </AdminAsyncView>

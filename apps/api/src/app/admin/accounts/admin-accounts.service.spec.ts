@@ -172,4 +172,25 @@ describe('AdminAccountsService', () => {
     });
     expect(gameAccounts.remove).toHaveBeenCalledWith('account-1');
   });
+
+  it('bulkDeactivate deactivates each account', async () => {
+    gameAccounts.deactivate.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: false,
+    });
+
+    await expect(
+      service.bulkDeactivate(['account-1', 'account-2']),
+    ).resolves.toEqual({
+      succeeded: ['account-1', 'account-2'],
+      failed: [],
+    });
+    expect(gameAccounts.deactivate).toHaveBeenCalledTimes(2);
+  });
 });

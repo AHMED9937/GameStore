@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
+import type { BulkActionResult } from './admin.types';
 
 export type AdminSubscriptionPlanGameRecord = {
   id: string;
@@ -72,4 +73,10 @@ export function updateAdminSubscriptionPlan(
 
 export function deleteAdminSubscriptionPlan(id: string) {
   return apiDelete<{ id: string; deleted: true }>(`/admin/subscription-plans/${id}`);
+}
+
+export function bulkDeleteAdminSubscriptionPlans(ids: string[]) {
+  return apiPost<BulkActionResult>('/admin/subscription-plans/bulk-delete', {
+    ids,
+  });
 }

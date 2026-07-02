@@ -155,6 +155,8 @@ describe('LicensesService ownership', () => {
         id: 'lic-1',
         licenseKey: 'KEY-1',
         status: 'available',
+        source: 'purchase',
+        expiresAt: null,
         game: { id: 'g1', title: 'Game', slug: 'game' },
       },
     ];

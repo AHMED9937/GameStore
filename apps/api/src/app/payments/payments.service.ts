@@ -3,9 +3,14 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { AuthUser } from '@gamestore/api/auth';
-import { GamesRepository, OrdersRepository } from '@gamestore/api/data-access';
+import {
+  GamesRepository,
+  OrdersRepository,
+  SubscriptionPlansRepository,
+} from '@gamestore/api/data-access';
 import {
   StripeConfig,
   StripeMisconfiguredError,
@@ -18,6 +23,10 @@ export type CreateCheckoutDto = {
   slug?: string;
 };
 
+export type CreateSubscriptionCheckoutDto = {
+  planSlug: string;
+};
+
 type PurchasableGame = NonNullable<Awaited<ReturnType<GamesRepository['findById']>>>;
 
 @Injectable()
@@ -25,6 +34,7 @@ export class PaymentsService {
   constructor(
     private readonly games: GamesRepository,
     private readonly orders: OrdersRepository,
+    private readonly plans: SubscriptionPlansRepository,
     private readonly stripe: StripeService,
   ) {}
 
@@ -71,6 +81,53 @@ export class PaymentsService {
     });
 
     return session;
+  }
+
+  async createSubscriptionCheckout(
+    dto: CreateSubscriptionCheckoutDto,
+    user?: AuthUser,
+  ): Promise<CreateCheckoutSessionResult> {
+    if (!user) {
+      throw new UnauthorizedException('Sign in to subscribe');
+    }
+
+    if (!StripeConfig.isCheckoutConfigured()) {
+      throw new ServiceUnavailableException(
+        'Payments are temporarily unavailable',
+      );
+    }
+
+    const planSlug = dto.planSlug?.trim();
+    if (!planSlug) {
+      throw new BadRequestException('planSlug is required');
+    }
+
+    const plan = await this.plans.findBySlug(planSlug);
+    if (!plan || !plan.isActive) {
+      throw new NotFoundException(`No active subscription plan found for "${planSlug}"`);
+    }
+
+    if (plan.games.length === 0) {
+      throw new BadRequestException(
+        'This subscription plan has no published games linked yet',
+      );
+    }
+
+    try {
+      return await this.stripe.createSubscriptionCheckoutSession({
+        planId: plan.id,
+        planSlug: plan.slug,
+        planName: plan.name,
+        stripePriceId: plan.stripePriceId,
+        userId: user.id,
+        customerEmail: user.email,
+      });
+    } catch (error) {
+      if (error instanceof StripeMisconfiguredError) {
+        throw new ServiceUnavailableException(error.message);
+      }
+      throw error;
+    }
   }
 
   private async resolvePurchasableGame(

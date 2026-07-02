@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
-import type { SetupResponse } from './admin.types';
+import type { BulkActionResult, SetupResponse } from './admin.types';
 
 export type AdminAccountRecord = {
   id: string;
@@ -62,5 +62,12 @@ export function reactivateAdminAccount(id: string) {
 export function deleteAdminAccount(id: string) {
   return apiDelete<SetupResponse | { id: string; deleted: true }>(
     `/admin/accounts/${id}`,
+  );
+}
+
+export function bulkDeactivateAdminAccounts(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/accounts/bulk-deactivate',
+    { ids },
   );
 }

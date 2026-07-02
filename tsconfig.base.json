@@ -38,6 +38,9 @@
       "@gamestore/web/feature-my-games": [
         "./libs/web/feature-my-games/src/index.ts"
       ],
+      "@gamestore/web/feature-subscriptions": [
+        "./libs/web/feature-subscriptions/src/index.ts"
+      ],
       "@gamestore/web/feature-steam-access": [
         "./libs/web/feature-steam-access/src/index.ts"
       ],
