@@ -52,6 +52,9 @@
         "./libs/web/feature-admin/src/index.ts"
       ],
       "@gamestore/shared/seo": ["./libs/shared/seo/src/index.ts"],
+      "@gamestore/shared/game-requirements": [
+        "./libs/shared/game-requirements/src/index.ts"
+      ],
       "@gamestore/api/prisma": ["./libs/api/prisma/src/index.ts"],
       "@gamestore/api/stripe": ["./libs/api/stripe/src/index.ts"],
       "@gamestore/api/steam": ["./libs/api/steam/src/index.ts"],

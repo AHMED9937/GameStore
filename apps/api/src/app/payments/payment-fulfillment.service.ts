@@ -7,12 +7,14 @@ import {
   OrdersRepository,
 } from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
+import { StripeService } from '@gamestore/api/stripe';
 
 export type FulfillmentAction =
   | 'fulfilled'
   | 'already_fulfilled'
   | 'pending_payment'
   | 'order_not_found'
+  | 'invalid_game'
   | 'marked_failed'
   | 'ignored';
 
@@ -30,7 +32,71 @@ export class PaymentFulfillmentService {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersRepository,
     private readonly gameAccounts: GameAccountsRepository,
+    private readonly stripe: StripeService,
   ) {}
+
+  async syncFulfillmentFromStripe(sessionId: string): Promise<FulfillmentResult> {
+    try {
+      const session = await this.stripe.retrieveCheckoutSession(sessionId);
+      return this.syncCheckoutSession(session);
+    } catch (error) {
+      this.logger.warn(
+        `Could not sync fulfillment from Stripe for session ${sessionId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return { action: 'ignored' };
+    }
+  }
+
+  async cancelCheckoutSession(sessionId: string): Promise<FulfillmentResult> {
+    try {
+      const session = await this.stripe.retrieveCheckoutSession(sessionId);
+      if (session.mode === 'subscription') {
+        return { action: 'ignored' };
+      }
+
+      if (!session.id) {
+        return { action: 'ignored' };
+      }
+
+      if (session.payment_status === 'paid') {
+        return this.handleCheckoutSessionCompleted(session);
+      }
+
+      return this.handleCheckoutSessionFailed(sessionId);
+    } catch (error) {
+      this.logger.warn(
+        `Could not cancel checkout session ${sessionId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return { action: 'ignored' };
+    }
+  }
+
+  private async syncCheckoutSession(
+    session: Stripe.Checkout.Session,
+  ): Promise<FulfillmentResult> {
+    if (session.mode === 'subscription') {
+      return { action: 'ignored' };
+    }
+
+    const sessionId = session.id;
+    if (!sessionId) {
+      return { action: 'ignored' };
+    }
+
+    if (session.status === 'expired') {
+      return this.handleCheckoutSessionFailed(sessionId);
+    }
+
+    if (session.payment_status === 'paid') {
+      return this.handleCheckoutSessionCompleted(session);
+    }
+
+    return { action: 'pending_payment' };
+  }
 
   async handleCheckoutSessionCompleted(
     session: Stripe.Checkout.Session,
@@ -63,6 +129,13 @@ export class PaymentFulfillmentService {
     }
 
     const gameId = session.metadata?.gameId ?? order.gameId;
+    if (!gameId) {
+      this.logger.error(
+        `Cannot fulfill order ${order.id}: missing gameId for session ${sessionId}`,
+      );
+      return { action: 'invalid_game', orderId: order.id };
+    }
+
     const ownerId =
       session.metadata?.userId?.trim() || order.ownerId || undefined;
     const buyerEmail =
@@ -81,19 +154,14 @@ export class PaymentFulfillmentService {
     await this.warnIfNoPoolCapacity(gameId);
 
     const validFrom = new Date();
-    const license = await this.createLicenseWithRetry(
+    const license = await this.fulfillOrderInTransaction({
+      orderId: order.id,
       gameId,
       buyerEmail,
       ownerId,
       validFrom,
-    );
-
-    await this.orders.markCompleted(order.id, {
-      licenseId: license.id,
       stripePaymentId,
-      buyerEmail,
       amount,
-      ownerId,
     });
 
     return {
@@ -113,6 +181,39 @@ export class PaymentFulfillmentService {
     return { action: 'marked_failed', orderId: order.id };
   }
 
+  private async fulfillOrderInTransaction(input: {
+    orderId: string;
+    gameId: string;
+    buyerEmail?: string;
+    ownerId?: string;
+    validFrom: Date;
+    stripePaymentId?: string;
+    amount?: number;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const license = await this.createLicenseWithRetryInTx(tx, {
+        gameId: input.gameId,
+        buyerEmail: input.buyerEmail,
+        ownerId: input.ownerId,
+        validFrom: input.validFrom,
+      });
+
+      await tx.order.update({
+        where: { id: input.orderId },
+        data: {
+          status: 'completed',
+          licenseId: license.id,
+          stripePaymentId: input.stripePaymentId,
+          buyerEmail: input.buyerEmail,
+          ...(input.amount !== undefined ? { amount: input.amount } : {}),
+          ...(input.ownerId !== undefined ? { ownerId: input.ownerId } : {}),
+        },
+      });
+
+      return license;
+    });
+  }
+
   private async warnIfNoPoolCapacity(gameId: string): Promise<void> {
     const poolAccount = await this.gameAccounts.findAvailableForGame(gameId);
     if (!poolAccount) {
@@ -122,24 +223,27 @@ export class PaymentFulfillmentService {
     }
   }
 
-  private async createLicenseWithRetry(
-    gameId: string,
-    buyerEmail?: string,
-    ownerId?: string,
-    validFrom: Date = new Date(),
+  private async createLicenseWithRetryInTx(
+    tx: Prisma.TransactionClient,
+    input: {
+      gameId: string;
+      buyerEmail?: string;
+      ownerId?: string;
+      validFrom: Date;
+    },
   ) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await this.prisma.license.create({
+        return await tx.license.create({
           data: {
             licenseKey: generateLicenseKey(),
             status: 'available',
             source: 'purchase',
-            validFrom,
+            validFrom: input.validFrom,
             expiresAt: null,
-            buyerEmail,
-            game: { connect: { id: gameId } },
-            ...(ownerId ? { owner: { connect: { id: ownerId } } } : {}),
+            buyerEmail: input.buyerEmail,
+            game: { connect: { id: input.gameId } },
+            ...(input.ownerId ? { owner: { connect: { id: input.ownerId } } } : {}),
           },
         });
       } catch (error) {

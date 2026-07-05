@@ -12,6 +12,8 @@ export type IgdbGameDetails = {
   releaseDate: Date | null;
   genres: string[];
   coverUrl: string | null;
+  coverCardUrl: string | null;
+  coverSourceUrl: string | null;
 };
 
 export type IgdbScreenshot = {

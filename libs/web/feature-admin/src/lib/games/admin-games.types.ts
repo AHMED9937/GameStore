@@ -1,3 +1,25 @@
+import type { GameSystemRequirementsFormValues } from '@gamestore/shared/game-requirements';
+import {
+  EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM,
+  fromRequirementsFormValues,
+  toRequirementsFormValues,
+  type GameSystemRequirements,
+} from '@gamestore/shared/game-requirements';
+
+export type AdminGameFormValues = {
+  title: string;
+  slug: string;
+  platform: string;
+  description: string;
+  priceBase: string;
+  coverImage: string;
+  releaseDate: string;
+  genresText: string;
+  requirementsMin: GameSystemRequirementsFormValues;
+  requirementsRecommended: GameSystemRequirementsFormValues;
+  published: boolean;
+};
+
 export type AdminGameTab =
   | 'basics'
   | 'storefront'
@@ -18,18 +40,10 @@ export type AdminGameListItem = {
   readinessLabel?: 'Draft' | 'Ready' | 'Published';
 };
 
-export type AdminGameFormValues = {
-  title: string;
-  slug: string;
-  platform: string;
-  description: string;
-  priceBase: string;
-  coverImage: string;
-  releaseDate: string;
-  genresText: string;
-  requirementsMin: string;
-  requirementsRecommended: string;
-  published: boolean;
+export type AdminGameIgdbMeta = {
+  igdbId: number | null;
+  igdbSyncedAt: string | null;
+  igdbCoverUrl: string | null;
 };
 
 export const EMPTY_ADMIN_GAME_FORM_VALUES: AdminGameFormValues = {
@@ -41,8 +55,8 @@ export const EMPTY_ADMIN_GAME_FORM_VALUES: AdminGameFormValues = {
   coverImage: '/og/default.png',
   releaseDate: '',
   genresText: '',
-  requirementsMin: '',
-  requirementsRecommended: '',
+  requirementsMin: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
+  requirementsRecommended: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
   published: false,
 };
 
@@ -57,6 +71,16 @@ export function genresArrayToText(genres: string[]): string {
   return genres.join(', ');
 }
 
+function parseRequirementsField(
+  value: unknown,
+): GameSystemRequirementsFormValues {
+  if (!value || typeof value !== 'object') {
+    return { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM };
+  }
+
+  return toRequirementsFormValues(value as GameSystemRequirements);
+}
+
 export function toAdminGameInput(values: AdminGameFormValues) {
   return {
     title: values.title.trim(),
@@ -67,8 +91,10 @@ export function toAdminGameInput(values: AdminGameFormValues) {
     coverImage: values.coverImage.trim() || undefined,
     releaseDate: values.releaseDate.trim() || null,
     genres: genresTextToArray(values.genresText),
-    requirementsMin: values.requirementsMin.trim() || null,
-    requirementsRecommended: values.requirementsRecommended.trim() || null,
+    requirementsMin: fromRequirementsFormValues(values.requirementsMin),
+    requirementsRecommended: fromRequirementsFormValues(
+      values.requirementsRecommended,
+    ),
     published: values.published,
   };
 }
@@ -84,8 +110,8 @@ export function parseAdminGameForm(data: Record<string, unknown>): AdminGameForm
     coverImage: String(data.coverImage ?? ''),
     releaseDate: data.releaseDate ? String(data.releaseDate).slice(0, 10) : '',
     genresText: genresArrayToText(genres),
-    requirementsMin: String(data.requirementsMin ?? ''),
-    requirementsRecommended: String(data.requirementsRecommended ?? ''),
+    requirementsMin: parseRequirementsField(data.requirementsMin),
+    requirementsRecommended: parseRequirementsField(data.requirementsRecommended),
     published: Boolean(data.published),
   };
 }

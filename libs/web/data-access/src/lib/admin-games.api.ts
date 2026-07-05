@@ -1,5 +1,8 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
+import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 import type { BulkActionResult, SetupResponse } from './admin.types';
+
+export type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 
 export type AdminGameMediaRecord = {
   id: string;
@@ -24,13 +27,16 @@ export type AdminGameRecord = {
   priceBase: string;
   description: string | null;
   coverImage: string | null;
+  coverCardImage: string | null;
   publishedAt: string | null;
   published: boolean;
   igdbId: number | null;
+  igdbSyncedAt: string | null;
+  igdbCoverUrl: string | null;
   releaseDate: string | null;
   genres: string[];
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: AdminGameMediaRecord[];
   accountSummary: AdminGameAccountSummary;
 };
@@ -46,8 +52,8 @@ export type AdminGameInput = {
   publishedAt?: string | null;
   genres?: string[];
   releaseDate?: string | null;
-  requirementsMin?: string | null;
-  requirementsRecommended?: string | null;
+  requirementsMin?: GameSystemRequirements | null;
+  requirementsRecommended?: GameSystemRequirements | null;
 };
 
 export type AdminReadinessCheck = {

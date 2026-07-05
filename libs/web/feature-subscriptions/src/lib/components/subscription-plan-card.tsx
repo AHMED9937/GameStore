@@ -5,6 +5,7 @@ import {
   Text,
 } from '@gamestore/shared/ui';
 import type { PublicSubscriptionPlan } from '@gamestore/web/data-access';
+import { getGameCardCover } from '@gamestore/web/data-access';
 import { formatPlanInterval } from '../subscription.utils';
 import { SubscriptionCheckoutButton } from './subscription-checkout-button';
 import styles from './section.module.css';
@@ -43,14 +44,12 @@ export function SubscriptionPlanCard({
       <div className={styles.gameList}>
         {plan.games.map((game) => (
           <div key={game.id} className={styles.gameRow}>
-            {game.coverImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={game.coverImage}
-                alt=""
-                className={styles.gameCover}
-              />
-            ) : null}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={getGameCardCover(game)}
+              alt=""
+              className={styles.gameCover}
+            />
             <Text>{game.title}</Text>
           </div>
         ))}

@@ -24,7 +24,7 @@ describe('LicensesRepository', () => {
     expect(prisma.license.findUnique).toHaveBeenCalledWith({
       where: { licenseKey: 'DEMO-KEY-0001' },
       include: {
-        game: { select: { id: true, title: true, slug: true, coverImage: true } },
+        game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
         account: true,
       },
     });
@@ -45,7 +45,7 @@ describe('LicensesRepository', () => {
         status: true,
         source: true,
         expiresAt: true,
-        game: { select: { id: true, title: true, slug: true, coverImage: true } },
+        game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
       },
     });
   });
@@ -59,7 +59,7 @@ describe('LicensesRepository', () => {
     expect(prisma.license.findMany).toHaveBeenCalledWith({
       orderBy: { createdAt: 'desc' },
       include: {
-        game: { select: { id: true, title: true, slug: true, coverImage: true } },
+        game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
         owner: { select: { email: true } },
       },
     });
@@ -93,7 +93,7 @@ describe('LicensesRepository', () => {
         buyerCountry: 'US',
       },
       include: {
-        game: { select: { id: true, title: true, slug: true, coverImage: true } },
+        game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
         owner: { select: { email: true } },
       },
     });

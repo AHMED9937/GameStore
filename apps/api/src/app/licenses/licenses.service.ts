@@ -13,17 +13,30 @@ import {
   LicensesRepository,
 } from '@gamestore/api/data-access';
 import { SteamCryptoService } from '@gamestore/api/steam';
+import { EntitlementCleanupService } from '../entitlements/entitlement-cleanup.service';
 
 export type LicenseValidation = {
   licenseKey: string;
   status: string;
-  game: { id: string; title: string; slug: string; coverImage: string | null };
+  game: {
+    id: string;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+    coverCardImage: string | null;
+  };
 };
 
 export type LicenseActivation = {
   licenseKey: string;
   status: 'activated';
-  game: { id: string; title: string; slug: string; coverImage: string | null };
+  game: {
+    id: string;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+    coverCardImage: string | null;
+  };
   account: { username: string; password: string };
 };
 
@@ -57,6 +70,7 @@ export class LicensesService {
     private readonly licenses: LicensesRepository,
     private readonly accounts: GameAccountsRepository,
     private readonly crypto: SteamCryptoService,
+    private readonly entitlementCleanup: EntitlementCleanupService,
   ) {}
 
   async validate(
@@ -187,7 +201,7 @@ export class LicensesService {
 
   async revoke(id: string) {
     await this.findOne(id);
-    return this.licenses.revoke(id);
+    return this.entitlementCleanup.revokeLicenseWithCleanup(id);
   }
 
   async update(id: string, dto: UpdateLicenseDto) {
@@ -230,6 +244,10 @@ export class LicensesService {
       throw new BadRequestException(
         'Cannot delete an activated license',
       );
+    }
+
+    if (license.accountId) {
+      await this.entitlementCleanup.releaseLicenseFromPool(id);
     }
 
     await this.licenses.delete(id);

@@ -5,6 +5,7 @@ export type PublicSubscriptionPlanGame = {
   title: string;
   slug: string;
   coverImage: string | null;
+  coverCardImage?: string | null;
 };
 
 export type PublicSubscriptionPlan = {

@@ -22,10 +22,14 @@ function statusVariant(
   if (status === 'pending') {
     return 'accent';
   }
-  if (status === 'failed') {
-    return 'accent';
-  }
   return 'default';
+}
+
+function formatOrderStatus(status: string): string {
+  if (status === 'failed') {
+    return 'Canceled';
+  }
+  return status;
 }
 
 function formatAmount(amount: string, currency: string): string {
@@ -69,7 +73,7 @@ function renderRowCells(order: AdminOrderListItem) {
       <td>{order.buyerEmail ?? order.ownerEmail ?? '—'}</td>
       <td>
         <Badge variant={statusVariant(order.status)} data-testid={`order-status-${order.id}`}>
-          {order.status}
+          {formatOrderStatus(order.status)}
         </Badge>
       </td>
       <td>

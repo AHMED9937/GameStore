@@ -4,6 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { GamesRepository } from '@gamestore/api/data-access';
+import {
+  type GameSystemRequirements,
+  parseStoredGameSystemRequirements,
+} from '@gamestore/shared/game-requirements';
 import { Prisma } from '@prisma/client';
 
 export type GameDto = {
@@ -14,6 +18,7 @@ export type GameDto = {
   platform: string;
   priceBase: string;
   coverImage: string | null;
+  coverCardImage: string | null;
 };
 
 export type GameMediaDto = {
@@ -27,8 +32,8 @@ export type GameMediaDto = {
 export type GameDetailDto = GameDto & {
   genres: string[];
   releaseDate: string | null;
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: GameMediaDto[];
 };
 
@@ -42,8 +47,8 @@ export type CreateGameDto = {
   publishedAt?: string | null;
   genres?: string[];
   releaseDate?: string | null;
-  requirementsMin?: string | null;
-  requirementsRecommended?: string | null;
+  requirementsMin?: GameSystemRequirements | null;
+  requirementsRecommended?: GameSystemRequirements | null;
 };
 
 type GameForDto = {
@@ -54,6 +59,7 @@ type GameForDto = {
   platform: string;
   priceBase: { toString(): string };
   coverImage: string | null;
+  coverCardImage: string | null;
 };
 
 type GameForDetailDto = GameForDto & {
@@ -79,6 +85,7 @@ function toDto(game: GameForDto): GameDto {
     platform: game.platform,
     priceBase: game.priceBase.toString(),
     coverImage: game.coverImage,
+    coverCardImage: game.coverCardImage,
   };
 }
 
@@ -87,8 +94,10 @@ function toDetailDto(game: GameForDetailDto): GameDetailDto {
     ...toDto(game),
     genres: game.genres,
     releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
-    requirementsMin: game.requirementsMin,
-    requirementsRecommended: game.requirementsRecommended,
+    requirementsMin: parseStoredGameSystemRequirements(game.requirementsMin),
+    requirementsRecommended: parseStoredGameSystemRequirements(
+      game.requirementsRecommended,
+    ),
     media: game.media.map((item) => ({
       id: item.id,
       type: item.type,

@@ -54,3 +54,12 @@
   color: inherit;
   display: block;
 }
+
+.cardCover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated, rgba(255, 255, 255, 0.06));
+}

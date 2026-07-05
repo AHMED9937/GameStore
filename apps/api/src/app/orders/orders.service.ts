@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  assertOwnedResourceAccess,
+  assertSessionOrderAccess,
   type AuthUser,
 } from '@gamestore/api/auth';
 import {
@@ -12,6 +12,10 @@ import {
   type CreatePendingOrderInput,
   type MarkOrderCompletedInput,
 } from '@gamestore/api/data-access';
+import {
+  PaymentFulfillmentService,
+  type FulfillmentResult,
+} from '../payments/payment-fulfillment.service';
 
 export type OrderSummaryDto = {
   id: string;
@@ -48,7 +52,10 @@ type OrderWithRelations = NonNullable<
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly orders: OrdersRepository) {}
+  constructor(
+    private readonly orders: OrdersRepository,
+    private readonly fulfillment: PaymentFulfillmentService,
+  ) {}
 
   createPending(dto: CreatePendingOrderInput) {
     return this.orders.createPending(dto);
@@ -70,24 +77,69 @@ export class OrdersService {
     return order;
   }
 
-  async getCheckoutBySession(
+  async cancelCheckoutBySession(
     sessionId: string,
     user?: AuthUser,
   ): Promise<OrderSessionLookupResponse> {
-    const order = await this.orders.findByStripeSessionId(sessionId);
+    let order = await this.orders.findByStripeSessionId(sessionId);
     if (!order) {
       throw new NotFoundException(
         `No order found for session "${sessionId}"`,
       );
     }
 
-    assertOwnedResourceAccess(
+    if (order.status === 'pending') {
+      await this.fulfillment.cancelCheckoutSession(sessionId);
+      order = await this.orders.findByStripeSessionId(sessionId);
+      if (!order) {
+        throw new NotFoundException(
+          `No order found for session "${sessionId}"`,
+        );
+      }
+    }
+
+    assertSessionOrderAccess(
       user,
       order.ownerId,
       'Sign in with the account used to purchase',
     );
 
     return this.toSessionLookupResponse(order);
+  }
+
+  async getCheckoutBySession(
+    sessionId: string,
+    user?: AuthUser,
+  ): Promise<OrderSessionLookupResponse> {
+    let order = await this.orders.findByStripeSessionId(sessionId);
+    if (!order) {
+      throw new NotFoundException(
+        `No order found for session "${sessionId}"`,
+      );
+    }
+
+    let pendingMessage: string | undefined;
+
+    if (order.status === 'pending') {
+      const syncResult = await this.fulfillment.syncFulfillmentFromStripe(sessionId);
+      order = await this.orders.findByStripeSessionId(sessionId);
+      if (!order) {
+        throw new NotFoundException(
+          `No order found for session "${sessionId}"`,
+        );
+      }
+      if (order.status === 'pending') {
+        pendingMessage = this.pendingMessageFromSync(syncResult);
+      }
+    }
+
+    assertSessionOrderAccess(
+      user,
+      order.ownerId,
+      'Sign in with the account used to purchase',
+    );
+
+    return this.toSessionLookupResponse(order, pendingMessage);
   }
 
   markCompleted(id: string, data: MarkOrderCompletedInput) {
@@ -98,13 +150,22 @@ export class OrdersService {
     return this.orders.markFailed(stripeSessionId);
   }
 
+  private pendingMessageFromSync(sync: FulfillmentResult): string {
+    if (sync.action === 'pending_payment') {
+      return 'Confirming payment with Stripe…';
+    }
+
+    return 'Payment received — issuing your license…';
+  }
+
   private toSessionLookupResponse(
     order: OrderWithRelations,
+    pendingMessage?: string,
   ): OrderSessionLookupResponse {
     if (order.status === 'pending') {
       return {
         status: 'pending',
-        message: 'Payment received — issuing your license…',
+        message: pendingMessage ?? 'Payment received — issuing your license…',
       };
     }
 
@@ -116,21 +177,50 @@ export class OrdersService {
     }
 
     if (order.status === 'completed' && order.license) {
+      const game = this.resolveOrderGame(order);
+      if (!game) {
+        throw new NotFoundException(
+          `No game details found for completed order "${order.id}"`,
+        );
+      }
+
       return {
         status: 'completed',
         order: this.toOrderSummary(order),
         license: {
           licenseKey: order.license.licenseKey,
           status: order.license.status,
-          game: order.game,
+          game,
         },
       };
     }
 
     return {
       status: 'pending',
-      message: 'Payment received — issuing your license…',
+      message: pendingMessage ?? 'Payment received — issuing your license…',
     };
+  }
+
+  private resolveOrderGame(
+    order: OrderWithRelations & {
+      gameId?: string | null;
+      gameTitleSnapshot?: string | null;
+      gameSlugSnapshot?: string | null;
+    },
+  ): OrderLicenseDto['game'] | null {
+    if (order.game) {
+      return order.game;
+    }
+
+    if (order.gameTitleSnapshot && order.gameSlugSnapshot) {
+      return {
+        id: order.gameId ?? '',
+        title: order.gameTitleSnapshot,
+        slug: order.gameSlugSnapshot,
+      };
+    }
+
+    return null;
   }
 
   private toOrderSummary(order: OrderWithRelations): OrderSummaryDto {

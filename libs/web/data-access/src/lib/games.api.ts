@@ -1,5 +1,8 @@
 import { cache } from 'react';
+import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 import { apiGet } from './api-client';
+
+export type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 
 export type Game = {
   id: string;
@@ -10,6 +13,7 @@ export type Game = {
   /** Decimal serialized as string from the API */
   priceBase: string;
   coverImage: string | null;
+  coverCardImage?: string | null;
 };
 
 export type GameMedia = {
@@ -23,8 +27,8 @@ export type GameMedia = {
 export type GameDetail = Game & {
   genres: string[];
   releaseDate: string | null;
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: GameMedia[];
 };
 
@@ -42,6 +46,13 @@ export function formatGamePrice(priceBase: string): string {
 export const getGames = cache(async (): Promise<Game[]> => {
   return apiGet<Game[]>('/games');
 });
+
+export function getGameCardCover(
+  game: Pick<Game, 'coverCardImage' | 'coverImage'>,
+  fallback = '/og/default.png',
+): string {
+  return game.coverCardImage?.trim() || game.coverImage?.trim() || fallback;
+}
 
 export async function getGameBySlug(slug: string): Promise<GameDetail> {
   return apiGet<GameDetail>(`/games/${slug}`);

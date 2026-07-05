@@ -7,6 +7,7 @@ const gameSummarySelect = {
   title: true,
   slug: true,
   coverImage: true,
+  coverCardImage: true,
 } satisfies Prisma.GameSelect;
 
 @Injectable()
@@ -82,6 +83,44 @@ export class LicensesRepository {
   findById(id: string) {
     return this.prisma.license.findUnique({
       where: { id },
+      include: {
+        game: { select: gameSummarySelect },
+        owner: { select: { email: true } },
+      },
+    });
+  }
+
+  findByIdForCleanup(id: string) {
+    return this.prisma.license.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        accountId: true,
+        gameId: true,
+      },
+    });
+  }
+
+  findByGameIdExcludingRevoked(gameId: string) {
+    return this.prisma.license.findMany({
+      where: { gameId, status: { not: 'revoked' } },
+      select: { id: true },
+    });
+  }
+
+  releaseFromPool(licenseId: string) {
+    return this.prisma.license.update({
+      where: { id: licenseId },
+      data: { accountId: null },
+      select: { id: true },
+    });
+  }
+
+  setRevoked(id: string) {
+    return this.prisma.license.update({
+      where: { id },
+      data: { status: 'revoked' },
       include: {
         game: { select: gameSummarySelect },
         owner: { select: { email: true } },

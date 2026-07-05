@@ -16,6 +16,7 @@ model Game {
   platform        String
   priceBase       Decimal  @db.Decimal(10, 2)
   coverImage      String?
+  coverCardImage  String?
   metaTitle       String?
   metaDescription String?
   ogImage         String?
@@ -73,7 +74,7 @@ model GamePricingRegion {
 
 model GameAccount {
   id                String    @id @default(cuid())
-  gameId            String
+  gameId            String?
   platform          String
   username          String
   passwordEncrypted String
@@ -87,7 +88,7 @@ model GameAccount {
   lastHealthCheck          DateTime?
   createdAt         DateTime  @default(now())
 
-  game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game     Game?     @relation(fields: [gameId], references: [id], onDelete: SetNull)
   licenses License[]
 
   @@index([gameId, isActive])
@@ -162,21 +163,23 @@ model License {
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  gameId          String
-  ownerId         String?
-  licenseId       String?  @unique
-  stripeSessionId String   @unique
-  stripePaymentId String?
-  orderType       String   @default("one_time")
-  amount          Decimal  @db.Decimal(10, 2)
-  currency        String   @default("USD") @db.VarChar(3)
-  status          String   @default("pending")
-  buyerEmail      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  gameId            String?
+  gameTitleSnapshot String?
+  gameSlugSnapshot  String?
+  ownerId           String?
+  licenseId         String?  @unique
+  stripeSessionId   String   @unique
+  stripePaymentId   String?
+  orderType         String   @default("one_time")
+  amount            Decimal  @db.Decimal(10, 2)
+  currency          String   @default("USD") @db.VarChar(3)
+  status            String   @default("pending")
+  buyerEmail        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  game    Game     @relation(fields: [gameId], references: [id], onDelete: Restrict)
+  game    Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
   license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
   owner   User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 

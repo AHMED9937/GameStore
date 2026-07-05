@@ -1,21 +1,22 @@
-import { parseRequirements } from '../game-detail.utils';
+import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
+import { requirementsToDisplayRows } from '@gamestore/shared/game-requirements';
 import { IconCpu } from './game-detail-icons';
 
 export type GameDetailSpecsProps = {
-  minimum?: string | null;
-  recommended?: string | null;
+  minimum?: GameSystemRequirements | null;
+  recommended?: GameSystemRequirements | null;
 };
 
 function SpecsPanel({
   title,
-  text,
+  requirements,
   recommended = false,
 }: {
   title: string;
-  text: string;
+  requirements: GameSystemRequirements;
   recommended?: boolean;
 }) {
-  const rows = parseRequirements(text);
+  const rows = requirementsToDisplayRows(requirements);
 
   return (
     <article className={recommended ? 'specs-panel specs-panel--recommended' : 'specs-panel'}>
@@ -47,8 +48,10 @@ export function GameDetailSpecs({ minimum, recommended }: GameDetailSpecsProps) 
 
   return (
     <div className="specs-grid">
-      {minimum ? <SpecsPanel title="Minimum" text={minimum} /> : null}
-      {recommended ? <SpecsPanel title="Recommended" text={recommended} recommended /> : null}
+      {minimum ? <SpecsPanel title="Minimum" requirements={minimum} /> : null}
+      {recommended ? (
+        <SpecsPanel title="Recommended" requirements={recommended} recommended />
+      ) : null}
     </div>
   );
 }

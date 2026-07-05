@@ -37,6 +37,7 @@ export class SubscriptionPlansRepository {
               select: {
                 ...gameSummarySelect,
                 coverImage: true,
+                coverCardImage: true,
               },
             },
           },

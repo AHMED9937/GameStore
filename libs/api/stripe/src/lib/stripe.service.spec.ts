@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { StripeService } from './stripe.service';
 
 const sessionsCreate = vi.fn();
+const sessionsRetrieve = vi.fn();
 const subscriptionsRetrieve = vi.fn();
 
 vi.mock('stripe', () => ({
@@ -9,6 +10,7 @@ vi.mock('stripe', () => ({
     checkout = {
       sessions: {
         create: sessionsCreate,
+        retrieve: sessionsRetrieve,
       },
     };
 
@@ -34,6 +36,11 @@ describe('StripeService', () => {
     sessionsCreate.mockResolvedValue({
       id: 'cs_test_session',
       url: 'https://checkout.stripe.com/pay/cs_test_session',
+    });
+    sessionsRetrieve.mockResolvedValue({
+      id: 'cs_test_session',
+      mode: 'payment',
+      payment_status: 'paid',
     });
   });
 
@@ -93,7 +100,7 @@ describe('StripeService', () => {
       success_url:
         'http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url:
-        'http://localhost:3000/checkout?game=demo-game-1&cancelled=1',
+        'http://localhost:3000/checkout?game=demo-game-1&cancelled=1&session_id={CHECKOUT_SESSION_ID}',
       customer_email: 'buyer@example.com',
     });
     expect(result).toEqual({
@@ -195,6 +202,20 @@ describe('StripeService', () => {
     expect(result).toEqual({
       sessionId: 'cs_test_session',
       url: 'https://checkout.stripe.com/pay/cs_test_session',
+    });
+
+    vi.unstubAllEnvs();
+  });
+
+  it('retrieveCheckoutSession retrieves session with payment_intent expanded', async () => {
+    const session = await service.retrieveCheckoutSession('cs_test_session');
+
+    expect(sessionsRetrieve).toHaveBeenCalledWith('cs_test_session', {
+      expand: ['payment_intent'],
+    });
+    expect(session).toMatchObject({
+      id: 'cs_test_session',
+      payment_status: 'paid',
     });
 
     vi.unstubAllEnvs();

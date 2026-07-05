@@ -28,10 +28,7 @@ export async function importIgdbGame(
     throw new Error(`IGDB game ${input.igdbId} not found`);
   }
 
-  const [screenshots, videos] = await Promise.all([
-    client.getScreenshots(input.igdbId),
-    client.getVideos(input.igdbId),
-  ]);
+  const { screenshots, videos } = await client.getGameMedia(input.igdbId);
 
   const existing = await prisma.game.findUnique({ where: { igdbId: input.igdbId } });
   const slug = existing
@@ -44,6 +41,7 @@ export async function importIgdbGame(
 
   const priceBase = parsePriceBase(input.priceBase);
   const coverImage = details.coverUrl ?? '/og/default.png';
+  const coverCardImage = details.coverCardUrl ?? details.coverUrl ?? '/og/default.png';
   const syncedAt = new Date();
 
   const game = await prisma.$transaction(async (tx) => {
@@ -54,7 +52,8 @@ export async function importIgdbGame(
       platform: input.platform.trim(),
       priceBase,
       coverImage,
-      igdbCoverUrl: details.coverUrl,
+      coverCardImage,
+      igdbCoverUrl: details.coverSourceUrl,
       releaseDate: details.releaseDate,
       genres: details.genres,
       igdbSyncedAt: syncedAt,
@@ -86,7 +85,7 @@ export async function importIgdbGame(
         url: video.url,
         title: video.title,
         igdbId: video.igdbId,
-        sortOrder: index,
+        sortOrder: screenshots.length + index,
       })),
     ];
 

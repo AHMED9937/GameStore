@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, Card, Container, Heading, Text } from '@gamestore/shared/ui';
+import { getGameCardCover } from '@gamestore/web/data-access';
 import { useValidatedLicense } from './validated-license-context';
 import styles from './section.module.css';
 
@@ -24,7 +25,7 @@ export function LicenseGamePicker() {
     );
   }
 
-  const coverSrc = validatedGame.coverImage?.trim() || '/og/default.png';
+  const coverSrc = getGameCardCover(validatedGame);
 
   return (
     <section className={styles.sectionTight} data-testid="license-game-picker">

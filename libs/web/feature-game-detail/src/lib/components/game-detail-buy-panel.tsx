@@ -1,20 +1,20 @@
 import type { GameDetail } from '@gamestore/web/data-access';
-import { formatGamePrice } from '@gamestore/web/data-access';
+import { formatGamePrice, getGameCardCover } from '@gamestore/web/data-access';
 import { Badge, Card, Heading, Text } from '@gamestore/shared/ui';
 import { formatPlatformLabel } from '../game-detail.utils';
 import { GameDetailBuyButton } from './game-detail-buy-cta';
 import styles from './game-detail.module.css';
 
 export type GameDetailBuyPanelProps = {
-  game: Pick<GameDetail, 'title' | 'priceBase' | 'coverImage' | 'platform' | 'slug'>;
+  game: Pick<GameDetail, 'title' | 'priceBase' | 'coverImage' | 'coverCardImage' | 'platform' | 'slug'>;
 };
 
 export function GameDetailBuyPanel({ game }: GameDetailBuyPanelProps) {
+  const coverSrc = getGameCardCover(game);
+
   return (
     <Card className={styles.buyPanel} data-testid="game-detail-buy-panel">
-      {game.coverImage ? (
-        <img src={game.coverImage} alt="" className={styles.buyCover} loading="lazy" />
-      ) : null}
+      <img src={coverSrc} alt="" className={styles.buyCover} loading="lazy" />
       <Heading level="h2" style={{ fontSize: '1.25rem', marginTop: '1rem' }}>
         {game.title}
       </Heading>
