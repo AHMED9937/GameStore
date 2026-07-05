@@ -19,6 +19,7 @@ const adminGameSelect = {
   platform: true,
   priceBase: true,
   coverImage: true,
+  coverCardImage: true,
   metaTitle: true,
   metaDescription: true,
   ogImage: true,

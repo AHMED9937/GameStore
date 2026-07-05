@@ -17,7 +17,7 @@ export function buildCheckoutUrls(gameSlug: string, siteUrl?: string) {
 
   return {
     successUrl: `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${base}/checkout?game=${encodeURIComponent(gameSlug)}&cancelled=1`,
+    cancelUrl: `${base}/checkout?game=${encodeURIComponent(gameSlug)}&cancelled=1&session_id={CHECKOUT_SESSION_ID}`,
   };
 }
 

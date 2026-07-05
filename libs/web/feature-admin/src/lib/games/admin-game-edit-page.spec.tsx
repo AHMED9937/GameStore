@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM } from '@gamestore/shared/game-requirements';
 import { AdminGameEditPage } from './admin-game-edit-page';
 import { ADMIN_GAMES_SETUP_MESSAGE } from './games.constants';
 
@@ -43,8 +44,8 @@ describe('AdminGameEditPage', () => {
             coverImage: '/cover.png',
             releaseDate: '2024-01-01',
             genresText: 'Adventure',
-            requirementsMin: '',
-            requirementsRecommended: '',
+            requirementsMin: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
+            requirementsRecommended: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
             published: false,
           },
         }}

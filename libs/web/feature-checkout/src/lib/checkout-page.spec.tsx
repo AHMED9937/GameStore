@@ -1,7 +1,18 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { GameDetail } from '@gamestore/web/data-access';
 import { CheckoutPage } from './checkout-page';
+
+vi.mock('@gamestore/web/data-access', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@gamestore/web/data-access')>();
+  return {
+    ...actual,
+    cancelOrderBySession: vi.fn().mockResolvedValue({
+      status: 'failed',
+      message: 'Payment was not completed.',
+    }),
+  };
+});
 
 const mockGame: GameDetail = {
   id: 'game-1',
@@ -57,6 +68,7 @@ describe('CheckoutPage', () => {
     render(
       <CheckoutPage
         cancelled
+        sessionId="cs_test_abc"
         gameState={{ status: 'success', data: mockGame }}
       />,
     );

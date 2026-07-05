@@ -1,16 +1,36 @@
 import { IgdbConfig } from './igdb.config';
+import {
+  IGDB_COVER_CARD_SIZE,
+  IGDB_SCREENSHOT_SIZE,
+  normalizeIgdbImageUrl,
+  resolveIgdbCoverUrls,
+  upgradeIgdbImageUrl,
+} from './igdb-image-url';
 import type {
   IgdbGameDetails,
   IgdbScreenshot,
   IgdbSearchResult,
   IgdbVideo,
 } from './igdb.types';
+import { IGDB_API_PAGE_SIZE } from './igdb-media.constants';
 import {
-  IGDB_IMPORT_SCREENSHOT_LIMIT,
-  IGDB_IMPORT_VIDEO_LIMIT,
-} from './igdb-media.constants';
+  extractYoutubeVideoId,
+  toYoutubeEmbedFromIgdbVideoId,
+} from './igdb-youtube';
 
 export type FetchFn = typeof fetch;
+
+export class IgdbClientError extends Error {
+  readonly status: number;
+  readonly kind: 'auth' | 'upstream' | 'client';
+
+  constructor(message: string, status: number, kind: IgdbClientError['kind']) {
+    super(message);
+    this.name = 'IgdbClientError';
+    this.status = status;
+    this.kind = kind;
+  }
+}
 
 let fetchImpl: FetchFn = globalThis.fetch.bind(globalThis);
 
@@ -33,6 +53,8 @@ type IgdbGameRow = {
 };
 type IgdbScreenshotRow = { id?: number; url?: string };
 type IgdbVideoRow = { id?: number; name?: string; video_id?: string };
+type IgdbMediaScopeRow = { id: number; version_parent?: number; parent_game?: number };
+type IgdbRowWithId = { id?: number };
 
 export class IgdbClient {
   private token: string | null = null;
@@ -56,7 +78,7 @@ export class IgdbClient {
       igdbId: row.id,
       title: row.name ?? `Game ${row.id}`,
       releaseDate: unixToIsoDate(row.first_release_date),
-      coverUrl: toCoverUrl(row.cover?.url),
+      coverUrl: toSearchCoverUrl(row.cover?.url),
     }));
   }
 
@@ -70,6 +92,8 @@ export class IgdbClient {
       return null;
     }
 
+    const covers = resolveIgdbCoverUrls(row.cover?.url);
+
     return {
       igdbId: row.id,
       title: row.name ?? `Game ${row.id}`,
@@ -78,42 +102,156 @@ export class IgdbClient {
       genres: (row.genres ?? [])
         .map((genre) => genre.name)
         .filter((name): name is string => Boolean(name)),
-      coverUrl: toCoverUrl(row.cover?.url),
+      coverUrl: covers.coverUrl,
+      coverCardUrl: covers.coverCardUrl,
+      coverSourceUrl: covers.coverSourceUrl,
     };
   }
 
-  async getScreenshots(
-    igdbId: number,
-    limit = IGDB_IMPORT_SCREENSHOT_LIMIT,
-  ): Promise<IgdbScreenshot[]> {
-    const rows = await this.post<IgdbScreenshotRow[]>(
-      '/screenshots',
-      `fields id,url; where game = ${igdbId}; limit ${limit};`,
-    );
-
-    return rows
-      .map((row, index) => ({
-        igdbId: row.id ?? null,
-        url: toImageUrl(row.url),
-        sortOrder: index,
-      }))
-      .filter((row) => Boolean(row.url))
-      .map(({ igdbId: screenshotId, url }) => ({ igdbId: screenshotId, url }));
+  async getGameMedia(igdbId: number): Promise<{
+    screenshots: IgdbScreenshot[];
+    videos: IgdbVideo[];
+  }> {
+    const gameIds = await this.resolveMediaGameIds(igdbId);
+    const [screenshots, videos] = await Promise.all([
+      this.collectScreenshots(gameIds),
+      this.collectVideos(gameIds),
+    ]);
+    return { screenshots, videos };
   }
 
-  async getVideos(igdbId: number, limit = IGDB_IMPORT_VIDEO_LIMIT): Promise<IgdbVideo[]> {
-    const rows = await this.post<IgdbVideoRow[]>(
-      '/game_videos',
-      `fields id,name,video_id; where game = ${igdbId}; limit ${limit};`,
-    );
+  async getScreenshots(igdbId: number): Promise<IgdbScreenshot[]> {
+    const gameIds = await this.resolveMediaGameIds(igdbId);
+    return this.collectScreenshots(gameIds);
+  }
 
-    return rows
-      .map((row) => ({
-        igdbId: row.id ?? null,
-        title: row.name ?? null,
-        url: row.video_id ? `https://www.youtube.com/embed/${row.video_id}` : '',
-      }))
-      .filter((row) => Boolean(row.url));
+  async getVideos(igdbId: number): Promise<IgdbVideo[]> {
+    const gameIds = await this.resolveMediaGameIds(igdbId);
+    return this.collectVideos(gameIds);
+  }
+
+  private async resolveMediaGameIds(igdbId: number): Promise<number[]> {
+    const rows = await this.post<IgdbMediaScopeRow[]>(
+      '/games',
+      `fields id,version_parent,parent_game; where id = ${igdbId};`,
+    );
+    const row = rows[0];
+    if (!row) {
+      return [igdbId];
+    }
+
+    const ids = [igdbId];
+    for (const relatedId of [row.version_parent, row.parent_game]) {
+      if (relatedId && relatedId !== igdbId && !ids.includes(relatedId)) {
+        ids.push(relatedId);
+      }
+    }
+    return ids;
+  }
+
+  private async collectScreenshots(gameIds: number[]): Promise<IgdbScreenshot[]> {
+    const seenScreenshotIds = new Set<number>();
+    const screenshots: IgdbScreenshot[] = [];
+
+    for (const gameId of gameIds) {
+      const rows = await this.fetchAllIgdbRows<IgdbScreenshotRow>(
+        '/screenshots',
+        `fields id,url; where game = ${gameId};`,
+      );
+
+      for (const row of rows) {
+        if (row.id !== undefined && seenScreenshotIds.has(row.id)) {
+          continue;
+        }
+        const url = toScreenshotUrl(row.url);
+        if (!url) {
+          continue;
+        }
+        if (row.id !== undefined) {
+          seenScreenshotIds.add(row.id);
+        }
+        screenshots.push({ igdbId: row.id ?? null, url });
+      }
+    }
+
+    return screenshots;
+  }
+
+  private async collectVideos(gameIds: number[]): Promise<IgdbVideo[]> {
+    const seenYoutubeIds = new Set<string>();
+    const seenIgdbIds = new Set<number>();
+    const videos: IgdbVideo[] = [];
+
+    for (const gameId of gameIds) {
+      const rows = await this.fetchAllIgdbRows<IgdbVideoRow>(
+        '/game_videos',
+        `fields id,name,video_id; where game = ${gameId};`,
+      );
+
+      for (const row of rows) {
+        if (row.id !== undefined && seenIgdbIds.has(row.id)) {
+          continue;
+        }
+        const url = toYoutubeEmbedFromIgdbVideoId(row.video_id);
+        if (!url) {
+          continue;
+        }
+        const youtubeId = extractYoutubeVideoId(url);
+        if (youtubeId && seenYoutubeIds.has(youtubeId)) {
+          continue;
+        }
+        if (row.id !== undefined) {
+          seenIgdbIds.add(row.id);
+        }
+        if (youtubeId) {
+          seenYoutubeIds.add(youtubeId);
+        }
+        videos.push({
+          igdbId: row.id ?? null,
+          title: row.name ?? null,
+          url,
+        });
+      }
+    }
+
+    return videos;
+  }
+
+  private async fetchAllIgdbRows<T extends IgdbRowWithId>(
+    path: string,
+    baseQuery: string,
+  ): Promise<T[]> {
+    const results: T[] = [];
+    const seenIds = new Set<number>();
+    let offset = 0;
+
+    while (true) {
+      const page = await this.post<T[]>(
+        path,
+        `${baseQuery} sort id asc; limit ${IGDB_API_PAGE_SIZE}; offset ${offset};`,
+      );
+
+      if (page.length === 0) {
+        break;
+      }
+
+      for (const row of page) {
+        if (row.id !== undefined) {
+          if (seenIds.has(row.id)) {
+            continue;
+          }
+          seenIds.add(row.id);
+        }
+        results.push(row);
+      }
+
+      if (page.length < IGDB_API_PAGE_SIZE) {
+        break;
+      }
+      offset += IGDB_API_PAGE_SIZE;
+    }
+
+    return results;
   }
 
   private async post<T>(path: string, body: string): Promise<T> {
@@ -136,7 +274,7 @@ export class IgdbClient {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`IGDB ${path} failed (${response.status}): ${text}`);
+      throw mapIgdbHttpError(path, response.status, text);
     }
 
     return (await response.json()) as T;
@@ -162,7 +300,7 @@ export class IgdbClient {
     const response = await this.fetchFn(url.toString(), { method: 'POST' });
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`IGDB OAuth failed (${response.status}): ${text}`);
+      throw mapIgdbHttpError('oauth', response.status, text);
     }
 
     const payload = (await response.json()) as {
@@ -192,14 +330,34 @@ function unixToIsoDate(seconds?: number): string | null {
   return date ? date.toISOString().slice(0, 10) : null;
 }
 
-function toImageUrl(url?: string): string {
-  if (!url) {
-    return '';
-  }
-  return url.startsWith('//') ? `https:${url}` : url;
+function toSearchCoverUrl(url?: string): string | null {
+  const upgraded = upgradeIgdbImageUrl(normalizeIgdbImageUrl(url), IGDB_COVER_CARD_SIZE);
+  return upgraded || null;
 }
 
-function toCoverUrl(url?: string): string | null {
-  const normalized = toImageUrl(url);
-  return normalized || null;
+function toScreenshotUrl(url?: string): string {
+  return upgradeIgdbImageUrl(normalizeIgdbImageUrl(url), IGDB_SCREENSHOT_SIZE);
+}
+
+function mapIgdbHttpError(path: string, status: number, body: string): IgdbClientError {
+  const safeDetail = body.trim().slice(0, 200) || 'upstream error';
+  if (status === 401 || status === 403) {
+    return new IgdbClientError(
+      'IGDB authentication failed. Check IGDB_CLIENT_ID and IGDB_CLIENT_SECRET.',
+      status,
+      'auth',
+    );
+  }
+  if (status === 429 || status >= 500) {
+    return new IgdbClientError(
+      `IGDB ${path} is temporarily unavailable (${status}). Try again shortly.`,
+      status,
+      'upstream',
+    );
+  }
+  return new IgdbClientError(
+    `IGDB ${path} request failed (${status}): ${safeDetail}`,
+    status,
+    'client',
+  );
 }

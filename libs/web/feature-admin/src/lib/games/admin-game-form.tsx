@@ -2,6 +2,7 @@
 
 import { Button, Input, Text } from '@gamestore/shared/ui';
 import type { AdminGameFormValues, AdminGameTab } from './admin-games.types';
+import { AdminGameRequirementsFields } from './admin-game-requirements-fields';
 import styles from './games.module.css';
 
 const TABS: { id: AdminGameTab; label: string }[] = [
@@ -15,6 +16,7 @@ const TABS: { id: AdminGameTab; label: string }[] = [
 
 export type AdminGameFormProps = {
   values?: AdminGameFormValues;
+  coverCardImage?: string | null;
   disabled?: boolean;
   mode?: 'create' | 'edit';
   activeTab?: AdminGameTab;
@@ -27,6 +29,7 @@ export type AdminGameFormProps = {
 
 export function AdminGameForm({
   values,
+  coverCardImage,
   disabled = false,
   mode = 'create',
   activeTab = 'basics',
@@ -148,6 +151,12 @@ export function AdminGameForm({
               onChange={(event) => updateField('coverImage', event.target.value)}
             />
           </div>
+          {mode === 'edit' && coverCardImage?.trim() ? (
+            <div className={styles.formField}>
+              <Text tone="muted">Card cover URL (IGDB)</Text>
+              <Input name="coverCardImage" value={coverCardImage} disabled readOnly />
+            </div>
+          ) : null}
           <div className={styles.formField}>
             <Text tone="muted">Release date</Text>
             <Input
@@ -172,34 +181,22 @@ export function AdminGameForm({
       ) : null}
 
       {activeTab === 'requirements' ? (
-        <>
-          <div className={styles.formField}>
-            <Text tone="muted">Minimum requirements</Text>
-            <textarea
-              className={styles.textarea}
-              name="requirementsMin"
-              rows={8}
-              value={formValues.requirementsMin}
-              disabled={disabled}
-              onChange={(event) =>
-                updateField('requirementsMin', event.target.value)
-              }
-            />
-          </div>
-          <div className={styles.formField}>
-            <Text tone="muted">Recommended requirements</Text>
-            <textarea
-              className={styles.textarea}
-              name="requirementsRecommended"
-              rows={8}
-              value={formValues.requirementsRecommended}
-              disabled={disabled}
-              onChange={(event) =>
-                updateField('requirementsRecommended', event.target.value)
-              }
-            />
-          </div>
-        </>
+        <div className={styles.requirementsGrid}>
+          <AdminGameRequirementsFields
+            title="Minimum requirements"
+            values={formValues.requirementsMin}
+            disabled={disabled}
+            onChange={(requirementsMin) => updateField('requirementsMin', requirementsMin)}
+          />
+          <AdminGameRequirementsFields
+            title="Recommended requirements"
+            values={formValues.requirementsRecommended}
+            disabled={disabled}
+            onChange={(requirementsRecommended) =>
+              updateField('requirementsRecommended', requirementsRecommended)
+            }
+          />
+        </div>
       ) : null}
 
       {activeTab === 'media' ? mediaSection : null}

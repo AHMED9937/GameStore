@@ -6,6 +6,7 @@ export type PublicSubscriptionPlanGameDto = {
   title: string;
   slug: string;
   coverImage: string | null;
+  coverCardImage: string | null;
 };
 
 export type PublicSubscriptionPlanDto = {
@@ -39,6 +40,7 @@ export class SubscriptionPlansService {
             title: game.title,
             slug: game.slug,
             coverImage: game.coverImage,
+            coverCardImage: game.coverCardImage,
           })),
       }))
       .filter((plan) => plan.games.length > 0);

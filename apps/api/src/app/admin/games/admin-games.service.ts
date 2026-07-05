@@ -7,12 +7,19 @@ import {
 import { GamesRepository } from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
 import { Prisma } from '@prisma/client';
+import {
+  hasGameSystemRequirementsContent,
+  parseStoredGameSystemRequirements,
+  serializeGameSystemRequirements,
+  type GameSystemRequirements,
+} from '@gamestore/shared/game-requirements';
 import type { CreateGameDto } from '../../games/games.service';
 import {
   normalizeBulkIds,
   runBulkIds,
   type BulkActionResult,
 } from '../bulk-action.types';
+import { EntitlementCleanupService } from '../../entitlements/entitlement-cleanup.service';
 import type {
   AdminGameAccountSummary,
   AdminGameMediaDto,
@@ -28,13 +35,16 @@ export type AdminGameDto = {
   priceBase: string;
   description: string | null;
   coverImage: string | null;
+  coverCardImage: string | null;
   publishedAt: string | null;
   published: boolean;
   igdbId: number | null;
+  igdbSyncedAt: string | null;
+  igdbCoverUrl: string | null;
   releaseDate: string | null;
   genres: string[];
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: AdminGameMediaDto[];
   accountSummary: AdminGameAccountSummary;
 };
@@ -43,8 +53,8 @@ export type AdminCreateGameDto = CreateGameDto & {
   published?: boolean;
   genres?: string[];
   releaseDate?: string | null;
-  requirementsMin?: string | null;
-  requirementsRecommended?: string | null;
+  requirementsMin?: GameSystemRequirements | null;
+  requirementsRecommended?: GameSystemRequirements | null;
 };
 
 export type AdminUpdateGameDto = Partial<AdminCreateGameDto>;
@@ -79,11 +89,18 @@ export class AdminGamesService {
   constructor(
     private readonly games: GamesRepository,
     private readonly prisma: PrismaService,
+    private readonly entitlementCleanup: EntitlementCleanupService,
   ) {}
 
   async findAll(): Promise<AdminGameDto[]> {
     const rows = await this.games.findAllAdmin();
-    return Promise.all(rows.map((row) => this.toAdminGameDto(row)));
+    const summaries = await this.getAccountSummariesBatch(rows.map((row) => row.id));
+    return rows.map((row) =>
+      this.toAdminGameDtoSync(
+        row,
+        summaries.get(row.id) ?? { total: 0, active: 0, hasActivePool: false },
+      ),
+    );
   }
 
   async findOne(id: string): Promise<AdminGameDto> {
@@ -136,6 +153,10 @@ export class AdminGamesService {
       }
     }
 
+    if (dto.published === false && existing.publishedAt) {
+      await this.entitlementCleanup.revokeAllLicensesForGame(id);
+    }
+
     try {
       await this.games.update(id, this.buildUpdateInput(dto, existing));
       return this.findOne(id);
@@ -157,6 +178,13 @@ export class AdminGamesService {
   }
 
   async remove(id: string): Promise<{ id: string; deleted: true }> {
+    const existing = await this.games.findByIdAdmin(id);
+    if (!existing) {
+      throw new NotFoundException(`No game found with id "${id}"`);
+    }
+
+    await this.entitlementCleanup.prepareGameForDeletion(id);
+
     try {
       await this.games.delete(id);
       return { id, deleted: true };
@@ -166,6 +194,14 @@ export class AdminGamesService {
         error.code === 'P2025'
       ) {
         throw new NotFoundException(`No game found with id "${id}"`);
+      }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Cannot delete game while related records still exist',
+        );
       }
       throw error;
     }
@@ -250,9 +286,13 @@ export class AdminGamesService {
       {
         id: 'requirements',
         label: 'Min and recommended requirements',
-        passed: Boolean(
-          game.requirementsMin?.trim() && game.requirementsRecommended?.trim(),
-        ),
+        passed:
+          hasGameSystemRequirementsContent(
+            parseStoredGameSystemRequirements(game.requirementsMin),
+          ) &&
+          hasGameSystemRequirementsContent(
+            parseStoredGameSystemRequirements(game.requirementsRecommended),
+          ),
         required: false,
       },
       {
@@ -282,6 +322,13 @@ export class AdminGamesService {
 
   private async toAdminGameDto(game: AdminGameRecord): Promise<AdminGameDto> {
     const accountSummary = await this.getAccountSummary(game.id);
+    return this.toAdminGameDtoSync(game, accountSummary);
+  }
+
+  private toAdminGameDtoSync(
+    game: AdminGameRecord,
+    accountSummary: AdminGameAccountSummary,
+  ): AdminGameDto {
     return {
       id: game.id,
       title: game.title,
@@ -290,16 +337,56 @@ export class AdminGamesService {
       priceBase: game.priceBase.toString(),
       description: game.description,
       coverImage: game.coverImage,
+      coverCardImage: game.coverCardImage,
       publishedAt: game.publishedAt?.toISOString() ?? null,
       published: game.publishedAt !== null,
       igdbId: game.igdbId,
+      igdbSyncedAt: game.igdbSyncedAt?.toISOString() ?? null,
+      igdbCoverUrl: game.igdbCoverUrl,
       releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
       genres: game.genres,
-      requirementsMin: game.requirementsMin,
-      requirementsRecommended: game.requirementsRecommended,
+      requirementsMin: parseStoredGameSystemRequirements(game.requirementsMin),
+      requirementsRecommended: parseStoredGameSystemRequirements(
+        game.requirementsRecommended,
+      ),
       media: game.media.map(toMediaDto),
       accountSummary,
     };
+  }
+
+  private async getAccountSummariesBatch(
+    gameIds: string[],
+  ): Promise<Map<string, AdminGameAccountSummary>> {
+    if (gameIds.length === 0) {
+      return new Map();
+    }
+
+    const accounts = await this.prisma.gameAccount.findMany({
+      where: { gameId: { in: gameIds } },
+      select: { gameId: true, isActive: true },
+    });
+
+    const counts = new Map<string, { total: number; active: number }>();
+    for (const account of accounts) {
+      const current = counts.get(account.gameId) ?? { total: 0, active: 0 };
+      current.total += 1;
+      if (account.isActive) {
+        current.active += 1;
+      }
+      counts.set(account.gameId, current);
+    }
+
+    const summaries = new Map<string, AdminGameAccountSummary>();
+    for (const gameId of gameIds) {
+      const summary = counts.get(gameId) ?? { total: 0, active: 0 };
+      summaries.set(gameId, {
+        total: summary.total,
+        active: summary.active,
+        hasActivePool: summary.active > 0,
+      });
+    }
+
+    return summaries;
   }
 
   private async getAccountSummary(
@@ -340,8 +427,10 @@ export class AdminGamesService {
       publishedAt,
       genres: dto.genres ?? [],
       releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : undefined,
-      requirementsMin: dto.requirementsMin,
-      requirementsRecommended: dto.requirementsRecommended,
+      requirementsMin: serializeGameSystemRequirements(dto.requirementsMin),
+      requirementsRecommended: serializeGameSystemRequirements(
+        dto.requirementsRecommended,
+      ),
     };
   }
 
@@ -373,10 +462,12 @@ export class AdminGamesService {
       data.releaseDate = dto.releaseDate ? new Date(dto.releaseDate) : null;
     }
     if (dto.requirementsMin !== undefined) {
-      data.requirementsMin = dto.requirementsMin;
+      data.requirementsMin = serializeGameSystemRequirements(dto.requirementsMin);
     }
     if (dto.requirementsRecommended !== undefined) {
-      data.requirementsRecommended = dto.requirementsRecommended;
+      data.requirementsRecommended = serializeGameSystemRequirements(
+        dto.requirementsRecommended,
+      );
     }
 
     if (dto.published === true) {

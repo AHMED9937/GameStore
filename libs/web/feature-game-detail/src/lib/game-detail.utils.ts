@@ -28,29 +28,6 @@ export function splitMedia(media: GameMedia[]) {
   return { videos, screenshots, activation };
 }
 
-export type RequirementRow = {
-  label: string;
-  value: string;
-};
-
-export function parseRequirements(text: string): RequirementRow[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const colonIndex = line.indexOf(':');
-      if (colonIndex === -1) {
-        return { label: 'Note', value: line };
-      }
-
-      return {
-        label: line.slice(0, colonIndex).trim(),
-        value: line.slice(colonIndex + 1).trim(),
-      };
-    });
-}
-
 export function formatReleaseDate(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00`);
   if (Number.isNaN(date.getTime())) {

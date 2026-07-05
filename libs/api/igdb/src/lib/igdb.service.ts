@@ -20,12 +20,12 @@ export class IgdbService {
     return this.client.getGameDetails(igdbId);
   }
 
-  getScreenshots(igdbId: number, limit?: number) {
-    return this.client.getScreenshots(igdbId, limit);
+  getScreenshots(igdbId: number) {
+    return this.client.getScreenshots(igdbId);
   }
 
-  getVideos(igdbId: number, limit?: number) {
-    return this.client.getVideos(igdbId, limit);
+  getVideos(igdbId: number) {
+    return this.client.getVideos(igdbId);
   }
 
   async search(query: string) {
@@ -34,5 +34,20 @@ export class IgdbService {
     }
 
     return this.searchGames(query);
+  }
+
+  async preview(igdbId: number) {
+    if (!IgdbConfig.isConfigured()) {
+      return IgdbConfig.getSetupResponse('preview');
+    }
+
+    const details = await this.getGameDetails(igdbId);
+    if (!details) {
+      return null;
+    }
+
+    const { screenshots, videos } = await this.client.getGameMedia(igdbId);
+
+    return { ...details, screenshots, videos };
   }
 }
