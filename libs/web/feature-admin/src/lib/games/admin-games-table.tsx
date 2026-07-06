@@ -13,10 +13,14 @@ export type AdminGamesTableProps = {
   games: AdminGameListItem[];
   publishingId?: string | null;
   onPublishToggle?: (game: AdminGameListItem) => void;
+  onSoldOutToggle?: (game: AdminGameListItem) => void;
   selection?: AdminTableSelectionProps;
 };
 
 function statusBadge(game: AdminGameListItem) {
+  if (game.published && game.soldOut) {
+    return <Badge variant="default">Sold out</Badge>;
+  }
   if (game.published) {
     return <Badge variant="success">Published</Badge>;
   }
@@ -30,8 +34,10 @@ function renderRowCells(
   game: AdminGameListItem,
   publishingId: string | null,
   onPublishToggle?: (game: AdminGameListItem) => void,
+  onSoldOutToggle?: (game: AdminGameListItem) => void,
 ) {
   const isPublishing = publishingId === game.id;
+  const canMarkAvailable = game.published && game.hasActivePool;
 
   return (
     <>
@@ -42,6 +48,13 @@ function renderRowCells(
       <td>
         {game.hasActivePool ? (
           <Badge variant="success">Active pool</Badge>
+        ) : (
+          '—'
+        )}
+      </td>
+      <td>
+        {game.featuredOrder != null ? (
+          <Badge variant="success">#{game.featuredOrder}</Badge>
         ) : (
           '—'
         )}
@@ -68,6 +81,29 @@ function renderRowCells(
                   : 'Publish'}
             </Button>
           ) : null}
+          {onSoldOutToggle && game.published ? (
+            game.soldOut && !game.soldOutManual ? (
+              <Button type="button" variant="secondary" disabled>
+                No active pool
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={
+                  isPublishing ||
+                  (game.soldOutManual && !canMarkAvailable)
+                }
+                onClick={() => onSoldOutToggle(game)}
+              >
+                {isPublishing
+                  ? 'Saving…'
+                  : game.soldOutManual
+                    ? 'Mark available'
+                    : 'Mark sold out'}
+              </Button>
+            )
+          ) : null}
         </div>
       </td>
     </>
@@ -78,6 +114,7 @@ export function AdminGamesTable({
   games,
   publishingId = null,
   onPublishToggle,
+  onSoldOutToggle,
   selection,
 }: AdminGamesTableProps) {
   if (!selection) {
@@ -86,7 +123,7 @@ export function AdminGamesTable({
         <AdminTable columns={[...ADMIN_GAME_COLUMNS]} caption="Admin games catalog">
           {games.map((game) => (
             <tr key={game.id}>
-              {renderRowCells(game, publishingId, onPublishToggle)}
+              {renderRowCells(game, publishingId, onPublishToggle, onSoldOutToggle)}
             </tr>
           ))}
         </AdminTable>

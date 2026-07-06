@@ -11,9 +11,15 @@ const sampleGame = {
   priceBase: '9.99',
   description: 'A demo title',
   coverImage: null,
+  coverCardImage: null,
   publishedAt: null,
   published: false,
+  soldOut: false,
+  soldOutManual: false,
+  featuredOrder: null,
   igdbId: null,
+  igdbSyncedAt: null,
+  igdbCoverUrl: null,
   releaseDate: null,
   genres: [],
   requirementsMin: null,
@@ -36,13 +42,23 @@ describe('AdminGamesController', () => {
       canPublish: false,
       checks: [],
     }),
+    getFeaturedGames: vi.fn().mockResolvedValue({ featured: [], available: [] }),
+    updateFeaturedGames: vi.fn().mockResolvedValue({ featured: [], available: [] }),
   } satisfies AdminGamesService;
+
+  const igdbImport = {
+    syncGame: vi.fn().mockResolvedValue({ game: sampleGame }),
+  };
 
   const auditLogService = {
     log: vi.fn().mockResolvedValue(undefined),
   } satisfies AuditLogService;
 
-  const controller = new AdminGamesController(adminGames, auditLogService);
+  const controller = new AdminGamesController(
+    adminGames,
+    auditLogService,
+    igdbImport as never,
+  );
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
   const request = { headers: {}, ip: '127.0.0.1' };
 
@@ -109,6 +125,21 @@ describe('AdminGamesController', () => {
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.game.bulk_unpublish',
+      }),
+    );
+  });
+
+  it('updateFeatured records featured audit', async () => {
+    await controller.updateFeatured(
+      { gameIds: ['game-1'] },
+      adminUser,
+      request as never,
+    );
+
+    expect(adminGames.updateFeaturedGames).toHaveBeenCalledWith(['game-1']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.game.featured_update',
       }),
     );
   });

@@ -1,6 +1,11 @@
 import { cache } from 'react';
 import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
-import { apiGet } from './api-client';
+import { apiGetPublic, type ApiPublicCacheOptions } from './api-client';
+
+const PUBLIC_GAME_CACHE: ApiPublicCacheOptions = {
+  revalidate: 60,
+  tags: ['games'],
+};
 
 export type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 
@@ -14,6 +19,7 @@ export type Game = {
   priceBase: string;
   coverImage: string | null;
   coverCardImage?: string | null;
+  soldOut?: boolean;
 };
 
 export type GameMedia = {
@@ -44,7 +50,11 @@ export function formatGamePrice(priceBase: string): string {
 }
 
 export const getGames = cache(async (): Promise<Game[]> => {
-  return apiGet<Game[]>('/games');
+  return apiGetPublic<Game[]>('/games', PUBLIC_GAME_CACHE);
+});
+
+export const getFeaturedGames = cache(async (): Promise<Game[]> => {
+  return apiGetPublic<Game[]>('/games/featured', PUBLIC_GAME_CACHE);
 });
 
 export function getGameCardCover(
@@ -54,6 +64,9 @@ export function getGameCardCover(
   return game.coverCardImage?.trim() || game.coverImage?.trim() || fallback;
 }
 
-export async function getGameBySlug(slug: string): Promise<GameDetail> {
-  return apiGet<GameDetail>(`/games/${slug}`);
-}
+export const getGameBySlug = cache(async (slug: string): Promise<GameDetail> => {
+  return apiGetPublic<GameDetail>(`/games/${slug}`, {
+    revalidate: PUBLIC_GAME_CACHE.revalidate,
+    tags: [...(PUBLIC_GAME_CACHE.tags ?? []), `game:${slug}`],
+  });
+});

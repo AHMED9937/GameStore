@@ -28,6 +28,8 @@ model Game {
   igdbCoverUrl    String?
   requirementsMin         String? @db.Text
   requirementsRecommended String? @db.Text
+  featuredOrder   Int?
+  soldOut         Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -38,6 +40,8 @@ model Game {
   orders               Order[]
   subscriptionPlanGames SubscriptionPlanGame[]
 
+  @@index([featuredOrder])
+  @@index([publishedAt])
   @@map("games")
 }
 
@@ -235,4 +239,13 @@ model UserSubscription {
 
   @@index([userId, status])
   @@map("user_subscriptions")
+}
+
+/// Key-value store settings (e.g. default activation video URL).
+model StoreSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("store_settings")
 }

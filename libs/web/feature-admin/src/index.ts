@@ -8,6 +8,7 @@ export type { AdminTableColumn, AdminTableProps } from './lib/components/admin-t
 export { AdminDashboardPage } from './lib/dashboard/admin-dashboard-page';
 export { ADMIN_DASHBOARD_SETUP_MESSAGE } from './lib/dashboard/dashboard.constants';
 export { AdminGamesPage } from './lib/games/admin-games-page';
+export { AdminFeaturedGamesPage } from './lib/games/admin-featured-games-page';
 export { AdminGameFormPage } from './lib/games/admin-game-form-page';
 export { AdminGameEditPage } from './lib/games/admin-game-edit-page';
 export { ADMIN_GAMES_SETUP_MESSAGE } from './lib/games/games.constants';
