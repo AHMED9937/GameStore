@@ -1,4 +1,4 @@
-export const ADMIN_GAMES_SETUP_MESSAGE = 'Admin games — not implemented yet';
+export const ADMIN_GAMES_SETUP_MESSAGE = 'Admin games not implemented yet';
 
 export const ADMIN_GAME_COLUMNS = [
   { key: 'title', header: 'Title' },
@@ -6,6 +6,7 @@ export const ADMIN_GAME_COLUMNS = [
   { key: 'platform', header: 'Platform' },
   { key: 'price', header: 'Price' },
   { key: 'accounts', header: 'Pool' },
+  { key: 'featured', header: 'Featured' },
   { key: 'status', header: 'Status' },
   { key: 'actions', header: 'Actions' },
 ] as const;

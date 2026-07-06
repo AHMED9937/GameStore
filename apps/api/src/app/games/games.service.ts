@@ -3,12 +3,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GamesRepository } from '@gamestore/api/data-access';
+import {
+  DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+  GameAccountsRepository,
+  GamesRepository,
+  StoreSettingsRepository,
+  resolveSoldOut,
+} from '@gamestore/api/data-access';
 import {
   type GameSystemRequirements,
   parseStoredGameSystemRequirements,
+  serializeGameSystemRequirements,
 } from '@gamestore/shared/game-requirements';
 import { Prisma } from '@prisma/client';
+import {
+  STORE_DEFAULT_ACTIVATION_MEDIA_ID,
+  STORE_DEFAULT_ACTIVATION_TITLE,
+} from './activation-video.constants';
 
 export type GameDto = {
   id: string;
@@ -19,6 +30,7 @@ export type GameDto = {
   priceBase: string;
   coverImage: string | null;
   coverCardImage: string | null;
+  soldOut: boolean;
 };
 
 export type GameMediaDto = {
@@ -55,11 +67,12 @@ type GameForDto = {
   id: string;
   slug: string;
   title: string;
-  description: string | null;
+  description?: string | null;
   platform: string;
   priceBase: { toString(): string };
   coverImage: string | null;
   coverCardImage: string | null;
+  soldOut?: boolean;
 };
 
 type GameForDetailDto = GameForDto & {
@@ -81,11 +94,12 @@ function toDto(game: GameForDto): GameDto {
     id: game.id,
     slug: game.slug,
     title: game.title,
-    description: game.description,
+    description: game.description ?? null,
     platform: game.platform,
     priceBase: game.priceBase.toString(),
     coverImage: game.coverImage,
     coverCardImage: game.coverCardImage,
+    soldOut: game.soldOut ?? false,
   };
 }
 
@@ -108,13 +122,95 @@ function toDetailDto(game: GameForDetailDto): GameDetailDto {
   };
 }
 
+function withDefaultActivationMedia(
+  media: GameForDetailDto['media'],
+  defaultActivationUrl: string | null,
+): GameForDetailDto['media'] {
+  if (!defaultActivationUrl) {
+    return media;
+  }
+
+  const hasActivation = media.some((item) => item.type === 'activation');
+  if (hasActivation) {
+    return media;
+  }
+
+  return [
+    ...media,
+    {
+      id: STORE_DEFAULT_ACTIVATION_MEDIA_ID,
+      type: 'activation',
+      url: defaultActivationUrl,
+      title: STORE_DEFAULT_ACTIVATION_TITLE,
+      sortOrder: 0,
+    },
+  ];
+}
+
+function toGameWriteInput(
+  dto: Partial<CreateGameDto>,
+): Prisma.GameUpdateInput {
+  const {
+    requirementsMin,
+    requirementsRecommended,
+    publishedAt,
+    releaseDate,
+    ...rest
+  } = dto;
+
+  return {
+    ...rest,
+    ...(publishedAt !== undefined
+      ? { publishedAt: publishedAt ? new Date(publishedAt) : null }
+      : {}),
+    ...(releaseDate !== undefined
+      ? { releaseDate: releaseDate ? new Date(releaseDate) : null }
+      : {}),
+    ...(requirementsMin !== undefined
+      ? { requirementsMin: serializeGameSystemRequirements(requirementsMin) }
+      : {}),
+    ...(requirementsRecommended !== undefined
+      ? {
+          requirementsRecommended: serializeGameSystemRequirements(
+            requirementsRecommended,
+          ),
+        }
+      : {}),
+  };
+}
+
 @Injectable()
 export class GamesService {
-  constructor(private readonly games: GamesRepository) {}
+  constructor(
+    private readonly games: GamesRepository,
+    private readonly gameAccounts: GameAccountsRepository,
+    private readonly storeSettings: StoreSettingsRepository,
+  ) {}
 
   async findAll(): Promise<GameDto[]> {
-    const games = await this.games.findPublished();
-    return games.map(toDto);
+    const rows = await this.games.findPublished();
+    const poolFlags = await this.gameAccounts.getActivePoolFlagsByGameIds(
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) =>
+      toDto({
+        ...row,
+        soldOut: resolveSoldOut(row.soldOut, poolFlags.get(row.id) ?? false),
+      }),
+    );
+  }
+
+  async findFeatured(limit = 5): Promise<GameDto[]> {
+    const rows = await this.games.findFeaturedPublished(limit);
+    const poolFlags = await this.gameAccounts.getActivePoolFlagsByGameIds(
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) =>
+      toDto({
+        ...row,
+        soldOut: resolveSoldOut(row.soldOut, poolFlags.get(row.id) ?? false),
+      }),
+    );
   }
 
   async findBySlug(slug: string): Promise<GameDetailDto> {
@@ -122,7 +218,20 @@ export class GamesService {
     if (!game) {
       throw new NotFoundException(`No game found for slug "${slug}"`);
     }
-    return toDetailDto(game);
+
+    const [poolFlags, defaultActivationUrl] = await Promise.all([
+      this.gameAccounts.getActivePoolFlagsByGameIds([game.id]),
+      this.storeSettings.get(DEFAULT_ACTIVATION_VIDEO_URL_KEY),
+    ]);
+
+    return toDetailDto({
+      ...game,
+      soldOut: resolveSoldOut(
+        game.soldOut,
+        poolFlags.get(game.id) ?? false,
+      ),
+      media: withDefaultActivationMedia(game.media, defaultActivationUrl),
+    });
   }
 
   async create(dto: CreateGameDto): Promise<GameDto> {
@@ -150,10 +259,7 @@ export class GamesService {
 
   async update(id: string, dto: Partial<CreateGameDto>): Promise<GameDto> {
     try {
-      const game = await this.games.update(id, {
-        ...dto,
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
-      });
+      const game = await this.games.update(id, toGameWriteInput(dto));
       return toDto(game);
     } catch (error) {
       if (

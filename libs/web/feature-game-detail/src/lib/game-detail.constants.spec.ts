@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getActivationSteps, getProductDetails } from './game-detail.constants';
-import { formatReleaseDate } from './game-detail.utils';
+import { getActivationSteps, getImportantInformation, getProductDetails } from './game-detail.constants';
+import { formatReleaseDate, getPlatformAccessMode } from './game-detail.utils';
 import { requirementsToDisplayRows } from '@gamestore/shared/game-requirements';
 
 describe('game detail content', () => {
@@ -17,8 +17,23 @@ describe('game detail content', () => {
     expect(microsoft[2]?.description).toContain('Microsoft Store');
   });
 
+  it('shows offline Steam important information for Steam games', () => {
+    const items = getImportantInformation('steam');
+    expect(items[0]?.title).toBe('Offline Steam account');
+    expect(items[0]?.description).toContain('offline mode');
+    expect(items.some((item) => item.title === 'Incompatible with cloud gaming services')).toBe(
+      true,
+    );
+    expect(items.some((item) => item.title === 'Online Steam account')).toBe(false);
+  });
+
   it('formats release dates for display', () => {
     expect(formatReleaseDate('2023-08-01')).toBe('August 1, 2023');
+  });
+
+  it('marks Steam as offline and other platforms as online', () => {
+    expect(getPlatformAccessMode('steam')).toBe('offline');
+    expect(getPlatformAccessMode('microsoft')).toBe('online');
   });
 
   it('formats requirement objects into label value rows', () => {

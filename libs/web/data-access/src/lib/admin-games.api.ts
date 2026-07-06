@@ -30,6 +30,9 @@ export type AdminGameRecord = {
   coverCardImage: string | null;
   publishedAt: string | null;
   published: boolean;
+  soldOut: boolean;
+  soldOutManual: boolean;
+  featuredOrder: number | null;
   igdbId: number | null;
   igdbSyncedAt: string | null;
   igdbCoverUrl: string | null;
@@ -49,6 +52,7 @@ export type AdminGameInput = {
   description?: string;
   coverImage?: string;
   published?: boolean;
+  soldOut?: boolean;
   publishedAt?: string | null;
   genres?: string[];
   releaseDate?: string | null;
@@ -108,5 +112,35 @@ export function bulkDeleteAdminGames(ids: string[]) {
   return apiPost<SetupResponse | BulkActionResult>(
     '/admin/games/bulk-delete',
     { ids },
+  );
+}
+
+export type AdminFeaturedGameItem = {
+  id: string;
+  title: string;
+  slug: string;
+  platform: string;
+  priceBase: string;
+  coverImage: string | null;
+  coverCardImage: string | null;
+  featuredOrder: number | null;
+  releaseDate: string | null;
+};
+
+export type AdminFeaturedGamesResponse = {
+  featured: AdminFeaturedGameItem[];
+  available: AdminFeaturedGameItem[];
+};
+
+export function getAdminFeaturedGames() {
+  return apiGet<SetupResponse | AdminFeaturedGamesResponse>(
+    '/admin/games/featured',
+  );
+}
+
+export function updateAdminFeaturedGames(gameIds: string[]) {
+  return apiPut<SetupResponse | AdminFeaturedGamesResponse>(
+    '/admin/games/featured',
+    { gameIds },
   );
 }

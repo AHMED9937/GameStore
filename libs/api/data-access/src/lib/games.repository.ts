@@ -11,6 +11,18 @@ const gameMediaSelect = {
   sortOrder: true,
 } satisfies Prisma.GameMediaSelect;
 
+export const catalogGameSelect = {
+  id: true,
+  slug: true,
+  title: true,
+  platform: true,
+  priceBase: true,
+  coverImage: true,
+  coverCardImage: true,
+  soldOut: true,
+  genres: true,
+} satisfies Prisma.GameSelect;
+
 const adminGameSelect = {
   id: true,
   title: true,
@@ -24,6 +36,7 @@ const adminGameSelect = {
   metaDescription: true,
   ogImage: true,
   publishedAt: true,
+  soldOut: true,
   igdbId: true,
   releaseDate: true,
   genres: true,
@@ -31,6 +44,7 @@ const adminGameSelect = {
   igdbCoverUrl: true,
   requirementsMin: true,
   requirementsRecommended: true,
+  featuredOrder: true,
   createdAt: true,
   updatedAt: true,
   media: {
@@ -47,6 +61,73 @@ export class GamesRepository {
     return this.prisma.game.findMany({
       where: { publishedAt: { not: null } },
       orderBy: { title: 'asc' },
+      select: catalogGameSelect,
+    });
+  }
+
+  async findFeaturedPublished(limit = 5) {
+    const curated = await this.prisma.game.findMany({
+      where: {
+        publishedAt: { not: null },
+        featuredOrder: { not: null },
+      },
+      orderBy: { featuredOrder: 'asc' },
+      take: limit,
+      select: catalogGameSelect,
+    });
+
+    if (curated.length > 0) {
+      return curated;
+    }
+
+    return this.prisma.game.findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: [{ releaseDate: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      select: catalogGameSelect,
+    });
+  }
+
+  findPublishedEligibleForFeatured() {
+    return this.prisma.game.findMany({
+      where: { publishedAt: { not: null } },
+      orderBy: { title: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        platform: true,
+        priceBase: true,
+        coverImage: true,
+        coverCardImage: true,
+        featuredOrder: true,
+        releaseDate: true,
+      },
+    });
+  }
+
+  async setFeaturedOrder(items: Array<{ id: string; featuredOrder: number }>) {
+    await this.prisma.$transaction([
+      this.prisma.game.updateMany({
+        where: { featuredOrder: { not: null } },
+        data: { featuredOrder: null },
+      }),
+      ...items.map((item) =>
+        this.prisma.game.update({
+          where: { id: item.id },
+          data: { featuredOrder: item.featuredOrder },
+        }),
+      ),
+    ]);
+  }
+
+  clearFeaturedOrder(gameIds: string[]) {
+    if (gameIds.length === 0) {
+      return Promise.resolve({ count: 0 });
+    }
+    return this.prisma.game.updateMany({
+      where: { id: { in: gameIds } },
+      data: { featuredOrder: null },
     });
   }
 

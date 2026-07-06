@@ -16,14 +16,14 @@ describe('AdminGamesPage wired', () => {
     vi.mocked(getAdminGames).mockResolvedValue({
       status: 'setup',
       integration: 'admin-games',
-      message: 'Admin games — wired from API',
+      message: 'Admin games wired from API',
     });
 
     render(<AdminGamesPage />);
 
     await waitFor(() => {
       expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
-        'Admin games — wired from API',
+        'Admin games wired from API',
       );
     });
   });
@@ -35,9 +35,48 @@ describe('AdminGamesPage wired', () => {
     render(<AdminGamesPage />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('admin-error-banner').textContent).toBe(
+      expect(screen.getByTestId('admin-error-banner').textContent).toContain(
         'Admin access required',
       );
+    });
+    expect(screen.getByTestId('admin-error-retry')).toBeTruthy();
+  });
+
+  it('recovers from transient API failure', async () => {
+    const { ApiError } = await import('@gamestore/web/data-access');
+    vi.mocked(getAdminGames)
+      .mockRejectedValueOnce(
+        new ApiError(
+          503,
+          JSON.stringify({ error: 'API is starting or temporarily unreachable.' }),
+        ),
+      )
+      .mockResolvedValueOnce([
+        {
+          id: 'g1',
+          title: 'Demo Game',
+          slug: 'demo-game',
+          platform: 'PC',
+          priceBase: '29.99',
+          published: true,
+          igdbId: 100001,
+          featuredOrder: null,
+          accountSummary: { total: 1, active: 1, hasActivePool: true },
+          description: 'A long enough description for the wired recovery test.',
+          coverImage: '/cover.png',
+          genres: ['Adventure'],
+          publishedAt: '2025-01-01T00:00:00.000Z',
+          releaseDate: null,
+          requirementsMin: null,
+          requirementsRecommended: null,
+          media: [],
+        },
+      ]);
+
+    render(<AdminGamesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-row-checkbox-g1')).toBeTruthy();
     });
   });
 

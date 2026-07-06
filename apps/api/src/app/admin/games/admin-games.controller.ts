@@ -18,11 +18,13 @@ import {
   type AuthUser,
 } from '@gamestore/api/auth';
 import { BulkIdsDto } from '../dto/bulk-ids.dto';
+import { AdminIgdbImportService } from '../igdb/admin-igdb-import.service';
 import {
   AdminGamesService,
   type AdminCreateGameDto,
   type AdminUpdateGameDto,
 } from './admin-games.service';
+import { FeaturedGameIdsDto } from './featured-game-ids.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -32,6 +34,7 @@ export class AdminGamesController {
   constructor(
     private readonly adminGames: AdminGamesService,
     private readonly auditLogService: AuditLogService,
+    private readonly igdbImport: AdminIgdbImportService,
   ) {}
 
   @Get()
@@ -89,9 +92,68 @@ export class AdminGamesController {
     return result;
   }
 
+  @Get('featured')
+  getFeatured() {
+    return this.adminGames.getFeaturedGames();
+  }
+
+  @Put('featured')
+  async updateFeatured(
+    @Body() body: FeaturedGameIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.adminGames.updateFeaturedGames(body.gameIds);
+    const audit = auditContextFromRequest(request);
+    recordAudit(this.auditLogService, {
+      userId: user.id,
+      action: 'admin.game.featured_update',
+      resource: 'game',
+      resourceId: null,
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+      metadata: { gameIds: body.gameIds },
+    });
+    return result;
+  }
+
   @Get(':id/readiness')
   getReadiness(@Param('id') id: string) {
     return this.adminGames.getReadiness(id);
+  }
+
+  @Post(':id/sync-igdb')
+  @HttpCode(200)
+  async syncFromIgdb(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.igdbImport.syncGame(id);
+
+    if (
+      typeof result === 'object' &&
+      result !== null &&
+      'game' in result &&
+      typeof (result as { game?: { id?: unknown } }).game?.id === 'string'
+    ) {
+      const game = (result as { game: { id: string; igdbId: number; slug: string } }).game;
+      const audit = auditContextFromRequest(request);
+      recordAudit(this.auditLogService, {
+        userId: user.id,
+        action: 'admin.igdb.resync',
+        resource: 'game',
+        resourceId: game.id,
+        ip: audit.ip,
+        userAgent: audit.userAgent,
+        metadata: {
+          igdbId: game.igdbId,
+          slug: game.slug,
+        },
+      });
+    }
+
+    return result;
   }
 
   @Get(':id')
@@ -134,7 +196,11 @@ export class AdminGamesController {
         ? 'admin.game.publish'
         : body.published === false
           ? 'admin.game.unpublish'
-          : 'admin.game.update';
+          : body.soldOut === true
+            ? 'admin.game.sold_out'
+            : body.soldOut === false
+              ? 'admin.game.available'
+              : 'admin.game.update';
 
     recordAudit(this.auditLogService, {
       userId: user.id,

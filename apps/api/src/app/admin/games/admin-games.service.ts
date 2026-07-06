@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GamesRepository } from '@gamestore/api/data-access';
+import {
+  DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+  GamesRepository,
+  StoreSettingsRepository,
+  resolveSoldOut,
+} from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
 import { Prisma } from '@prisma/client';
 import {
@@ -38,6 +43,9 @@ export type AdminGameDto = {
   coverCardImage: string | null;
   publishedAt: string | null;
   published: boolean;
+  soldOut: boolean;
+  soldOutManual: boolean;
+  featuredOrder: number | null;
   igdbId: number | null;
   igdbSyncedAt: string | null;
   igdbCoverUrl: string | null;
@@ -51,6 +59,7 @@ export type AdminGameDto = {
 
 export type AdminCreateGameDto = CreateGameDto & {
   published?: boolean;
+  soldOut?: boolean;
   genres?: string[];
   releaseDate?: string | null;
   requirementsMin?: GameSystemRequirements | null;
@@ -58,6 +67,25 @@ export type AdminCreateGameDto = CreateGameDto & {
 };
 
 export type AdminUpdateGameDto = Partial<AdminCreateGameDto>;
+
+export type AdminFeaturedGameItemDto = {
+  id: string;
+  title: string;
+  slug: string;
+  platform: string;
+  priceBase: string;
+  coverImage: string | null;
+  coverCardImage: string | null;
+  featuredOrder: number | null;
+  releaseDate: string | null;
+};
+
+export type AdminFeaturedGamesDto = {
+  featured: AdminFeaturedGameItemDto[];
+  available: AdminFeaturedGameItemDto[];
+};
+
+const MAX_FEATURED_GAMES = 5;
 
 type AdminGameRecord = NonNullable<
   Awaited<ReturnType<GamesRepository['findByIdAdmin']>>
@@ -90,6 +118,7 @@ export class AdminGamesService {
     private readonly games: GamesRepository,
     private readonly prisma: PrismaService,
     private readonly entitlementCleanup: EntitlementCleanupService,
+    private readonly storeSettings: StoreSettingsRepository,
   ) {}
 
   async findAll(): Promise<AdminGameDto[]> {
@@ -157,6 +186,18 @@ export class AdminGamesService {
       await this.entitlementCleanup.revokeAllLicensesForGame(id);
     }
 
+    if (dto.soldOut === false) {
+      const accountSummary = await this.getAccountSummary(id);
+      const willBePublished =
+        dto.published === true ||
+        (dto.published !== false && existing.publishedAt !== null);
+      if (willBePublished && !accountSummary.hasActivePool) {
+        throw new BadRequestException(
+          'Cannot mark game as available without an active pool account',
+        );
+      }
+    }
+
     try {
       await this.games.update(id, this.buildUpdateInput(dto, existing));
       return this.findOne(id);
@@ -221,6 +262,59 @@ export class AdminGamesService {
     });
   }
 
+  async getFeaturedGames(): Promise<AdminFeaturedGamesDto> {
+    const games = await this.games.findPublishedEligibleForFeatured();
+    const featured = games
+      .filter((game) => game.featuredOrder !== null)
+      .sort((a, b) => (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0))
+      .map((game) => this.toFeaturedGameItemDto(game));
+    const featuredIds = new Set(featured.map((game) => game.id));
+    const available = games
+      .filter((game) => !featuredIds.has(game.id))
+      .map((game) => this.toFeaturedGameItemDto(game));
+
+    return { featured, available };
+  }
+
+  async updateFeaturedGames(gameIds: string[]): Promise<AdminFeaturedGamesDto> {
+    if (gameIds.length > MAX_FEATURED_GAMES) {
+      throw new BadRequestException(
+        `At most ${MAX_FEATURED_GAMES} games can be featured`,
+      );
+    }
+
+    const uniqueIds = [...new Set(gameIds)];
+    if (uniqueIds.length !== gameIds.length) {
+      throw new BadRequestException('Duplicate game ids are not allowed');
+    }
+
+    if (uniqueIds.length === 0) {
+      await this.games.setFeaturedOrder([]);
+      return this.getFeaturedGames();
+    }
+
+    const games = await this.prisma.game.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true, publishedAt: true },
+    });
+
+    if (games.length !== uniqueIds.length) {
+      throw new BadRequestException('One or more games were not found');
+    }
+
+    const unpublished = games.filter((game) => game.publishedAt === null);
+    if (unpublished.length > 0) {
+      throw new BadRequestException('Only published games can be featured');
+    }
+
+    const items = uniqueIds.map((id, index) => ({
+      id,
+      featuredOrder: index + 1,
+    }));
+    await this.games.setFeaturedOrder(items);
+    return this.getFeaturedGames();
+  }
+
   async getReadiness(id: string): Promise<AdminGameReadinessDto> {
     const game = await this.games.findByIdAdmin(id);
     if (!game) {
@@ -233,6 +327,9 @@ export class AdminGamesService {
     const activationCount = game.media.filter(
       (m) => m.type === 'activation',
     ).length;
+    const defaultActivationUrl = await this.storeSettings.get(
+      DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+    );
 
     const checks: AdminReadinessCheck[] = [
       {
@@ -304,7 +401,7 @@ export class AdminGamesService {
       {
         id: 'activation',
         label: 'Activation walkthrough media',
-        passed: activationCount >= 1,
+        passed: activationCount >= 1 || defaultActivationUrl !== null,
         required: false,
       },
     ];
@@ -340,6 +437,9 @@ export class AdminGamesService {
       coverCardImage: game.coverCardImage,
       publishedAt: game.publishedAt?.toISOString() ?? null,
       published: game.publishedAt !== null,
+      soldOutManual: game.soldOut,
+      soldOut: resolveSoldOut(game.soldOut, accountSummary.hasActivePool),
+      featuredOrder: game.featuredOrder,
       igdbId: game.igdbId,
       igdbSyncedAt: game.igdbSyncedAt?.toISOString() ?? null,
       igdbCoverUrl: game.igdbCoverUrl,
@@ -431,6 +531,7 @@ export class AdminGamesService {
       requirementsRecommended: serializeGameSystemRequirements(
         dto.requirementsRecommended,
       ),
+      soldOut: dto.soldOut ?? false,
     };
   }
 
@@ -476,8 +577,13 @@ export class AdminGamesService {
         : new Date();
     } else if (dto.published === false) {
       data.publishedAt = null;
+      data.featuredOrder = null;
     } else if (dto.publishedAt !== undefined) {
       data.publishedAt = dto.publishedAt ? new Date(dto.publishedAt) : null;
+    }
+
+    if (dto.soldOut !== undefined) {
+      data.soldOut = dto.soldOut;
     }
 
     if (dto.platform !== undefined && dto.platform !== existing.platform) {
@@ -485,5 +591,31 @@ export class AdminGamesService {
     }
 
     return data;
+  }
+
+  private toFeaturedGameItemDto(
+    game: {
+      id: string;
+      title: string;
+      slug: string;
+      platform: string;
+      priceBase: { toString(): string };
+      coverImage: string | null;
+      coverCardImage: string | null;
+      featuredOrder: number | null;
+      releaseDate: Date | null;
+    },
+  ): AdminFeaturedGameItemDto {
+    return {
+      id: game.id,
+      title: game.title,
+      slug: game.slug,
+      platform: game.platform,
+      priceBase: game.priceBase.toString(),
+      coverImage: game.coverImage,
+      coverCardImage: game.coverCardImage,
+      featuredOrder: game.featuredOrder,
+      releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
+    };
   }
 }

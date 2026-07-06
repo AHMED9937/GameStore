@@ -273,6 +273,23 @@ describe.skipIf(!hasDatabase)('Admin games API', () => {
       ]),
     );
 
+    await request(app.getHttpServer())
+      .put('/api/admin/games/featured')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ gameIds: [createdGameId] })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.featured).toEqual([
+          expect.objectContaining({ id: createdGameId, slug: createdSlug }),
+        ]);
+      });
+
+    const featuredPublic = await request(app.getHttpServer())
+      .get('/api/games/featured')
+      .expect(200);
+
+    expect(featuredPublic.body[0]).toMatchObject({ slug: createdSlug });
+
     const licenseResponse = await request(app.getHttpServer())
       .post('/api/admin/licenses/generate-key')
       .set(authAs(E2E_TOKENS.admin))
@@ -289,6 +306,7 @@ describe.skipIf(!hasDatabase)('Admin games API', () => {
       .expect((response) => {
         expect(response.body.published).toBe(false);
         expect(response.body.publishedAt).toBeNull();
+        expect(response.body.featuredOrder).toBeNull();
       });
 
     const licenseAfterUnpublish = await request(app.getHttpServer())
@@ -305,6 +323,163 @@ describe.skipIf(!hasDatabase)('Admin games API', () => {
     expect(publicAfterUnpublish.body).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ slug: createdSlug })]),
     );
+  });
+
+  it('sold out manual toggle blocks checkout while staying in public catalog', async () => {
+    const ts = Date.now();
+    const slug = `e2e-sold-out-${ts}`;
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/admin/games')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        title: 'E2E Sold Out Game',
+        slug,
+        platform: 'steam',
+        priceBase: 11.99,
+        genres: ['Adventure'],
+        description: LONG_DESCRIPTION,
+        coverImage: '/og/default.png',
+      })
+      .expect(201);
+
+    const gameId = createResponse.body.id as string;
+
+    const accountResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        username: `pool-sold-out-${ts}`,
+        password: 'e2e-test-password',
+        sharedSecret: 'e2e-shared-secret-value',
+        region: 'global',
+      })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${accountResponse.body.id}/assign`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ gameId })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ published: true })
+      .expect(200);
+
+    const publicBeforeSoldOut = await request(app.getHttpServer())
+      .get(`/api/games/${slug}`)
+      .expect(200);
+
+    expect(publicBeforeSoldOut.body).toMatchObject({
+      slug,
+      soldOut: false,
+    });
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ soldOut: true })
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.soldOutManual).toBe(true);
+        expect(response.body.soldOut).toBe(true);
+      });
+
+    const publicAfterSoldOut = await request(app.getHttpServer())
+      .get(`/api/games/${slug}`)
+      .expect(200);
+
+    expect(publicAfterSoldOut.body.soldOut).toBe(true);
+
+    await request(app.getHttpServer())
+      .post('/api/payments/checkout')
+      .set(authAs(E2E_TOKENS.userA))
+      .send({ slug })
+      .expect(400)
+      .expect((response) => {
+        expect(response.body.message).toMatch(/sold out/i);
+      });
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ soldOut: false })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .delete(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+  });
+
+  it('auto sold out when pool account is deactivated', async () => {
+    const ts = Date.now();
+    const slug = `e2e-auto-sold-out-${ts}`;
+
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/admin/games')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        title: 'E2E Auto Sold Out Game',
+        slug,
+        platform: 'steam',
+        priceBase: 8.99,
+        genres: ['Adventure'],
+        description: LONG_DESCRIPTION,
+        coverImage: '/og/default.png',
+      })
+      .expect(201);
+
+    const gameId = createResponse.body.id as string;
+
+    const accountResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        username: `pool-auto-sold-out-${ts}`,
+        password: 'e2e-test-password',
+        sharedSecret: 'e2e-shared-secret-value',
+        region: 'global',
+      })
+      .expect(201);
+
+    const accountId = accountResponse.body.id as string;
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${accountId}/assign`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ gameId })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ published: true })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${accountId}/deactivate`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    const publicDetail = await request(app.getHttpServer())
+      .get(`/api/games/${slug}`)
+      .expect(200);
+
+    expect(publicDetail.body.soldOut).toBe(true);
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ soldOut: false })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .delete(`/api/admin/games/${gameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
   });
 
   it('POST /api/admin/games/bulk-unpublish and bulk-delete remove draft games', async () => {

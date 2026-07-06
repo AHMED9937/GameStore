@@ -54,3 +54,29 @@ export function formatPlatformLabel(platform: string): string {
       return platform;
   }
 }
+
+export type PlatformAccessMode = 'offline' | 'online';
+
+export function getPlatformAccessMode(platform: string): PlatformAccessMode {
+  return platform.toLowerCase() === 'steam' ? 'offline' : 'online';
+}
+
+export function getPlatformAccessBadgeLabel(platform: string): string {
+  return getPlatformAccessMode(platform) === 'offline' ? 'Offline' : 'Online';
+}
+
+export function getPlatformAccessTitle(platform: string): string {
+  const store = formatPlatformLabel(platform);
+  return getPlatformAccessMode(platform) === 'offline'
+    ? `Offline ${store} account`
+    : `Online ${store} account`;
+}
+
+export function getPlatformAccessSummary(platform: string): string {
+  if (getPlatformAccessMode(platform) === 'offline') {
+    return 'Shared account access in offline mode single-player only, no online features.';
+  }
+
+  const store = formatPlatformLabel(platform);
+  return `Shared ${store} account with online play sign in with your personal profile for saves and multiplayer.`;
+}

@@ -29,7 +29,7 @@ describe('GameDetailSpecs', () => {
     expect(screen.getByText('Minimum')).toBeTruthy();
     expect(screen.getByText('Recommended')).toBeTruthy();
     expect(screen.getAllByText('Requires a 64-bit processor and operating system')).toHaveLength(2);
-    expect(screen.getByText('Windows 10/11 64-bit')).toBeTruthy();
+    expect(screen.getAllByText('Windows 10/11 64-bit')).toHaveLength(2);
     expect(screen.getByText('Intel Core i7-10700')).toBeTruthy();
   });
 

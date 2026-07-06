@@ -1,5 +1,10 @@
-import { formatPlatformLabel, formatReleaseDate } from '../game-detail.utils';
-import { IconCalendar, IconEpic, IconMicrosoft, IconSteam } from './game-detail-icons';
+import {
+  formatPlatformLabel,
+  formatReleaseDate,
+  getPlatformAccessBadgeLabel,
+  getPlatformAccessMode,
+} from '../game-detail.utils';
+import { IconCalendar, IconEpic, IconGamepad, IconMicrosoft, IconSteam } from './game-detail-icons';
 
 export type GameDetailHeroMetaProps = {
   platform: string;
@@ -8,16 +13,18 @@ export type GameDetailHeroMetaProps = {
 };
 
 function PlatformIcon({ platform }: { platform: string }) {
+  const className = 'meta-chip-icon meta-chip-icon--platform';
+
   switch (platform.toLowerCase()) {
     case 'steam':
-      return <IconSteam className="meta-chip-icon meta-chip-icon--platform" />;
+      return <IconSteam className={className} aria-hidden />;
     case 'epic':
-      return <IconEpic className="meta-chip-icon meta-chip-icon--platform" />;
+      return <IconEpic className={className} aria-hidden />;
     case 'microsoft':
     case 'xbox':
-      return <IconMicrosoft className="meta-chip-icon meta-chip-icon--platform" />;
+      return <IconMicrosoft className={className} aria-hidden />;
     default:
-      return null;
+      return <IconGamepad className={className} aria-hidden />;
   }
 }
 
@@ -26,14 +33,25 @@ export function GameDetailHeroMeta({
   releaseDate,
   genres = [],
 }: GameDetailHeroMetaProps) {
-  const platformLabel = formatPlatformLabel(platform);
   const formattedRelease = releaseDate ? formatReleaseDate(releaseDate) : null;
+  const accessMode = getPlatformAccessMode(platform);
+  const accessLabel = getPlatformAccessBadgeLabel(platform);
 
   return (
     <div className="meta-chip-row" data-testid="game-detail-hero-meta">
       <span className="meta-chip meta-chip--platform">
         <PlatformIcon platform={platform} />
-        <span className="meta-chip-value">{platformLabel}</span>
+        <span className="meta-chip-label">Platform</span>
+        <span className="meta-chip-value">{formatPlatformLabel(platform)}</span>
+        <span
+          className={
+            accessMode === 'offline'
+              ? 'meta-chip-access meta-chip-access--offline'
+              : 'meta-chip-access meta-chip-access--online'
+          }
+        >
+          {accessLabel}
+        </span>
       </span>
 
       {formattedRelease ? (

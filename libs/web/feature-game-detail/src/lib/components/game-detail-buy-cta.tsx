@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import type { GameDetail } from '@gamestore/web/data-access';
 import { formatGamePrice } from '@gamestore/web/data-access';
-import { formatPlatformLabel } from '../game-detail.utils';
+import {
+  formatPlatformLabel,
+  getPlatformAccessBadgeLabel,
+  getPlatformAccessMode,
+} from '../game-detail.utils';
+import { GameDetailPlatformIcon } from './game-detail-platform-icon';
+import styles from './game-detail.module.css';
 
 export type GameDetailBuyCtaProps = {
-  game: Pick<GameDetail, 'priceBase' | 'platform' | 'slug'>;
+  game: Pick<GameDetail, 'priceBase' | 'platform' | 'slug' | 'soldOut'>;
 };
 
 function IconCart() {
@@ -28,9 +34,18 @@ function IconCart() {
 
 export type GameDetailBuyButtonProps = {
   slug: string;
+  soldOut?: boolean;
 };
 
-export function GameDetailBuyButton({ slug }: GameDetailBuyButtonProps) {
+export function GameDetailBuyButton({ slug, soldOut = false }: GameDetailBuyButtonProps) {
+  if (soldOut) {
+    return (
+      <button type="button" className="btn-buy-now" disabled>
+        Sold out
+      </button>
+    );
+  }
+
   return (
     <Link
       href={`/checkout?game=${encodeURIComponent(slug)}`}
@@ -43,17 +58,37 @@ export function GameDetailBuyButton({ slug }: GameDetailBuyButtonProps) {
 }
 
 export function GameDetailBuyCta({ game }: GameDetailBuyCtaProps) {
+  const mode = getPlatformAccessMode(game.platform);
+
   return (
     <div className="buy-cta-mobile-only" data-testid="game-detail-buy-cta-mobile">
       <div className="buy-cta-bar">
         <div className="buy-cta-info">
           <p className="buy-cta-price">{formatGamePrice(game.priceBase)}</p>
-          <p className="buy-cta-sub">
-            {formatPlatformLabel(game.platform)} · Instant access after purchase
-          </p>
+          <div className={styles.buyCtaPlatformRow}>
+            <span className={styles.buyCtaPlatformIcon} aria-hidden>
+              <GameDetailPlatformIcon platform={game.platform} size="sm" />
+            </span>
+            <p className="buy-cta-sub">
+              <strong>{formatPlatformLabel(game.platform)}</strong>
+              <span
+                className={
+                  mode === 'offline'
+                    ? `${styles.platformAccessBadge} ${styles.platformAccessBadgeOffline} ${styles.platformAccessBadgeInline}`
+                    : `${styles.platformAccessBadge} ${styles.platformAccessBadgeOnline} ${styles.platformAccessBadgeInline}`
+                }
+              >
+                {getPlatformAccessBadgeLabel(game.platform)}
+              </span>
+              <span className={styles.buyCtaSubDivider}>·</span>
+              {game.soldOut
+                ? 'Currently unavailable for purchase'
+                : 'Instant access after purchase'}
+            </p>
+          </div>
         </div>
         <div className="buy-cta-action">
-          <GameDetailBuyButton slug={game.slug} />
+          <GameDetailBuyButton slug={game.slug} soldOut={game.soldOut} />
         </div>
       </div>
     </div>

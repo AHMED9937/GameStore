@@ -18,6 +18,7 @@ export type AdminGameFormValues = {
   requirementsMin: GameSystemRequirementsFormValues;
   requirementsRecommended: GameSystemRequirementsFormValues;
   published: boolean;
+  soldOutManual: boolean;
 };
 
 export type AdminGameTab =
@@ -35,6 +36,9 @@ export type AdminGameListItem = {
   platform: string;
   priceBase: string;
   published: boolean;
+  soldOut: boolean;
+  soldOutManual: boolean;
+  featuredOrder: number | null;
   igdbId: number | null;
   hasActivePool?: boolean;
   readinessLabel?: 'Draft' | 'Ready' | 'Published';
@@ -58,6 +62,7 @@ export const EMPTY_ADMIN_GAME_FORM_VALUES: AdminGameFormValues = {
   requirementsMin: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
   requirementsRecommended: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
   published: false,
+  soldOutManual: false,
 };
 
 export function genresTextToArray(text: string): string[] {
@@ -96,6 +101,7 @@ export function toAdminGameInput(values: AdminGameFormValues) {
       values.requirementsRecommended,
     ),
     published: values.published,
+    soldOut: values.soldOutManual,
   };
 }
 
@@ -113,5 +119,6 @@ export function parseAdminGameForm(data: Record<string, unknown>): AdminGameForm
     requirementsMin: parseRequirementsField(data.requirementsMin),
     requirementsRecommended: parseRequirementsField(data.requirementsRecommended),
     published: Boolean(data.published),
+    soldOutManual: Boolean(data.soldOutManual),
   };
 }
