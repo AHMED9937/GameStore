@@ -1,14 +1,30 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminDashboardController } from './admin-dashboard.controller';
+import type { AdminDashboardService } from './admin-dashboard.service';
 
 describe('AdminDashboardController', () => {
-  const controller = new AdminDashboardController();
+  const dashboard = {
+    getStats: vi.fn(),
+  } as unknown as AdminDashboardService;
 
-  it('getStats returns setup JSON', () => {
-    expect(controller.getStats()).toEqual({
-      status: 'setup',
-      integration: 'admin-dashboard',
-      message: 'Admin dashboard — not implemented yet',
-    });
+  let controller: AdminDashboardController;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    controller = new AdminDashboardController(dashboard);
+  });
+
+  it('getStats delegates to AdminDashboardService', async () => {
+    const stats = {
+      publishedGames: 2,
+      activeLicenses: 5,
+      poolAccounts: 1,
+      ordersToday: 0,
+      recentActivity: [],
+    };
+    vi.mocked(dashboard.getStats).mockResolvedValue(stats);
+
+    await expect(controller.getStats()).resolves.toEqual(stats);
+    expect(dashboard.getStats).toHaveBeenCalledTimes(1);
   });
 });

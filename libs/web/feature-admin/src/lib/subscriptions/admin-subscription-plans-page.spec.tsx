@@ -27,9 +27,12 @@ describe('AdminSubscriptionPlansPage', () => {
     expect(screen.getByTestId('admin-subscription-plans-table')).toBeTruthy();
     expect(screen.getByText('All Access')).toBeTruthy();
     expect(screen.getByText('all-access-monthly')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Edit' }).getAttribute('href')).toBe(
-      '/admin/subscriptions/plan-1',
-    );
+    expect(
+      screen
+        .getByRole('button', { name: 'Edit plan All Access' })
+        .closest('a')
+        ?.getAttribute('href'),
+    ).toBe('/admin/subscriptions/plan-1');
   });
 
   it('renders empty state', () => {

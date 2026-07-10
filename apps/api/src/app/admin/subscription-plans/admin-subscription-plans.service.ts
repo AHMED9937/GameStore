@@ -7,6 +7,8 @@ import {
 import {
   GamesRepository,
   SubscriptionPlansRepository,
+  normalizeEnumFilter,
+  normalizeSearchTerm,
 } from '@gamestore/api/data-access';
 import { Prisma } from '@prisma/client';
 import {
@@ -14,6 +16,7 @@ import {
   runBulkIds,
   type BulkActionResult,
 } from '../bulk-action.types';
+import type { AdminSubscriptionPlanListFiltersDto } from './admin-subscription-plan-list-filters.dto';
 
 export type AdminSubscriptionPlanGameDto = {
   id: string;
@@ -75,9 +78,26 @@ export class AdminSubscriptionPlansService {
     private readonly games: GamesRepository,
   ) {}
 
-  async findAll(): Promise<AdminSubscriptionPlanListItemDto[]> {
-    const rows = await this.plans.findAll();
+  async findAll(
+    filters?: AdminSubscriptionPlanListFiltersDto,
+  ): Promise<AdminSubscriptionPlanListItemDto[]> {
+    const rows = await this.plans.findAll(this.toPlanFilters(filters));
     return rows.map((row) => this.toListItemDto(row));
+  }
+
+  private toPlanFilters(filters?: AdminSubscriptionPlanListFiltersDto): {
+    q?: string;
+    status?: 'active' | 'inactive';
+  } {
+    const q = normalizeSearchTerm(filters?.q);
+    const status = normalizeEnumFilter(filters?.status, [
+      'active',
+      'inactive',
+    ] as const);
+    return {
+      ...(q ? { q } : {}),
+      ...(status ? { status } : {}),
+    };
   }
 
   async findOne(id: string): Promise<AdminSubscriptionPlanDetailDto> {

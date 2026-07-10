@@ -30,6 +30,8 @@ model Game {
   requirementsRecommended String? @db.Text
   featuredOrder   Int?
   soldOut         Boolean  @default(false)
+  discordPublishMessageId String?
+  discordAnnounceDescription String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

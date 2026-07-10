@@ -1,6 +1,6 @@
 # MVP Structure & Feature Prioritization Roadmap
 
-This document defines the **Minimum Viable Product (MVP)** — the smallest version of the platform that can launch, take payments, and deliver game access to customers — followed by a prioritized backlog of advanced features to add incrementally after launch.
+This document defines the **Minimum Viable Product (MVP)** the smallest version of the platform that can launch, take payments, and deliver game access to customers followed by a prioritized backlog of advanced features to add incrementally after launch.
 
 ---
 
@@ -12,13 +12,13 @@ Everything below is required for launch. Nothing else.
 
 ---
 
-### MVP — Phase 1: Foundation (Week 1–2)
+### MVP Phase 1: Foundation (Week 1–2)
 
 | # | Task | Details |
 |---|---|---|
 | 1.1 | **Initialize Next.js project** | App router, folder structure, environment variables |
 | 1.2 | **Setup Supabase** | Create project, configure API keys, enable Row Level Security |
-| 1.3 | **Create database tables** | `games`, `game_accounts`, `licenses` (base schema only — no regional pricing, no health checks yet) |
+| 1.3 | **Create database tables** | `games`, `game_accounts`, `licenses` (base schema only no regional pricing, no health checks yet) |
 | 1.4 | **IGDB Metadata Seeder** | Setup Twitch API access and write script to fetch game details (title, HD cover art, description) and automatically seed the database |
 | 1.5 | **Global CSS & dark theme** | Design system: colors, typography, card styles, glassmorphism, responsive grid |
 
@@ -26,14 +26,14 @@ Everything below is required for launch. Nothing else.
 
 ---
 
-### MVP — Phase 2: Store Catalog (Week 2–3)
+### MVP Phase 2: Store Catalog (Week 2–3)
 
 | # | Task | Details |
 |---|---|---|
 | 2.1 | **Homepage hero banner** | Promotional section with store branding and call-to-action |
 | 2.2 | **Game grid with cards** | Fetch games from Supabase, render as interactive cards (cover, title, platform badge, price) |
 | 2.3 | **Search bar** | Real-time client-side filtering of game titles |
-| 2.4 | **Platform filters** | Toggle buttons for Steam / Epic / Ubisoft / EA / Microsoft Store |
+| 2.4 | **Platform Filters** | Toggle buttons for Steam / Epic / Ubisoft / EA / Microsoft Store |
 | 2.5 | **Sort options** | Sort by price, name, or popularity |
 | 2.6 | **Game details page** (`/games/[slug]`) | Full game info, description, "Buy Now" button, platform/account type info |
 
@@ -41,7 +41,7 @@ Everything below is required for launch. Nothing else.
 
 ---
 
-### MVP — Phase 3: Checkout & Payment (Week 3–4)
+### MVP Phase 3: Checkout & Payment (Week 3–4)
 
 | # | Task | Details |
 |---|---|---|
@@ -54,21 +54,21 @@ Everything below is required for launch. Nothing else.
 
 ---
 
-### MVP — Phase 4: Activation Portal (Week 4–5)
+### MVP Phase 4: Activation Portal (Week 4–5)
 
 | # | Task | Details |
 |---|---|---|
 | 4.1 | **`/my-games` page** | License key input field + "Activate" button |
-| 4.2 | **Key validation API** | `POST /api/license/validate` — checks the key, returns the assigned account |
+| 4.2 | **Key validation API** | `POST /api/license/validate` checks the key, returns the assigned account |
 | 4.3 | **Credential display** | Show Username + Password with "Click to Copy" buttons |
-| 4.4 | **Steam Guard 2FA generator** | `POST /api/steam-guard/code` — uses `steam-totp` + the account's `shared_secret` to generate a live code |
+| 4.4 | **Steam Guard 2FA generator** | `POST /api/steam-guard/code` uses `steam-totp` + the account's `shared_secret` to generate a live code |
 | 4.5 | **Step-by-step activation wizard** | Interactive numbered steps with copy buttons and an embedded video/GIF showing how to go offline in Steam |
 
 **Deliverable**: Users can activate their key, see credentials, get 2FA codes, and follow a visual guide to play offline.
 
 ---
 
-### MVP — Phase 5: Essential Pages (Week 5–6)
+### MVP Phase 5: Essential Pages (Week 5–6)
 
 | # | Task | Details |
 |---|---|---|
@@ -93,7 +93,7 @@ Priority = (Revenue Impact + User Retention + Security) / Development Effort
 
 ---
 
-### 🔴 Priority 1 — Critical (Add Immediately After Launch)
+### 🔴 Priority 1 Critical (Add Immediately After Launch)
 
 These features directly protect your revenue and prevent account loss.
 
@@ -109,7 +109,7 @@ These features directly protect your revenue and prevent account loss.
 
 ---
 
-### 🟠 Priority 2 — High (Grow Revenue & Reduce Support)
+### 🟠 Priority 2 High (Grow Revenue & Reduce Support)
 
 These features increase sales and reduce the number of support tickets.
 
@@ -123,7 +123,7 @@ These features increase sales and reduce the number of support tickets.
 
 ---
 
-### 🟡 Priority 3 — Medium (Competitive Advantage)
+### 🟡 Priority 3 Medium (Competitive Advantage)
 
 These features differentiate you from competitors and build community loyalty.
 
@@ -138,7 +138,7 @@ These features differentiate you from competitors and build community loyalty.
 
 ---
 
-### 🟢 Priority 4 — Low (Scale & Monetization)
+### 🟢 Priority 4 Low (Scale & Monetization)
 
 These features matter once you have a stable user base and want to maximize lifetime value.
 
@@ -186,7 +186,7 @@ gantt
 
 | Layer | What's Included | When |
 |---|---|---|
-| **MVP** | Store catalog with IGDB seeding, search, filters, Stripe checkout, license keys, activation portal with 2FA, FAQ, Contact, deploy | Weeks 1–6 |
+| **MVP** | Store catalog with IGDB seeding, search, Filters, Stripe checkout, license keys, activation portal with 2FA, FAQ, Contact, deploy | Weeks 1–6 |
 | **🔴 P1** | Login cooldown queue, health monitor, Discord alerts, password rotation, DB encryption | Weeks 6–8 |
 | **🟠 P2** | Auto-refund/swap, multi-language, dynamic pricing | Weeks 8–12 |
 | **🟡 P3** | Discord bot, Steam Deck script, geo-clustering, live chat | Weeks 12–16 |

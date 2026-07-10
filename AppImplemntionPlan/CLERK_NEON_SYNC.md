@@ -4,8 +4,8 @@
 
 Aligned with:
 
-- [Clerk — Integrate Neon Postgres](https://clerk.com/docs/guides/development/integrations/databases/neon) (`auth().userId` → Neon)
-- [Clerk — Sync data with webhooks](https://clerk.com/docs/guides/development/webhooks/syncing) (`user.created` / `updated` / `deleted`)
+- [Clerk Integrate Neon Postgres](https://clerk.com/docs/guides/development/integrations/databases/neon) (`auth().userId` → Neon)
+- [Clerk Sync data with webhooks](https://clerk.com/docs/guides/development/webhooks/syncing) (`user.created` / `updated` / `deleted`)
 
 Parent: [SECURITY_PLAN.md](./SECURITY_PLAN.md)
 
@@ -56,7 +56,7 @@ We use **both** patterns: Clerk's `userId` for identity, plus a mirrored `users`
 ## Required `.env` (Clerk + Neon)
 
 ```env
-# Neon — pooled URL for runtime (from Neon console)
+# Neon pooled URL for runtime (from Neon console)
 DATABASE_URL=postgresql://USER:PASSWORD@HOST/DB?sslmode=require
 DIRECT_URL=postgresql://USER:PASSWORD@HOST/DB?sslmode=require
 
@@ -106,7 +106,7 @@ CLERK_WEBHOOK_SECRET=whsec_...
 
 ## Code pattern (Clerk Neon + our mirror)
 
-Server-only helper — use in Server Actions / API routes:
+Server-only helper use in Server Actions / API routes:
 
 ```typescript
 import { ensureDbUser, getClerkUserId } from '@/lib/clerk-neon';
@@ -156,8 +156,8 @@ npx tsx scripts/prune-stale-neon-users.mjs
 | `libs/api/auth/src/sync.ts` | Framework-agnostic upsert/delete (import from Next) |
 | `libs/api/prisma/src/lib/db.ts` | Prisma client for Next.js → Neon |
 | `apps/web/src/app/api/webhooks/route.ts` | Clerk webhooks |
-| `apps/web/src/app/api/users/sync/route.ts` | POST — sync on login |
-| `apps/web/src/app/api/users/me/route.ts` | GET — current Neon user |
+| `apps/web/src/app/api/users/sync/route.ts` | POST sync on login |
+| `apps/web/src/app/api/users/me/route.ts` | GET current Neon user |
 | `auth-redirect-handler.tsx` | Calls POST `/api/users/sync` after login |
 
 ---

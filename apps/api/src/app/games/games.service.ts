@@ -44,6 +44,9 @@ export type GameMediaDto = {
 export type GameDetailDto = GameDto & {
   genres: string[];
   releaseDate: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
   requirementsMin: GameSystemRequirements | null;
   requirementsRecommended: GameSystemRequirements | null;
   media: GameMediaDto[];
@@ -56,6 +59,9 @@ export type CreateGameDto = {
   priceBase: number | string;
   description?: string;
   coverImage?: string;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: string | null;
   publishedAt?: string | null;
   genres?: string[];
   releaseDate?: string | null;
@@ -78,6 +84,9 @@ type GameForDto = {
 type GameForDetailDto = GameForDto & {
   genres: string[];
   releaseDate: Date | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: string | null;
   requirementsMin: string | null;
   requirementsRecommended: string | null;
   media: Array<{
@@ -103,11 +112,24 @@ function toDto(game: GameForDto): GameDto {
   };
 }
 
+function normalizeOptionalString(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : null;
+}
+
 function toDetailDto(game: GameForDetailDto): GameDetailDto {
   return {
     ...toDto(game),
     genres: game.genres,
     releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
+    metaTitle: game.metaTitle ?? null,
+    metaDescription: game.metaDescription ?? null,
+    ogImage: game.ogImage ?? null,
     requirementsMin: parseStoredGameSystemRequirements(game.requirementsMin),
     requirementsRecommended: parseStoredGameSystemRequirements(
       game.requirementsRecommended,
@@ -155,11 +177,23 @@ function toGameWriteInput(
     requirementsRecommended,
     publishedAt,
     releaseDate,
+    metaTitle,
+    metaDescription,
+    ogImage,
     ...rest
   } = dto;
 
   return {
     ...rest,
+    ...(metaTitle !== undefined
+      ? { metaTitle: normalizeOptionalString(metaTitle) }
+      : {}),
+    ...(metaDescription !== undefined
+      ? { metaDescription: normalizeOptionalString(metaDescription) }
+      : {}),
+    ...(ogImage !== undefined
+      ? { ogImage: normalizeOptionalString(ogImage) }
+      : {}),
     ...(publishedAt !== undefined
       ? { publishedAt: publishedAt ? new Date(publishedAt) : null }
       : {}),

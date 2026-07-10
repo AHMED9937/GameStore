@@ -6,7 +6,7 @@ type AdminSignInPageProps = {
   searchParams: Promise<{ redirect_url?: string }>;
 };
 
-/** Admin login only — no self-service sign-up. */
+/** Admin login only no self-service sign-up. */
 export default async function AdminSignInPage({
   searchParams,
 }: AdminSignInPageProps) {

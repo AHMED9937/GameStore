@@ -1,4 +1,4 @@
-# GameStore — Nx Implementation Plan
+# GameStore Nx Implementation Plan
 
 This document is the **execution blueprint** for building GameStore as an **Nx monorepo**. It follows a **scaffold-first** approach: create structure, wiring, and tests before full business logic.
 
@@ -14,9 +14,9 @@ This document is the **execution blueprint** for building GameStore as an **Nx m
 |---|---|---|
 | **Database / CRUD** | Real Prisma + Neon + full CRUD | Business rules (queues, PPP, …) |
 | **Frontend pages** | Real routes, component trees, theme, real API data for games/licenses | Full UX polish |
-| **Stripe** | **Setup only** — deps, env, module, routes return setup text | Real Checkout Sessions, webhooks, license creation |
-| **Steam** | **Setup only** — deps, env, module, routes return setup text | Real TOTP, encryption, account pool logic |
-| **SEO** | **Setup only** — lib shell, env vars, file placeholders, minimal root title | Full `generateMetadata`, OG, JSON-LD, dynamic sitemap |
+| **Stripe** | **Setup only** deps, env, module, routes return setup text | Real Checkout Sessions, webhooks, license creation |
+| **Steam** | **Setup only** deps, env, module, routes return setup text | Real TOTP, encryption, account pool logic |
+| **SEO** | **Setup only** lib shell, env vars, file placeholders, minimal root title | Full `generateMetadata`, OG, JSON-LD, dynamic sitemap |
 
 **Setup-only response pattern** (used by Stripe, Steam, and SEO shell endpoints until implemented):
 
@@ -24,11 +24,11 @@ This document is the **execution blueprint** for building GameStore as an **Nx m
 {
   "status": "setup",
   "integration": "stripe",
-  "message": "Stripe checkout — not implemented yet"
+  "message": "Stripe checkout not implemented yet"
 }
 ```
 
-Frontend components for these integrations **display the setup message as visible text** — no SDK calls, no redirects, no fake payment codes.
+Frontend components for these integrations **display the setup message as visible text** no SDK calls, no redirects, no fake payment codes.
 
 ---
 
@@ -37,9 +37,9 @@ Frontend components for these integrations **display the setup message as visibl
 | Rule | Application code | Test code only |
 |---|---|---|
 | **Database / CRUD** | Real Prisma → Neon; real entities or real HTTP errors | May mock `PrismaClient` in unit tests |
-| **Stripe** | **Setup only** — config + routes return setup text (no Stripe SDK calls yet) | May mock Stripe when implementation is added |
-| **Steam** | **Setup only** — config + routes return setup text (no `steam-totp` calls yet) | May mock TOTP when implementation is added |
-| **SEO** | **Setup only** — file structure + env + minimal static root title (no full metadata yet) | May mock metadata builders in unit tests |
+| **Stripe** | **Setup only** config + routes return setup text (no Stripe SDK calls yet) | May mock Stripe when implementation is added |
+| **Steam** | **Setup only** config + routes return setup text (no `steam-totp` calls yet) | May mock TOTP when implementation is added |
+| **SEO** | **Setup only** file structure + env + minimal static root title (no full metadata yet) | May mock metadata builders in unit tests |
 | **HTTP / API (CRUD)** | Real controllers + real Prisma for games/licenses/accounts | May mock in unit tests |
 | **UI scaffold text** | Static labels in empty component shells | N/A |
 
@@ -82,7 +82,7 @@ GameStore/
 ├── libs/
 │   ├── shared/
 │   │   ├── theme/                    # Design tokens, CSS vars, Tailwind preset
-│   │   ├── seo/                      # SEO lib shell (setup only — implement later)
+│   │   ├── seo/                      # SEO lib shell (setup only implement later)
 │   │   ├── ui/                       # Shared UI primitives (Button, Card, …)
 │   │   └── types/                    # Shared TS types / DTO shapes
 │   ├── web/
@@ -97,10 +97,10 @@ GameStore/
 │   ├── api/
 │   │   ├── prisma/                   # Prisma client + schema
 │   │   ├── data-access/              # Real repositories (Prisma CRUD)
-│   │   ├── stripe/                   # Stripe module shell (setup only — implement later)
-│   │   └── steam/                    # Steam module shell (setup only — implement later)
+│   │   ├── stripe/                   # Stripe module shell (setup only implement later)
+│   │   └── steam/                    # Steam module shell (setup only implement later)
 │   └── testing/
-│       └── test-utils/               # Mock factories — **test imports only**
+│       └── test-utils/               # Mock factories **test imports only**
 ├── tools/
 │   └── gamestore-plugin/             # Local Nx plugin (generators + executors)
 ├── prisma/
@@ -113,7 +113,7 @@ GameStore/
 
 ---
 
-## Phase 0 — Nx Workspace & Custom Generators (DO THIS FIRST)
+## Phase 0 Nx Workspace & Custom Generators (DO THIS FIRST)
 
 **Goal:** Bootstrap the monorepo and a local plugin so every later phase is repeatable and consistent.
 
@@ -168,9 +168,9 @@ Each generator wraps official Nx generators and applies GameStore conventions (p
 
 - **Tags:** `type:feature|ui|data-access|integration`, `scope:web|api|shared`, `platform:steam|payments|database`
 - **Import paths:** `@gamestore/web/feature-catalog`, `@gamestore/shared/theme`, `@gamestore/shared/seo`, `@gamestore/api/prisma`
-- **Setup-only integrations:** Stripe, Steam, SEO generators create files + return setup text — no SDK calls
-- **UI shell pattern:** Components render static structural labels — CRUD data from real API only
-- **Service pattern (CRUD):** Inject real `PrismaService` — never fake game/license data
+- **Setup-only integrations:** Stripe, Steam, SEO generators create files + return setup text no SDK calls
+- **UI shell pattern:** Components render static structural labels CRUD data from real API only
+- **Service pattern (CRUD):** Inject real `PrismaService` never fake game/license data
 - **Test pattern:** Co-generate `*.spec.ts` with mocked dependencies via `test-utils` factories
 
 #### Example: `web-feature` generator output
@@ -183,7 +183,7 @@ libs/web/feature-catalog/
 │   │   ├── catalog-page.tsx              # static shell + real API hook (empty state OK)
 │   │   └── components/
 │   │       ├── catalog-hero.tsx
-│   │       ├── catalog-filters.tsx
+│   │       ├── catalog-Filters.tsx
 │   │       ├── catalog-grid.tsx          # renders real games[] or empty state
 │   │       └── catalog-game-card.tsx
 │   └── catalog-page.spec.tsx             # mocks API client in test only
@@ -196,8 +196,8 @@ Configure in `nx.json` / project configs:
 | Target | Projects | Notes |
 |---|---|---|
 | `lint` | all | ESLint |
-| `test` | libs + apps | Vitest — mocks allowed here |
-| `e2e` | `web-e2e`, `api-e2e` | Playwright — real services |
+| `test` | libs + apps | Vitest mocks allowed here |
+| `e2e` | `web-e2e`, `api-e2e` | Playwright real services |
 | `build` | `web`, `api` | Production build |
 | `serve` | `web`, `api` | Dev servers |
 | `prisma-generate` | `api-prisma` | `prisma generate` |
@@ -214,13 +214,13 @@ Configure in `nx.json` / project configs:
 
 ---
 
-## Phase 1 — Theme Setup + Display UI Preview
+## Phase 1 Theme Setup + Display UI Preview
 
 **Goal:** Establish the design system foundation and a **Theme Preview** page to validate tokens once design specs arrive.
 
 **Depends on:** Phase 0 (`theme-lib`, `ui-lib` generators)
 
-**No store pages yet** — only tokens + showcase.
+**No store pages yet** only tokens + showcase.
 
 ### 1.1 Theme library (`libs/shared/theme`)
 
@@ -234,7 +234,7 @@ Include:
 
 | Asset | Purpose |
 |---|---|
-| `tokens/colors.ts` | Semantic palette slots (primary, surface, accent, danger, …) — values TBD |
+| `tokens/colors.ts` | Semantic palette slots (primary, surface, accent, danger, …) values TBD |
 | `tokens/typography.ts` | Font families, sizes, weights |
 | `tokens/spacing.ts` | Spacing scale |
 | `tokens/radius.ts` | Border radius scale |
@@ -264,7 +264,7 @@ Sections on the page (static layout, no external data):
 5. Form controls
 6. Spacing/radius demonstration grid
 
-> When you share the design later, we only update `libs/shared/theme` tokens — not page structure.
+> When you share the design later, we only update `libs/shared/theme` tokens not page structure.
 
 ### 1.4 Phase 1 tests
 
@@ -288,7 +288,7 @@ pnpm nx e2e web-e2e --grep=theme-preview
 
 ---
 
-## Phase 2 — Frontend Scaffold (Pages, Component Trees, E2E)
+## Phase 2 Frontend Scaffold (Pages, Component Trees, E2E)
 
 **Goal:** Create all customer-facing routes and **component trees per page** with static UI labels, theme applied, and **real API client** wired (returns empty states until backend has data).
 
@@ -302,16 +302,16 @@ pnpm nx g @gamestore/workspace:init-workspace   # if not already done
 
 App shell files:
 
-- `app/layout.tsx` — wraps with `ThemeProvider`, header, footer; minimal static `metadata: { title: 'GameStore' }` only
-- `app/page.tsx` — re-exports Home feature
-- `app/robots.ts` — **setup shell** (returns minimal rules; full rules implemented later)
-- `app/sitemap.ts` — **setup shell** (returns empty array or static `['/']` with TODO comment)
+- `app/layout.tsx` wraps with `ThemeProvider`, header, footer; minimal static `metadata: { title: 'GameStore' }` only
+- `app/page.tsx` re-exports Home feature
+- `app/robots.ts` **setup shell** (returns minimal rules; full rules implemented later)
+- `app/sitemap.ts` **setup shell** (returns empty array or static `['/']` with TODO comment)
 - `components/layout/site-header.tsx`
 - `components/layout/site-footer.tsx`
 
 ### 2.2 API client library (`libs/web/data-access`)
 
-Real HTTP client — no mocked responses in app code:
+Real HTTP client no mocked responses in app code:
 
 ```typescript
 // libs/web/data-access/src/lib/api-client.ts
@@ -343,7 +343,7 @@ Each page must:
 
 - Use shared UI + theme tokens
 - Call real API endpoints via `libs/web/data-access` (empty array / 404 is valid)
-- Show `<EmptyState>` when API returns no data — **not** hardcoded fake game lists
+- Show `<EmptyState>` when API returns no data **not** hardcoded fake game lists
 - Export a single public component from the feature lib
 
 Static UI labels (component section headers) are fine; fake data is not.
@@ -352,7 +352,7 @@ Static UI labels (component section headers) are fine; fake data is not.
 
 Header nav links to all routes above. Static links only (no active-state logic yet).
 
-### 2.5 SEO setup (`libs/shared/seo`) — **config & files only**
+### 2.5 SEO setup (`libs/shared/seo`) **config & files only**
 
 Generate:
 
@@ -360,7 +360,7 @@ Generate:
 pnpm nx g @gamestore/workspace:seo-lib
 ```
 
-**Goal:** Create SEO **file structure, env vars, and empty helpers** — **do not implement** full metadata, Open Graph, JSON-LD, or dynamic sitemap in this plan.
+**Goal:** Create SEO **file structure, env vars, and empty helpers** **do not implement** full metadata, Open Graph, JSON-LD, or dynamic sitemap in this plan.
 
 #### 2.5.1 SEO library structure (shell files)
 
@@ -392,7 +392,7 @@ Values are read by `site-config.ts` but **not used for full metadata yet**.
 
 | Item | Now (setup) | Skip until post-plan |
 |---|---|---|
-| `libs/shared/seo` lib | ✅ file shell | — |
+| `libs/shared/seo` lib | ✅ file shell | |
 | Root layout title | ✅ static `"GameStore"` | title template, description |
 | Per-page `generateMetadata` | ❌ | ✅ all routes |
 | `openGraph` / `twitter` tags | ❌ | ✅ |
@@ -403,9 +403,9 @@ Values are read by `site-config.ts` but **not used for full metadata yet**.
 
 #### 2.5.4 Dev preview route (optional)
 
-`apps/web/app/dev/seo-preview/page.tsx` — displays visible setup text:
+`apps/web/app/dev/seo-preview/page.tsx` displays visible setup text:
 
-> "SEO — setup complete. Full metadata not implemented yet."
+> "SEO setup complete. Full metadata not implemented yet."
 
 Lists env vars from `site-config` (site name, URL) as proof of wiring.
 
@@ -420,7 +420,7 @@ Lists env vars from `site-config` (site name, URL) as proof of wiring.
 
 ### 2.6 Frontend unit tests (mocks allowed here)
 
-One test per feature lib — **mock the API client in spec files only**:
+One test per feature lib **mock the API client in spec files only**:
 
 ```tsx
 // catalog-page.spec.tsx
@@ -431,7 +431,7 @@ vi.mock('@gamestore/web/data-access', () => ({
 expect(screen.getByText(/No games yet/i)).toBeInTheDocument();
 ```
 
-### 2.7 E2E test suite (Playwright — real API)
+### 2.7 E2E test suite (Playwright real API)
 
 E2E runs against real `web` + `api` + Neon dev branch. No MSW in e2e.
 
@@ -456,17 +456,17 @@ pnpm nx e2e web-e2e
 - [ ] `robots.ts` / `sitemap.ts` shell files exist (minimal content)
 - [ ] `/dev/seo-preview` shows setup message (optional route)
 - [ ] E2E green for navigation + page smoke tests
-- [ ] Stripe / Steam / SEO **not implemented** — only file shells where applicable
+- [ ] Stripe / Steam / SEO **not implemented** only file shells where applicable
 
 ---
 
-## Phase 3 — Prisma + Neon Database
+## Phase 3 Prisma + Neon Database
 
 **Goal:** Install Prisma, configure Neon PostgreSQL, define schema, run migrations, verify connectivity with a **real health query**.
 
 **Depends on:** Phase 0 (`init-workspace`, `integration-lib`)
 
-### 3.1 Neon setup (manual — outside repo)
+### 3.1 Neon setup (manual outside repo)
 
 1. Create Neon project + database
 2. Copy pooled connection string (`?sslmode=require`)
@@ -505,7 +505,7 @@ libs/api/prisma/
 ├── src/
 │   ├── index.ts              # exports PrismaClient singleton
 │   └── lib/
-│       └── prisma.service.ts # Nest injectable — real PrismaClient
+│       └── prisma.service.ts # Nest injectable real PrismaClient
 ├── prisma/
 │   ├── schema.prisma
 │   └── seed.ts               # real seed data for dev/e2e
@@ -521,7 +521,7 @@ libs/api/prisma/
 | `GameAccount` | Steam account pool entry |
 | `License` | Purchased / assigned license key |
 
-**SEO fields on `Game`** (schema only — used when SEO is **implemented after this plan**):
+**SEO fields on `Game`** (schema only used when SEO is **implemented after this plan**):
 
 | Field | Type | Purpose |
 |---|---|---|
@@ -544,7 +544,7 @@ Real health check endpoint:
 GET /health/db → { status: "ok", latencyMs: 12 }
 ```
 
-Implementation: `await prisma.$queryRaw\`SELECT 1\`` — real query against Neon.
+Implementation: `await prisma.$queryRaw\`SELECT 1\`` real query against Neon.
 
 ### 3.6 Tests
 
@@ -564,9 +564,9 @@ Implementation: `await prisma.$queryRaw\`SELECT 1\`` — real query against Neon
 
 ---
 
-## Phase 4 — Stripe Payments (**Setup Only**)
+## Phase 4 Stripe Payments (**Setup Only**)
 
-**Goal:** Install Stripe dependency, add env vars, create module + routes + UI wiring. Endpoints **return setup text only** — no Stripe SDK calls, no Checkout Sessions, no webhooks.
+**Goal:** Install Stripe dependency, add env vars, create module + routes + UI wiring. Endpoints **return setup text only** no Stripe SDK calls, no Checkout Sessions, no webhooks.
 
 **Depends on:** Phase 3, Phase 2 (checkout pages exist)
 
@@ -582,8 +582,8 @@ libs/api/stripe/
 │   ├── index.ts
 │   └── lib/
 │       ├── stripe.config.ts          # reads env vars; validates format only (no API call)
-│       ├── stripe.service.ts         # returns setup text — TODO(implement-stripe)
-│       └── stripe-webhook.controller.ts  # returns setup text — TODO(implement-stripe)
+│       ├── stripe.service.ts         # returns setup text TODO(implement-stripe)
+│       └── stripe-webhook.controller.ts  # returns setup text TODO(implement-stripe)
 ```
 
 Add `stripe` to `package.json` but **do not instantiate** `new Stripe()` in service methods yet.
@@ -602,9 +602,9 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
 
 | Method | Route | Response |
 |---|---|---|
-| POST | `/api/payments/checkout` | `{ status: "setup", integration: "stripe", message: "Stripe checkout — not implemented yet" }` |
-| POST | `/api/payments/webhook` | `{ status: "setup", integration: "stripe", message: "Stripe webhook — not implemented yet" }` |
-| GET | `/api/payments/health` | `{ status: "setup", integration: "stripe", message: "Stripe — configured, not implemented yet" }` |
+| POST | `/api/payments/checkout` | `{ status: "setup", integration: "stripe", message: "Stripe checkout not implemented yet" }` |
+| POST | `/api/payments/webhook` | `{ status: "setup", integration: "stripe", message: "Stripe webhook not implemented yet" }` |
+| GET | `/api/payments/health` | `{ status: "setup", integration: "stripe", message: "Stripe configured, not implemented yet" }` |
 
 ### 4.4 Frontend wiring (display setup text)
 
@@ -630,9 +630,9 @@ In `feature-checkout`:
 
 ---
 
-## Phase 5 — Steam Integration (**Setup Only**)
+## Phase 5 Steam Integration (**Setup Only**)
 
-**Goal:** Install `steam-totp` dependency, add env vars, create module + routes + UI wiring. Endpoints **return setup text only** — no TOTP generation, no encryption, no account logic.
+**Goal:** Install `steam-totp` dependency, add env vars, create module + routes + UI wiring. Endpoints **return setup text only** no TOTP generation, no encryption, no account logic.
 
 **Depends on:** Phase 3 (schema has `GameAccount` fields for future use)
 
@@ -647,8 +647,8 @@ libs/api/steam/
 ├── src/
 │   └── lib/
 │       ├── steam.config.ts             # reads env vars only
-│       ├── steam-guard.service.ts      # returns setup text — TODO(implement-steam)
-│       └── steam-account.service.ts    # returns setup text — TODO(implement-steam)
+│       ├── steam-guard.service.ts      # returns setup text TODO(implement-steam)
+│       └── steam-account.service.ts    # returns setup text TODO(implement-steam)
 ```
 
 Add `steam-totp` to `package.json` but **do not call** `generateAuthCode()` yet.
@@ -666,8 +666,8 @@ STEAM_GUARD_COOLDOWN_MINUTES=15
 
 | Method | Route | Response |
 |---|---|---|
-| POST | `/api/steam/guard-code` | `{ status: "setup", integration: "steam", message: "Steam Guard — not implemented yet" }` |
-| GET | `/api/steam/health` | `{ status: "setup", integration: "steam", message: "Steam — configured, not implemented yet" }` |
+| POST | `/api/steam/guard-code` | `{ status: "setup", integration: "steam", message: "Steam Guard not implemented yet" }` |
+| GET | `/api/steam/health` | `{ status: "setup", integration: "steam", message: "Steam configured, not implemented yet" }` |
 
 ### 5.4 Frontend wiring (display setup text)
 
@@ -693,7 +693,7 @@ In `feature-my-games`:
 
 ---
 
-## Phase 6 — Backend CRUD + Frontend Connection + E2E
+## Phase 6 Backend CRUD + Frontend Connection + E2E
 
 **Goal:** NestJS API with **real Prisma CRUD** for games/licenses/accounts, frontend consuming real DB data, full-stack e2e against real Neon. Stripe, Steam, and SEO **remain setup-only** (text responses).
 
@@ -715,14 +715,14 @@ Generate each with `api-resource`:
 | Games | `/api/games` | list, get by id/slug, create, update, delete |
 | Licenses | `/api/licenses` | list, get, create, validate, revoke |
 | Game Accounts | `/api/game-accounts` | list, get, create, deactivate |
-| Orders | `/api/orders` | list, get — **setup text only** (Stripe not implemented) |
+| Orders | `/api/orders` | list, get **setup text only** (Stripe not implemented) |
 
 Each **CRUD** handler (games, licenses, game-accounts):
 
 - Calls real repository → real Prisma → real Neon
 - Returns real entities or real HTTP errors (`404`, `400`, `409`)
 
-**Stripe / Steam routes** (from Phases 4–5) keep returning setup text — no license creation on webhook yet.
+**Stripe / Steam routes** (from Phases 4–5) keep returning setup text no license creation on webhook yet.
 
 ### 6.3 Data-access layer (real repositories)
 
@@ -750,9 +750,9 @@ Unit tests for repositories **mock PrismaClient** in `*.spec.ts` only.
 | `feature-my-games` | `POST /api/steam/guard-code` | Displays Steam **setup text** from API |
 | `feature-checkout` | `POST /api/payments/checkout` | Displays Stripe **setup text** from API |
 
-BFF proxy in Next forwards to NestJS — one consistent pattern from Phase 2.
+BFF proxy in Next forwards to NestJS one consistent pattern from Phase 2.
 
-### 6.5 SEO — **not implemented in Phase 6**
+### 6.5 SEO **not implemented in Phase 6**
 
 SEO stays at Phase 2 setup level. Game pages use default layout title only.
 
@@ -908,7 +908,7 @@ Use Neon **branch databases** for CI (`DATABASE_URL` secret per environment).
 
 ## What Comes After This Plan (Out of Scope Here)
 
-Once all phases pass exit criteria, **implement** Stripe, Steam, and SEO for real — then add business rules:
+Once all phases pass exit criteria, **implement** Stripe, Steam, and SEO for real then add business rules:
 
 ### Integration implementation (do these first)
 
@@ -925,7 +925,7 @@ Once all phases pass exit criteria, **implement** Stripe, Steam, and SEO for rea
 3. Account health monitor + Discord alerts
 4. Geo-IP PPP pricing + `hreflang` alternate URLs per locale
 5. Multi-language routing (`/en`, `/ar`, …) with localized metadata
-6. SEO blog & game guides (`/guides/[slug]`) — see `mvp_structure_and_roadmap.md` P4.3
+6. SEO blog & game guides (`/guides/[slug]`) see `mvp_structure_and_roadmap.md` P4.3
 7. Deploy (Vercel + API host + Neon prod)
 
 ---
@@ -947,10 +947,10 @@ Once all phases pass exit criteria, **implement** Stripe, Steam, and SEO for rea
 
 | File | Role |
 |---|---|
-| `IMPLEMENTATION_PLAN.md` | **This file** — Nx execution plan (CRUD real; Stripe/Steam/SEO setup-only) |
+| `IMPLEMENTATION_PLAN.md` | **This file** Nx execution plan (CRUD real; Stripe/Steam/SEO setup-only) |
 | `README.md` | Product architecture & advanced features reference |
 | `mvp_structure_and_roadmap.md` | MVP feature prioritization after scaffold is complete |
 
 ---
 
-*Next step: Run **Phase 0** — initialize Nx workspace and implement `@gamestore/workspace` generators. Share theme design specs when ready for Phase 1 token values.*
+*Next step: Run **Phase 0** initialize Nx workspace and implement `@gamestore/workspace` generators. Share theme design specs when ready for Phase 1 token values.*

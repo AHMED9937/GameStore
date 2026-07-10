@@ -1,6 +1,14 @@
 import Link from 'next/link';
-import { Badge, Button } from '@gamestore/shared/ui';
+import { Badge } from '@gamestore/shared/ui';
 import { AdminTable } from '../components/admin-table';
+import {
+  IconAvailable,
+  IconEdit,
+  IconPublish,
+  IconSoldOut,
+  IconUnpublish,
+} from '../components/admin-action-icons';
+import { AdminRowActionButton } from '../components/admin-row-action-button';
 import {
   AdminSelectableRow,
   AdminSelectableTable,
@@ -8,6 +16,7 @@ import {
 import { ADMIN_GAME_COLUMNS } from './games.constants';
 import type { AdminGameListItem } from './admin-games.types';
 import type { AdminTableSelectionProps } from '../types/admin-table-selection';
+import styles from './games.module.css';
 
 export type AdminGamesTableProps = {
   games: AdminGameListItem[];
@@ -61,47 +70,43 @@ function renderRowCells(
       </td>
       <td>{statusBadge(game)}</td>
       <td>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <Link href={`/admin/games/${game.id}/edit`}>
-            <Button type="button" variant="ghost">
-              Edit
-            </Button>
+        <div className={styles.tableActions}>
+          <Link
+            href={`/admin/games/${game.id}/edit`}
+            aria-label={`Edit ${game.title}`}
+            title={`Edit ${game.title}`}
+          >
+            <AdminRowActionButton
+              variant="ghost"
+              label={`Edit ${game.title}`}
+              icon={<IconEdit />}
+            />
           </Link>
           {onPublishToggle ? (
-            <Button
-              type="button"
-              variant="secondary"
+            <AdminRowActionButton
+              label={`${game.published ? 'Unpublish' : 'Publish'} ${game.title}`}
+              icon={game.published ? <IconUnpublish /> : <IconPublish />}
               disabled={isPublishing}
               onClick={() => onPublishToggle(game)}
-            >
-              {isPublishing
-                ? 'Saving…'
-                : game.published
-                  ? 'Unpublish'
-                  : 'Publish'}
-            </Button>
+            />
           ) : null}
           {onSoldOutToggle && game.published ? (
             game.soldOut && !game.soldOutManual ? (
-              <Button type="button" variant="secondary" disabled>
-                No active pool
-              </Button>
+              <AdminRowActionButton
+                label={`No active pool for ${game.title}`}
+                icon={<IconSoldOut />}
+                disabled
+              />
             ) : (
-              <Button
-                type="button"
-                variant="secondary"
+              <AdminRowActionButton
+                label={`${game.soldOutManual ? 'Mark available' : 'Mark sold out'} ${game.title}`}
+                icon={game.soldOutManual ? <IconAvailable /> : <IconSoldOut />}
                 disabled={
                   isPublishing ||
                   (game.soldOutManual && !canMarkAvailable)
                 }
                 onClick={() => onSoldOutToggle(game)}
-              >
-                {isPublishing
-                  ? 'Saving…'
-                  : game.soldOutManual
-                    ? 'Mark available'
-                    : 'Mark sold out'}
-              </Button>
+              />
             )
           ) : null}
         </div>
@@ -150,7 +155,7 @@ export function AdminGamesTable({
             disabled={!selection.isRowSelectable(game.id) || selection.disabled}
             onToggle={selection.toggleRow}
           >
-            {renderRowCells(game, publishingId, onPublishToggle)}
+            {renderRowCells(game, publishingId, onPublishToggle, onSoldOutToggle)}
           </AdminSelectableRow>
         ))}
       </AdminSelectableTable>

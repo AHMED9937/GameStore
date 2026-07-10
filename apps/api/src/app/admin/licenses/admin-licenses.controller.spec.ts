@@ -17,6 +17,8 @@ const sampleListItem = {
   gameTitle: 'Demo Game',
   ownerEmail: 'buyer@example.com',
   status: 'available',
+  source: 'admin',
+  expiresAt: null,
 };
 
 describe('AdminLicensesController', () => {
@@ -63,9 +65,10 @@ describe('AdminLicensesController', () => {
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
   const request = { headers: {}, ip: '127.0.0.1' };
 
-  it('findAll returns admin licenses', async () => {
-    await expect(controller.findAll()).resolves.toEqual([sampleListItem]);
-    expect(licenses.findAll).toHaveBeenCalled();
+  it('findAll returns admin licenses and forwards Filters', async () => {
+    const Filters = { game: 'demo', source: 'admin', expires: 'lifetime' as const };
+    await expect(controller.findAll(Filters)).resolves.toEqual([sampleListItem]);
+    expect(licenses.findAll).toHaveBeenCalledWith(Filters);
   });
 
   it('generateKey records audit log', async () => {

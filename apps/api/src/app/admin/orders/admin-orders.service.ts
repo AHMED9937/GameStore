@@ -6,12 +6,15 @@ import {
 import {
   OrdersRepository,
   maskLicenseKey,
+  normalizeEnumFilter,
+  normalizeSearchTerm,
 } from '@gamestore/api/data-access';
 import {
   normalizeBulkIds,
   runBulkIds,
   type BulkActionResult,
 } from '../bulk-action.types';
+import type { AdminOrderListFiltersDto } from './admin-order-list-filters.dto';
 
 export type AdminOrderListItemDto = {
   id: string;
@@ -32,8 +35,8 @@ export type AdminOrderListItemDto = {
 export class AdminOrdersService {
   constructor(private readonly orders: OrdersRepository) {}
 
-  async findAll(): Promise<AdminOrderListItemDto[]> {
-    const rows = await this.orders.findAll();
+  async findAll(filters?: AdminOrderListFiltersDto): Promise<AdminOrderListItemDto[]> {
+    const rows = await this.orders.findAll(this.toOrderFilters(filters));
 
     return rows.map((order) => ({
       id: order.id,
@@ -43,14 +46,29 @@ export class AdminOrdersService {
       currency: order.currency,
       buyerEmail: order.buyerEmail,
       ownerEmail: order.owner?.email ?? null,
-      gameTitle: order.game.title,
-      gameSlug: order.game.slug,
+      gameTitle: order.game?.title ?? order.gameTitleSnapshot ?? 'Unknown game',
+      gameSlug: order.game?.slug ?? order.gameSlugSnapshot ?? '—',
       licenseKeyMasked: order.license
         ? maskLicenseKey(order.license.licenseKey)
         : null,
       licenseSource: order.license?.source ?? null,
       createdAt: order.createdAt.toISOString(),
     }));
+  }
+
+  private toOrderFilters(filters?: AdminOrderListFiltersDto): {
+    q?: string;
+    status?: string;
+    orderType?: string;
+  } {
+    const q = normalizeSearchTerm(filters?.q);
+    const status = normalizeSearchTerm(filters?.status)?.toLowerCase();
+    const orderType = normalizeSearchTerm(filters?.orderType)?.toLowerCase();
+    return {
+      ...(q ? { q } : {}),
+      ...(status ? { status } : {}),
+      ...(orderType ? { orderType } : {}),
+    };
   }
 
   async bulkDelete(ids: string[]): Promise<BulkActionResult> {

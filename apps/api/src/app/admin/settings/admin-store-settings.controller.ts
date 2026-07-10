@@ -9,6 +9,7 @@ import {
 } from '@gamestore/api/auth';
 import { AdminStoreSettingsService } from './admin-store-settings.service';
 import { parseUpdateActivationVideoBody } from './update-activation-video.dto';
+import { parseUpdateFaqUbisoftSettingsBody } from './update-faq-ubisoft-settings.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -41,6 +42,35 @@ export class AdminStoreSettingsController {
       resource: 'store_setting',
       resourceId: 'default_activation_video_url',
       metadata: { hasUrl: result.url !== null },
+    });
+    return result;
+  }
+
+  @Get('faq-ubisoft')
+  getFaqUbisoftSettings() {
+    return this.storeSettings.getFaqUbisoftSettings();
+  }
+
+  @Put('faq-ubisoft')
+  async updateFaqUbisoftSettings(
+    @Body() body: Parameters<typeof parseUpdateFaqUbisoftSettingsBody>[0],
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const parsed = parseUpdateFaqUbisoftSettingsBody(body);
+    const result = await this.storeSettings.updateFaqUbisoftSettings(parsed);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.store_setting.faq_ubisoft.update',
+      resource: 'store_setting',
+      resourceId: 'faq_ubisoft',
+      metadata: {
+        hasMethod1Video: result.method1VideoUrl !== null,
+        hasMethod2Video: result.method2VideoUrl !== null,
+        hasLockerDownload: result.lockerDownloadUrl !== null,
+        hasLockerGithub: result.lockerGithubUrl !== null,
+      },
     });
     return result;
   }

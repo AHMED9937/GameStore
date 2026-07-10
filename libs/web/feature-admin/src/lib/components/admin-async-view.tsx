@@ -1,24 +1,30 @@
 import type { ReactNode } from 'react';
-import { EmptyState } from '@gamestore/shared/ui';
+import { Button, EmptyState, SkeletonPanel } from '@gamestore/shared/ui';
 import type { AdminAsyncState } from '../types/admin-async-state';
 import styles from './admin-components.module.css';
 
 export type AdminAsyncViewProps<T> = {
   state: AdminAsyncState<T>;
   emptyMessage?: string;
+  onRetry?: () => void;
+  isRetrying?: boolean;
   children: (data: T) => ReactNode;
 };
 
 export function AdminAsyncView<T>({
   state,
   emptyMessage = 'No records yet.',
+  onRetry,
+  isRetrying = false,
   children,
 }: AdminAsyncViewProps<T>) {
   if (state.status === 'idle' || state.status === 'loading') {
     return (
-      <div className={styles.loading} role="status" aria-live="polite">
-        Loading…
-      </div>
+      <SkeletonPanel
+        height={56}
+        className={styles.compactLoadingPanel}
+        data-testid="admin-async-loading"
+      />
     );
   }
 
@@ -41,7 +47,18 @@ export function AdminAsyncView<T>({
         role="alert"
         data-testid="admin-error-banner"
       >
-        {state.message}
+        <p>{state.message}</p>
+        {onRetry ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isRetrying}
+            onClick={onRetry}
+            data-testid="admin-error-retry"
+          >
+            {isRetrying ? 'Retrying…' : 'Retry'}
+          </Button>
+        ) : null}
       </div>
     );
   }

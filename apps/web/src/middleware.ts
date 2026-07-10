@@ -19,6 +19,9 @@ const isPublicRoute = createRouteMatcher([
   '/api/subscription-plans(.*)',
   '/api/health(.*)',
   '/api/payments/webhook(.*)',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/dev(.*)',
 ]);
 
 const isAdminRoute = createRouteMatcher(['/admin(.*)']);
@@ -82,7 +85,7 @@ export default clerkMiddleware(async (auth, req) => {
     return;
   }
 
-  // Protected user routes (my-games, etc.) — Clerk Neon pattern: require auth
+  // Protected user routes (my-games, etc.) Clerk Neon pattern: require auth
   await auth.protect();
 });
 

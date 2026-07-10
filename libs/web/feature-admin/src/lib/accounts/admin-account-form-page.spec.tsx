@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { AdminAccountFormPage } from './admin-account-form-page';
 import { ADMIN_ACCOUNTS_SETUP_MESSAGE } from './accounts.constants';
@@ -12,7 +12,9 @@ vi.mock('@gamestore/web/data-access', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@gamestore/web/data-access')>();
   return {
     ...actual,
-    getAdminGames: vi.fn().mockResolvedValue([]),
+    getAdminGames: vi.fn().mockResolvedValue([
+      { id: 'game-123', title: 'Prefill Game', platform: 'steam' },
+    ]),
   };
 });
 
@@ -31,21 +33,34 @@ describe('AdminAccountFormPage', () => {
     expect(screen.getByTestId('admin-account-form-actions')).toBeTruthy();
   });
 
-  it('renders enabled form fields in controlled success mode', () => {
+  it('renders enabled form fields in controlled success mode', async () => {
     render(
       <AdminAccountFormPage
         formState={{ status: 'success', data: EMPTY_ADMIN_ACCOUNT_FORM_VALUES }}
       />,
     );
     expect(screen.getByRole('combobox', { name: 'Steam game' })).toBeTruthy();
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Steam game' }));
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Unassigned (inventory)' })).toBeTruthy();
+    });
     expect(screen.getByRole('button', { name: 'Save account' }).hasAttribute('disabled')).toBe(
       false,
     );
   });
 
+  it('prefills gameId from initialGameId', async () => {
+    render(<AdminAccountFormPage initialGameId="game-123" />);
+    await waitFor(() => {
+      expect(
+        (screen.getByRole('combobox', { name: 'Steam game' }) as HTMLInputElement).value,
+      ).toBe('Prefill Game');
+    });
+  });
+
   it('renders loading spinner', () => {
     render(<AdminAccountFormPage formState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {

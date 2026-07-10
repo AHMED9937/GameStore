@@ -1,7 +1,33 @@
 import type { PrismaClient } from '@prisma/client';
 import type { IgdbClient } from './igdb-client';
+import { buildIgdbSeoDefaults } from './igdb-seo-defaults';
 import type { IgdbImportInput, IgdbImportedGame } from './igdb.types';
 import { resolveUniqueSlug, slugifyTitle } from './igdb-slug';
+
+type ExistingSeoFields = {
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
+};
+
+function mergeSeoFields(
+  existing: ExistingSeoFields | null,
+  defaults: ReturnType<typeof buildIgdbSeoDefaults>,
+): ExistingSeoFields {
+  if (!existing) {
+    return {
+      metaTitle: defaults.metaTitle,
+      metaDescription: defaults.metaDescription,
+      ogImage: defaults.ogImage,
+    };
+  }
+
+  return {
+    metaTitle: existing.metaTitle ?? defaults.metaTitle,
+    metaDescription: existing.metaDescription ?? defaults.metaDescription,
+    ogImage: existing.ogImage ?? defaults.ogImage,
+  };
+}
 
 function parsePriceBase(value: number | string): number {
   const parsed = typeof value === 'string' ? Number.parseFloat(value) : value;
@@ -43,6 +69,23 @@ export async function importIgdbGame(
   const coverImage = details.coverUrl ?? '/og/default.png';
   const coverCardImage = details.coverCardUrl ?? details.coverUrl ?? '/og/default.png';
   const syncedAt = new Date();
+  const seoDefaults = buildIgdbSeoDefaults({
+    title: details.title,
+    platform: input.platform.trim(),
+    priceBase,
+    summary: details.summary,
+    coverImage,
+  });
+  const seoFields = mergeSeoFields(
+    existing
+      ? {
+          metaTitle: existing.metaTitle,
+          metaDescription: existing.metaDescription,
+          ogImage: existing.ogImage,
+        }
+      : null,
+    seoDefaults,
+  );
 
   const game = await prisma.$transaction(async (tx) => {
     const gameData = {
@@ -58,6 +101,9 @@ export async function importIgdbGame(
       genres: details.genres,
       igdbSyncedAt: syncedAt,
       publishedAt: null as Date | null,
+      metaTitle: seoFields.metaTitle,
+      metaDescription: seoFields.metaDescription,
+      ogImage: seoFields.ogImage,
     };
 
     const saved = existing

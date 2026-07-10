@@ -1,6 +1,8 @@
+import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
 import { ThemeProvider } from '@gamestore/shared/theme';
+import { buildPageMetadata, siteConfig } from '@gamestore/shared/seo';
 import { SiteShell } from '../components/layout/site-shell';
 import { clerkAppearance } from '../lib/clerk-appearance';
 import './global.css';
@@ -17,9 +19,9 @@ const spaceGrotesk = Space_Grotesk({
   weight: ['500', '700'],
 });
 
-export const metadata = {
-  title: 'GameStore',
-  description: 'Premium offline game activation store',
+export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.siteUrl),
+  ...buildPageMetadata('home'),
 };
 
 export default function RootLayout({

@@ -8,6 +8,8 @@ import {
   Card,
   Container,
   Heading,
+  SkeletonPanel,
+  SkeletonText,
   Text,
 } from '@gamestore/shared/ui';
 import {
@@ -17,14 +19,21 @@ import {
   type UserLicenseSummary,
 } from '@gamestore/web/data-access';
 import {
-  formatLicenseExpiry,
   formatLicenseSource,
-  isLicenseExpired,
+  getLicenseExpiryState,
 } from '@gamestore/web/feature-subscriptions';
 import { useValidatedLicense } from './validated-license-context';
 import styles from './section.module.css';
 
-export function MyLicensesPanel() {
+export type MyLicensesPanelProps = {
+  showInlineLoading?: boolean;
+  onInitialLoadingChange?: (loading: boolean) => void;
+};
+
+export function MyLicensesPanel({
+  showInlineLoading = true,
+  onInitialLoadingChange,
+}: MyLicensesPanelProps = {}) {
   const { setValidatedLicense, setStep } = useValidatedLicense();
   const [licenses, setLicenses] = useState<UserLicenseSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +77,10 @@ export function MyLicensesPanel() {
     };
   }, []);
 
+  useEffect(() => {
+    onInitialLoadingChange?.(loading);
+  }, [loading, onInitialLoadingChange]);
+
   async function handleSelect(licenseKey: string) {
     setSelectingKey(licenseKey);
     setError(null);
@@ -88,11 +101,12 @@ export function MyLicensesPanel() {
     }
   }
 
-  if (loading) {
+  if (loading && showInlineLoading) {
     return (
       <section className={styles.sectionTight}>
         <Container>
-          <Text tone="muted">Loading your licenses…</Text>
+          <SkeletonText width="42%" />
+          <SkeletonPanel height={120} style={{ marginTop: '0.75rem' }} />
         </Container>
       </section>
     );
@@ -123,7 +137,11 @@ export function MyLicensesPanel() {
         {error ? <Text tone="muted">{error}</Text> : null}
         <div className={styles.licenseList}>
           {licenses.map((license) => {
-            const expired = isLicenseExpired(license.expiresAt);
+            const expiry = getLicenseExpiryState(
+              license.expiresAt,
+              license.validFrom,
+            );
+            const isActivated = license.status === 'activated';
 
             return (
               <Card key={license.id} className={styles.panel}>
@@ -133,11 +151,12 @@ export function MyLicensesPanel() {
                       <strong>{license.game.title}</strong>
                     </Text>
                     <Text tone="muted">
-                      {license.licenseKey} — {license.status}
+                      {license.licenseKey}
+                      {isActivated ? ' · Active' : ` · ${license.status}`}
                     </Text>
                     <div className={styles.licenseMeta}>
-                      <Badge variant={expired ? 'default' : 'success'}>
-                        {formatLicenseExpiry(license.expiresAt)}
+                      <Badge variant={expiry.expired ? 'default' : 'success'}>
+                        {expiry.label}
                       </Badge>
                       <Badge variant="accent">
                         {formatLicenseSource(license.source)}
@@ -147,14 +166,14 @@ export function MyLicensesPanel() {
                   <Button
                     variant="secondary"
                     disabled={
-                      expired || selectingKey === license.licenseKey
+                      expiry.expired || selectingKey === license.licenseKey
                     }
                     onClick={() => void handleSelect(license.licenseKey)}
                   >
-                    {expired
+                    {expiry.expired
                       ? 'Expired'
                       : selectingKey === license.licenseKey
-                        ? 'Loading…'
+                        ? '…'
                         : 'Select'}
                   </Button>
                 </div>

@@ -17,8 +17,12 @@ export type AdminGameFormValues = {
   genresText: string;
   requirementsMin: GameSystemRequirementsFormValues;
   requirementsRecommended: GameSystemRequirementsFormValues;
+  metaTitle: string;
+  metaDescription: string;
+  ogImage: string;
   published: boolean;
   soldOutManual: boolean;
+  discordAnnounceDescription: string;
 };
 
 export type AdminGameTab =
@@ -27,6 +31,7 @@ export type AdminGameTab =
   | 'requirements'
   | 'media'
   | 'accounts'
+  | 'marketing'
   | 'publish';
 
 export type AdminGameListItem = {
@@ -61,8 +66,12 @@ export const EMPTY_ADMIN_GAME_FORM_VALUES: AdminGameFormValues = {
   genresText: '',
   requirementsMin: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
   requirementsRecommended: { ...EMPTY_GAME_SYSTEM_REQUIREMENTS_FORM },
+  metaTitle: '',
+  metaDescription: '',
+  ogImage: '',
   published: false,
   soldOutManual: false,
+  discordAnnounceDescription: '',
 };
 
 export function genresTextToArray(text: string): string[] {
@@ -100,8 +109,13 @@ export function toAdminGameInput(values: AdminGameFormValues) {
     requirementsRecommended: fromRequirementsFormValues(
       values.requirementsRecommended,
     ),
+    metaTitle: values.metaTitle.trim() || undefined,
+    metaDescription: values.metaDescription.trim() || undefined,
+    ogImage: values.ogImage.trim() || undefined,
     published: values.published,
     soldOut: values.soldOutManual,
+    discordAnnounceDescription:
+      values.discordAnnounceDescription.trim() || null,
   };
 }
 
@@ -118,7 +132,16 @@ export function parseAdminGameForm(data: Record<string, unknown>): AdminGameForm
     genresText: genresArrayToText(genres),
     requirementsMin: parseRequirementsField(data.requirementsMin),
     requirementsRecommended: parseRequirementsField(data.requirementsRecommended),
+    metaTitle: String(data.metaTitle ?? ''),
+    metaDescription: String(data.metaDescription ?? ''),
+    ogImage: String(data.ogImage ?? ''),
     published: Boolean(data.published),
     soldOutManual: Boolean(data.soldOutManual),
+    discordAnnounceDescription: String(
+      (data.discord as { announceDescription?: string | null } | undefined)
+        ?.announceDescription ??
+        data.discordAnnounceDescription ??
+        '',
+    ),
   };
 }

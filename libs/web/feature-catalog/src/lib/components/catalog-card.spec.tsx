@@ -23,4 +23,11 @@ describe('CatalogCard', () => {
     render(<CatalogCard game={{ ...baseGame, soldOut: false }} />);
     expect(screen.queryByText('Sold out')).toBeNull();
   });
+
+  it('renders descriptive cover alt text', () => {
+    const { container } = render(<CatalogCard game={baseGame} />);
+    const image = container.querySelector('img');
+
+    expect(image?.getAttribute('alt')).toBe('Demo Game cover');
+  });
 });

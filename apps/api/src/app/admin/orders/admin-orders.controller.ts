@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Query,
   Req,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import {
 } from '@gamestore/api/auth';
 import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import { AdminOrdersService } from './admin-orders.service';
+import type { AdminOrderListFiltersDto } from './admin-order-list-filters.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -28,8 +30,8 @@ export class AdminOrdersController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.adminOrders.findAll();
+  findAll(@Query() filters: AdminOrderListFiltersDto) {
+    return this.adminOrders.findAll(filters);
   }
 
   @Post('bulk-delete')

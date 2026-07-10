@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@gamestore/api/auth';
-import type { GamesRepository, OrdersRepository, SubscriptionPlansRepository } from '@gamestore/api/data-access';
+import type { GamesRepository, GameAccountsRepository, OrdersRepository, SubscriptionPlansRepository } from '@gamestore/api/data-access';
 import { StripeConfig, type StripeService } from '@gamestore/api/stripe';
 import { PaymentsService } from './payments.service';
 
@@ -25,6 +25,7 @@ const publishedGame = {
   priceBase: { toString: () => '19.99' },
   coverImage: 'https://cdn.example.com/cover.jpg',
   publishedAt: new Date('2025-01-01'),
+  soldOut: false,
 };
 
 describe('PaymentsService', () => {
@@ -32,6 +33,10 @@ describe('PaymentsService', () => {
     findById: vi.fn(),
     findBySlug: vi.fn(),
   } as unknown as GamesRepository;
+
+  const gameAccounts = {
+    getActivePoolFlagsByGameIds: vi.fn().mockResolvedValue(new Map([['game-1', true]])),
+  } as unknown as GameAccountsRepository;
 
   const orders = {
     createPending: vi.fn(),
@@ -50,10 +55,13 @@ describe('PaymentsService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new PaymentsService(games, orders, plans, stripe);
+    service = new PaymentsService(games, gameAccounts, orders, plans, stripe);
 
     vi.spyOn(StripeConfig, 'isCheckoutConfigured').mockReturnValue(true);
     vi.mocked(games.findBySlug).mockResolvedValue(publishedGame as never);
+    vi.mocked(gameAccounts.getActivePoolFlagsByGameIds).mockResolvedValue(
+      new Map([['game-1', true]]),
+    );
     vi.mocked(stripe.createCheckoutSession).mockResolvedValue({
       sessionId: 'cs_test_abc',
       url: 'https://checkout.stripe.com/pay/cs_test_abc',
@@ -75,6 +83,8 @@ describe('PaymentsService', () => {
     });
     expect(orders.createPending).toHaveBeenCalledWith({
       gameId: 'game-1',
+      gameTitleSnapshot: 'Demo Game',
+      gameSlugSnapshot: 'demo-game-1',
       stripeSessionId: 'cs_test_abc',
       amount: 19.99,
       ownerId: 'user-a',
@@ -102,6 +112,30 @@ describe('PaymentsService', () => {
     );
   });
 
+  it('rejects sold-out games', async () => {
+    vi.mocked(games.findBySlug).mockResolvedValue({
+      ...publishedGame,
+      soldOut: true,
+    } as never);
+    vi.mocked(gameAccounts.getActivePoolFlagsByGameIds).mockResolvedValue(
+      new Map([['game-1', true]]),
+    );
+
+    await expect(
+      service.createCheckout({ slug: 'demo-game-1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('rejects games with no active pool even when manual soldOut is false', async () => {
+    vi.mocked(gameAccounts.getActivePoolFlagsByGameIds).mockResolvedValue(
+      new Map([['game-1', false]]),
+    );
+
+    await expect(
+      service.createCheckout({ slug: 'demo-game-1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('returns 404 when slug does not match a published game', async () => {
     vi.mocked(games.findBySlug).mockResolvedValue(null);
 
@@ -116,6 +150,20 @@ describe('PaymentsService', () => {
     await expect(
       service.createCheckout({ slug: 'demo-game-1' }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('logs and rethrows when pending order creation fails after Stripe session', async () => {
+    vi.mocked(orders.createPending).mockRejectedValue(new Error('db down'));
+    const errorSpy = vi.spyOn(service['logger'], 'error');
+
+    await expect(
+      service.createCheckout({ slug: 'demo-game-1' }, user),
+    ).rejects.toThrow('db down');
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('cs_test_abc'),
+      expect.any(String),
+    );
   });
 
   it('creates a subscription checkout session for an active plan', async () => {

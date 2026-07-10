@@ -1,9 +1,13 @@
 export * from './lib/data-access.module';
+export * from './lib/admin-list-filters';
 export * from './lib/audit-logs.repository';
 export * from './lib/games.repository';
 export * from './lib/licenses.repository';
+export * from './lib/license-validity.util';
 export * from './lib/game-accounts.repository';
 export * from './lib/orders.repository';
 export * from './lib/subscription-plans.repository';
 export * from './lib/user-subscriptions.repository';
+export * from './lib/store-settings.repository';
+export * from './lib/game-sold-out';
 export { generateLicenseKey, maskLicenseKey } from './lib/license-key.util';

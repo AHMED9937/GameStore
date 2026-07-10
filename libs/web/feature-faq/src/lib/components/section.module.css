@@ -1,12 +1,228 @@
 .section {
-  padding: 3rem 0 2rem;
+  padding: 3rem 0 1.5rem;
 }
 
-.panel {
-  padding: 1rem 1.25rem;
-  margin-bottom: 0.75rem;
+.subtitle {
+  margin-top: 0.75rem;
+  max-width: 36rem;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.65;
 }
 
-.faqItem {
-  padding: 1rem 1.25rem;
+.accordionSection {
+  padding: 0 0 1rem;
+}
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.accordionItem {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: var(--transition-smooth);
+}
+
+.accordionItem:has(.accordionTrigger[aria-expanded='true']) {
+  border-color: rgba(6, 182, 212, 0.28);
+  box-shadow: 0 8px 28px rgba(6, 182, 212, 0.06);
+}
+
+.accordionTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1.125rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accordionTrigger:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.accordionQuestion {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.accordionChevron {
+  flex-shrink: 0;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-right: 2px solid var(--color-secondary);
+  border-bottom: 2px solid var(--color-secondary);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  margin-top: -0.2rem;
+}
+
+.accordionChevronOpen {
+  transform: rotate(-135deg);
+  margin-top: 0.2rem;
+}
+
+.accordionPanel {
+  display: none;
+  padding: 0 1.25rem 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.accordionPanelOpen {
+  display: block;
+}
+
+.faqAnswer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  padding-top: 1rem;
+}
+
+.faqParagraph {
+  margin: 0;
+  line-height: 1.65;
+}
+
+.faqList {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.faqList li {
+  line-height: 1.6;
+}
+
+.faqCallout {
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.faqCalloutTitle {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.faqCalloutBody {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.faqMethod {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.faqMethodTitle {
+  display: block;
+  margin-bottom: 0.625rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.faqMethodLead {
+  margin: 0.75rem 0 0;
+}
+
+.faqLinkRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.faqExternalLink {
+  color: var(--color-secondary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.faqExternalLink:hover {
+  color: var(--text-main);
+}
+
+.faqActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.faqPrimaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  background: var(--gradient-brand);
+  color: var(--bg-darker);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: var(--shadow-secondaryGlow, 0 0 30px var(--color-secondary-glow));
+  transition: var(--transition-smooth);
+}
+
+.faqPrimaryLink:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 40px var(--color-primary-glow);
+}
+
+.faqSecondaryLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-primary);
+  color: var(--text-main);
+  font-weight: 700;
+  text-decoration: none;
+  transition: var(--transition-smooth);
+}
+
+.faqSecondaryLink:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.ctaSection {
+  padding: 1rem 0 3rem;
+}
+
+.ctaDescription {
+  margin: 0;
+}
+
+.ctaActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.faq-video-fallback {
+  margin-top: 0.5rem;
 }

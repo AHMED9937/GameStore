@@ -1,14 +1,23 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { AdminAuditController } from './admin-audit.controller';
+import type { AdminAuditService } from './admin-audit.service';
 
 describe('AdminAuditController', () => {
-  const controller = new AdminAuditController();
+  const audit = {
+    list: vi.fn().mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      limit: 20,
+      totalPages: 0,
+    }),
+  } satisfies AdminAuditService;
 
-  it('list returns setup JSON', () => {
-    expect(controller.list('1', '20', 'admin.game.create')).toEqual({
-      status: 'setup',
-      integration: 'admin-audit',
-      message: 'Admin audit log — not implemented yet',
-    });
+  const controller = new AdminAuditController(audit);
+
+  it('list forwards filters to service', async () => {
+    const filters = { q: 'admin.game.create', page: '2', limit: '10' };
+    await controller.list(filters);
+    expect(audit.list).toHaveBeenCalledWith(filters);
   });
 });

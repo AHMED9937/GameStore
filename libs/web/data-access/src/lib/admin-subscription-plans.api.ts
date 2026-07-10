@@ -52,8 +52,25 @@ export type UpdateAdminSubscriptionPlanInput = {
   gameIds?: string[];
 };
 
-export function getAdminSubscriptionPlans() {
-  return apiGet<AdminSubscriptionPlanListRecord[]>('/admin/subscription-plans');
+export type AdminSubscriptionPlanListFilters = {
+  q?: string;
+  status?: 'active' | 'inactive';
+};
+
+export function getAdminSubscriptionPlans(
+  filters: AdminSubscriptionPlanListFilters = {},
+) {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  return apiGet<AdminSubscriptionPlanListRecord[]>(
+    `/admin/subscription-plans${suffix}`,
+  );
 }
 
 export function getAdminSubscriptionPlan(id: string) {

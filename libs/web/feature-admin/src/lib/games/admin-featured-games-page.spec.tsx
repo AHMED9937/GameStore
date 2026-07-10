@@ -40,6 +40,39 @@ const availableGame = {
 };
 
 describe('AdminFeaturedGamesPage', () => {
+  it('shows pending and success feedback while saving', async () => {
+    vi.mocked(getAdminFeaturedGames).mockResolvedValue({
+      featured: [featuredGame],
+      available: [availableGame],
+    });
+    vi.mocked(updateAdminFeaturedGames).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              featured: [featuredGame, { ...availableGame, featuredOrder: 2 }],
+              available: [],
+            });
+          }, 20);
+        }),
+    );
+
+    render(<AdminFeaturedGamesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Alpha Game')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save featured' }));
+
+    expect(screen.getByTestId('admin-featured-games-action-pending')).toBeTruthy();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-featured-games-action-message')).toBeTruthy();
+    });
+  });
+
   it('adds an available game to featured slots', async () => {
     vi.mocked(getAdminFeaturedGames).mockResolvedValue({
       featured: [featuredGame],

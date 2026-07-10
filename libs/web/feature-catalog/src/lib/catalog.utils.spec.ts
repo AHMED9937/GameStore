@@ -37,14 +37,14 @@ describe('catalog.utils', () => {
     expect(normalizeCatalogPlatform('xbox')).toBe('microsoft');
   });
 
-  it('filters by platform', () => {
+  it('Filters by platform', () => {
     expect(filterCatalogGames(games, '', 'steam')).toHaveLength(1);
     expect(filterCatalogGames(games, '', 'microsoft')).toHaveLength(1);
     expect(filterCatalogGames(games, '', 'epic')).toHaveLength(1);
     expect(filterCatalogGames(games, '', 'ubisoft')).toHaveLength(0);
   });
 
-  it('filters by search query across title and description', () => {
+  it('Filters by search query across title and description', () => {
     expect(filterCatalogGames(games, 'rally', 'all')).toHaveLength(1);
     expect(filterCatalogGames(games, 'space', 'all')).toHaveLength(1);
     expect(filterCatalogGames(games, 'void', 'steam')).toHaveLength(0);

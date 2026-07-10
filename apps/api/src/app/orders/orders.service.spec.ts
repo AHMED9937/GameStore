@@ -197,7 +197,7 @@ describe('OrdersService', () => {
     );
     expect(result).toEqual({
       status: 'pending',
-      message: 'Payment received — issuing your license…',
+      message: 'Payment received issuing your license…',
     });
   });
 

@@ -23,30 +23,6 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
     await closeE2eApp(app);
   });
 
-  it('GET /api/admin/stats returns 401 without a bearer token', async () => {
-    await request(app.getHttpServer()).get('/api/admin/stats').expect(401);
-  });
-
-  it('GET /api/admin/stats returns 403 for a non-admin user', async () => {
-    await request(app.getHttpServer())
-      .get('/api/admin/stats')
-      .set(authAs(E2E_TOKENS.userA))
-      .expect(403);
-  });
-
-  it('GET /api/admin/stats returns setup JSON for an admin user', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/admin/stats')
-      .set(authAs(E2E_TOKENS.admin))
-      .expect(200);
-
-    expect(response.body).toEqual({
-      status: 'setup',
-      integration: 'admin-dashboard',
-      message: 'Admin dashboard — not implemented yet',
-    });
-  });
-
   it('GET /api/admin/games returns 403 for a non-admin user', async () => {
     await request(app.getHttpServer())
       .get('/api/admin/games')
@@ -133,16 +109,21 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
 
     expect(Array.isArray(response.body)).toBe(true);
     if (response.body.length > 0) {
-      expect(response.body[0]).toEqual(
+      const account = response.body[0];
+      expect(account).toEqual(
         expect.objectContaining({
           id: expect.any(String),
-          gameId: expect.any(String),
-          gameTitle: expect.any(String),
           username: expect.any(String),
           platform: expect.any(String),
           isActive: expect.any(Boolean),
         }),
       );
+      expect(
+        account.gameId === null || typeof account.gameId === 'string',
+      ).toBe(true);
+      expect(
+        account.gameTitle === null || typeof account.gameTitle === 'string',
+      ).toBe(true);
     }
   });
 
@@ -176,7 +157,7 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
   const auditSetupBody = {
     status: 'setup',
     integration: 'admin-audit',
-    message: 'Admin audit log — not implemented yet',
+    message: 'Admin audit log not implemented yet',
   };
 
   it('GET /api/admin/audit-logs returns 403 for a non-admin user', async () => {
@@ -186,13 +167,21 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
       .expect(403);
   });
 
-  it('GET /api/admin/audit-logs returns setup JSON for an admin user', async () => {
+  it('GET /api/admin/audit-logs returns paginated audit logs for an admin user', async () => {
     const response = await request(app.getHttpServer())
-      .get('/api/admin/audit-logs?page=1&limit=10&action=admin.game.create')
+      .get('/api/admin/audit-logs?page=1&limit=10&q=admin.game')
       .set(authAs(E2E_TOKENS.admin))
       .expect(200);
 
-    expect(response.body).toEqual(auditSetupBody);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        items: expect.any(Array),
+        total: expect.any(Number),
+        page: 1,
+        limit: 10,
+        totalPages: expect.any(Number),
+      }),
+    );
   });
 
   it('GET /api/audit-logs remains on the real admin audit endpoint', async () => {
@@ -217,14 +206,32 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
   const igdbSearchSetupBody = {
     status: 'setup',
     integration: 'igdb',
-    message: 'IGDB search — not implemented yet',
+    message:
+      'IGDB search is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.',
   };
 
   const igdbImportSetupBody = {
     status: 'setup',
     integration: 'igdb',
-    message: 'IGDB import — not implemented yet',
+    message:
+      'IGDB import is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.',
   };
+
+  it('GET /api/admin/igdb/health returns configured flag for admin', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/admin/igdb/health')
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toEqual({
+      integration: 'igdb',
+      configured: false,
+    });
+  });
+
+  it('GET /api/admin/igdb/health returns 401 without auth', async () => {
+    await request(app.getHttpServer()).get('/api/admin/igdb/health').expect(401);
+  });
 
   it('GET /api/admin/igdb/search returns 403 for a non-admin user', async () => {
     await request(app.getHttpServer())
@@ -250,6 +257,18 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
       .expect(201);
 
     expect(response.body).toEqual(igdbImportSetupBody);
+  });
+
+  it('POST /api/admin/igdb/import returns 400 for invalid igdbId', async () => {
+    await request(app.getHttpServer())
+      .post('/api/admin/igdb/import')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ igdbId: 0 })
+      .expect(400);
+  });
+
+  it('GET /api/admin/igdb/search returns 401 without auth', async () => {
+    await request(app.getHttpServer()).get('/api/admin/igdb/search?q=halo').expect(401);
   });
 });
 

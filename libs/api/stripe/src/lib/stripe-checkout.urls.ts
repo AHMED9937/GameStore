@@ -43,7 +43,7 @@ export function resolveStripeProductImage(
       return trimmed;
     }
   } catch {
-    // Relative path (e.g. /og/default.png) — omit for Stripe.
+    // Relative path (e.g. /og/default.png) omit for Stripe.
   }
 
   return undefined;

@@ -1,9 +1,15 @@
-import { EmptyState } from '@gamestore/shared/ui';
+import styles from './accounts.module.css';
 
-export function AdminAccountsEmpty() {
+export type AdminAccountsEmptyProps = {
+  message?: string;
+};
+
+export function AdminAccountsEmpty({
+  message = 'No pool accounts yet.',
+}: AdminAccountsEmptyProps = {}) {
   return (
-    <div data-testid="admin-accounts-empty">
-      <EmptyState message="No pool accounts yet." />
+    <div className={styles.tableEmpty} data-testid="admin-accounts-empty">
+      <p className={styles.tableEmptyMessage}>{message}</p>
     </div>
   );
 }

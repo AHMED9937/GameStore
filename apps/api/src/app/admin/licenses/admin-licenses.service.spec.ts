@@ -85,9 +85,27 @@ describe('AdminLicensesService', () => {
         ownerEmail: 'buyer@example.com',
         status: 'available',
         source: 'admin',
-        expiresAt: null,
+        expiresAt: '2026-01-01T00:00:00.000Z',
       },
     ]);
+  });
+
+  it('findAll normalizes and forwards list Filters', async () => {
+    await service.findAll({
+      game: '  Demo ',
+      source: ' ADMIN ',
+      owner: ' OWNER@EXAMPLE.COM ',
+      status: ' Available ',
+      expires: 'expiring',
+    });
+
+    expect(licenses.findAll).toHaveBeenCalledWith({
+      game: 'Demo',
+      source: 'admin',
+      owner: 'owner@example.com',
+      status: 'available',
+      expires: 'expiring',
+    });
   });
 
   it('generateKey creates a license for an existing game', async () => {

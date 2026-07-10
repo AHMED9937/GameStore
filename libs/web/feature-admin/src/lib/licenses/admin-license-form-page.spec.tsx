@@ -24,7 +24,7 @@ describe('AdminLicenseFormPage', () => {
 
   it('renders loading spinner', () => {
     render(<AdminLicenseFormPage formState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {

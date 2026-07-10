@@ -28,6 +28,14 @@ export type AdminLicenseListRecord = {
   expiresAt: string | null;
 };
 
+export type AdminLicenseListFilters = {
+  game?: string;
+  source?: string;
+  owner?: string;
+  status?: string;
+  expires?: 'lifetime' | 'expiring' | 'expired';
+};
+
 export type CreateAdminLicenseInput = {
   gameId: string;
   licenseKey?: string;
@@ -48,8 +56,16 @@ export type UpdateAdminLicenseInput = {
   expiresAt?: string | null;
 };
 
-export function getAdminLicenses() {
-  return apiGet<SetupResponse | AdminLicenseListRecord[]>('/admin/licenses');
+export function getAdminLicenses(Filters?: AdminLicenseListFilters) {
+  const query = new URLSearchParams();
+  if (Filters?.game) query.set('game', Filters.game);
+  if (Filters?.source) query.set('source', Filters.source);
+  if (Filters?.owner) query.set('owner', Filters.owner);
+  if (Filters?.status) query.set('status', Filters.status);
+  if (Filters?.expires) query.set('expires', Filters.expires);
+  const queryString = query.toString();
+  const path = queryString ? `/admin/licenses?${queryString}` : '/admin/licenses';
+  return apiGet<SetupResponse | AdminLicenseListRecord[]>(path);
 }
 
 export function getAdminLicense(id: string) {

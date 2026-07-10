@@ -6,6 +6,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@gamestore/api/auth';
 import type { LicensesRepository } from '@gamestore/api/data-access';
+import type { EntitlementCleanupService } from '../entitlements/entitlement-cleanup.service';
 import { LicensesService } from './licenses.service';
 
 const userA: AuthUser = {
@@ -50,11 +51,24 @@ describe('LicensesService ownership', () => {
     decrypt: vi.fn(),
   } as unknown as import('@gamestore/api/steam').SteamCryptoService;
 
+  const entitlementCleanup = {
+    revokeLicenseWithCleanup: vi.fn(),
+    releaseLicenseFromPool: vi.fn(),
+  } satisfies Pick<
+    EntitlementCleanupService,
+    'revokeLicenseWithCleanup' | 'releaseLicenseFromPool'
+  >;
+
   let service: LicensesService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new LicensesService(licenses, accounts, crypto);
+    service = new LicensesService(
+      licenses,
+      accounts,
+      crypto,
+      entitlementCleanup as EntitlementCleanupService,
+    );
   });
 
   it('allows validate for unassigned licenses without a user', async () => {
@@ -63,6 +77,7 @@ describe('LicensesService ownership', () => {
       status: 'available',
       ownerId: null,
       expiresAt: null,
+      validFrom: new Date(),
       game: { id: 'g1', title: 'Game', slug: 'game' },
     } as never);
 
@@ -79,6 +94,7 @@ describe('LicensesService ownership', () => {
       status: 'available',
       ownerId: 'user-a',
       expiresAt: null,
+      validFrom: new Date(),
       game: { id: 'g1', title: 'Game', slug: 'game' },
     } as never);
 
@@ -93,6 +109,7 @@ describe('LicensesService ownership', () => {
       status: 'available',
       ownerId: 'user-a',
       expiresAt: null,
+      validFrom: new Date(),
       game: { id: 'g1', title: 'Game', slug: 'game' },
     } as never);
 
@@ -109,6 +126,7 @@ describe('LicensesService ownership', () => {
       status: 'available',
       ownerId: 'user-a',
       expiresAt: null,
+      validFrom: new Date(),
       game: { id: 'g1', title: 'Game', slug: 'game' },
     } as never);
 
@@ -157,12 +175,23 @@ describe('LicensesService ownership', () => {
         status: 'available',
         source: 'purchase',
         expiresAt: null,
+        validFrom: new Date('2024-01-01T00:00:00.000Z'),
         game: { id: 'g1', title: 'Game', slug: 'game' },
       },
     ];
     vi.mocked(licenses.findByOwnerId).mockResolvedValue(rows as never);
 
-    await expect(service.findMine(userA)).resolves.toEqual(rows);
+    await expect(service.findMine(userA)).resolves.toEqual([
+      {
+        id: 'lic-1',
+        licenseKey: 'KEY-1',
+        status: 'available',
+        source: 'purchase',
+        validFrom: '2024-01-01T00:00:00.000Z',
+        expiresAt: '2026-01-01T00:00:00.000Z',
+        game: { id: 'g1', title: 'Game', slug: 'game' },
+      },
+    ]);
     expect(licenses.findByOwnerId).toHaveBeenCalledWith('user-a');
   });
 
@@ -191,6 +220,25 @@ describe('LicensesService ownership', () => {
     expect(licenses.update).toHaveBeenCalledWith('lic-1', {
       buyerEmail: 'new@example.com',
       buyerCountry: 'US',
+    });
+  });
+
+  it('update sets default expiry when expiresAt is cleared', async () => {
+    const validFrom = new Date('2024-01-01T00:00:00.000Z');
+    vi.mocked(licenses.findById).mockResolvedValue({
+      id: 'lic-1',
+      status: 'available',
+      validFrom,
+    } as never);
+    vi.mocked(licenses.update).mockResolvedValue({
+      id: 'lic-1',
+      expiresAt: new Date('2026-01-01T00:00:00.000Z'),
+    } as never);
+
+    await service.update('lic-1', { expiresAt: null });
+
+    expect(licenses.update).toHaveBeenCalledWith('lic-1', {
+      expiresAt: new Date('2026-01-01T00:00:00.000Z'),
     });
   });
 
@@ -227,6 +275,26 @@ describe('LicensesService ownership', () => {
 
     await expect(service.remove('lic-1')).rejects.toBeInstanceOf(
       BadRequestException,
+    );
+  });
+
+  it('revoke delegates to entitlement cleanup', async () => {
+    vi.mocked(licenses.findById).mockResolvedValue({
+      id: 'lic-1',
+      status: 'activated',
+      accountId: 'account-1',
+    } as never);
+    vi.mocked(entitlementCleanup.revokeLicenseWithCleanup).mockResolvedValue({
+      id: 'lic-1',
+      status: 'revoked',
+    } as never);
+
+    await expect(service.revoke('lic-1')).resolves.toEqual({
+      id: 'lic-1',
+      status: 'revoked',
+    });
+    expect(entitlementCleanup.revokeLicenseWithCleanup).toHaveBeenCalledWith(
+      'lic-1',
     );
   });
 });

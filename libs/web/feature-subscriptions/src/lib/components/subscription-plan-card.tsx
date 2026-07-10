@@ -36,7 +36,7 @@ export function SubscriptionPlanCard({
         </Text>
         {cancelled && selected ? (
           <Badge variant="accent" style={{ marginTop: '0.75rem' }}>
-            Checkout cancelled — you can try again
+            Checkout cancelled you can try again
           </Badge>
         ) : null}
       </div>

@@ -1,5 +1,5 @@
 export const ADMIN_LICENSES_SETUP_MESSAGE =
-  'Admin licenses — not implemented yet';
+  'Admin licenses not implemented yet';
 
 export const ADMIN_LICENSE_COLUMNS = [
   { key: 'licenseKey', header: 'License key' },

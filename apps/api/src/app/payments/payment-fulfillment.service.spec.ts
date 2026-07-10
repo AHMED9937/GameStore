@@ -93,7 +93,7 @@ describe('PaymentFulfillmentService', () => {
         licenseKey: expect.stringMatching(/^GS-/),
         status: 'available',
         source: 'purchase',
-        expiresAt: null,
+        expiresAt: expect.any(Date),
         buyerEmail: 'buyer@example.com',
         validFrom: expect.any(Date),
         game: { connect: { id: 'game-1' } },

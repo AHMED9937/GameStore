@@ -9,10 +9,10 @@
 
 ## Recommendations
 
-1. **Post-payment license creation already exists** — `payment-fulfillment.service.ts` mints a `License` on `checkout.session.completed`. Extend; do not rebuild.
-2. **Pool assignment at activation** — Payment creates entitlement; activation consumes pool capacity.
-3. **One `License` row per game for subscriptions** — `gameId` stays required; `source=subscription` + `expiresAt`.
-4. **`expiresAt` on all licenses** — `null` = lifetime (purchase/admin); subscription sets period end.
+1. **Post-payment license creation already exists** `payment-fulfillment.service.ts` mints a `License` on `checkout.session.completed`. Extend; do not rebuild.
+2. **Pool assignment at activation** Payment creates entitlement; activation consumes pool capacity.
+3. **One `License` row per game for subscriptions** `gameId` stays required; `source=subscription` + `expiresAt`.
+4. **`expiresAt` on all licenses** `null` = lifetime (purchase/admin); subscription sets period end.
 
 ---
 
@@ -43,7 +43,7 @@ flowchart TB
 
 ---
 
-## Part 1 — Database schema
+## Part 1 Database schema
 
 ### License extensions
 
@@ -70,9 +70,9 @@ Order link remains via `Order.licenseId` (existing 1:1).
 
 ### Subscription tables
 
-- `SubscriptionPlan` — name, slug, stripePriceId, interval, isActive
-- `SubscriptionPlanGame` — plan ↔ published game mapping
-- `UserSubscription` — user, plan, Stripe ids, period dates, status
+- `SubscriptionPlan` name, slug, stripePriceId, interval, isActive
+- `SubscriptionPlanGame` plan ↔ published game mapping
+- `UserSubscription` user, plan, Stripe ids, period dates, status
 
 ### ER diagram
 
@@ -99,7 +99,7 @@ erDiagram
 
 ---
 
-## Part 2 — One-time purchase (harden)
+## Part 2 One-time purchase (harden)
 
 | Task | Detail |
 |------|--------|
@@ -110,7 +110,7 @@ erDiagram
 
 ---
 
-## Part 3 — Pool rotation
+## Part 3 Pool rotation
 
 - Use `GameAccount.maxActiveUsers` instead of hardcoded 50.
 - `findAvailableForGame` picks lowest `activeUsersCount` under per-account cap.
@@ -118,7 +118,7 @@ erDiagram
 
 ---
 
-## Part 4 — License validity
+## Part 4 License validity
 
 | Source | `expiresAt` |
 |--------|-------------|
@@ -130,7 +130,7 @@ erDiagram
 
 ---
 
-## Part 5 — Subscription (Stripe)
+## Part 5 Subscription (Stripe)
 
 | Event | Action |
 |-------|--------|
@@ -146,7 +146,7 @@ erDiagram
 
 ---
 
-## Part 6 — Admin CRUD
+## Part 6 Admin CRUD
 
 | Area | Changes |
 |------|---------|

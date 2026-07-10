@@ -10,7 +10,9 @@
 #   .\scripts\stripe-webhook-dev.ps1
 #
 # The script prints a whsec_... secret. Copy it into .env as STRIPE_WEBHOOK_SECRET,
-# then restart the API so license fulfillment works after checkout.
+# then restart the API so license fulfillment works immediately via webhooks.
+# Without webhooks, fulfillment still runs when the buyer hits the success page
+# (Stripe session sync fallback on GET /orders/by-session/:id).
 
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -34,7 +36,7 @@ if (-not $stripeSecretKey) {
 
 $stripeCmd = Get-Command stripe -ErrorAction SilentlyContinue
 if (-not $stripeCmd) {
-  Write-Error 'Stripe CLI not found. Install: winget install Stripe.StripeCli — then open a new terminal.'
+  Write-Error 'Stripe CLI not found. Install: winget install Stripe.StripeCli then open a new terminal.'
 }
 
 Write-Host ''

@@ -65,13 +65,78 @@ export class LicensesRepository {
         status: true,
         source: true,
         expiresAt: true,
+        validFrom: true,
         game: { select: gameSummarySelect },
       },
     });
   }
 
-  findAll() {
+  findAll(Filters?: {
+    game?: string;
+    source?: string;
+    owner?: string;
+    status?: string;
+    expires?: 'lifetime' | 'expiring' | 'expired';
+  }) {
+    const now = new Date();
+    const where: Prisma.LicenseWhereInput = {
+      ...(Filters?.game
+        ? {
+            game: {
+              title: {
+                contains: Filters.game,
+                mode: 'insensitive',
+              },
+            },
+          }
+        : {}),
+      ...(Filters?.source
+        ? {
+            source: {
+              equals: Filters.source,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(Filters?.status
+        ? {
+            status: {
+              equals: Filters.status,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(Filters?.owner
+        ? {
+            OR: [
+              {
+                owner: {
+                  email: {
+                    contains: Filters.owner,
+                    mode: 'insensitive',
+                  },
+                },
+              },
+              {
+                buyerEmail: {
+                  contains: Filters.owner,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(Filters?.expires === 'lifetime'
+        ? { expiresAt: null }
+        : Filters?.expires === 'expired'
+          ? { expiresAt: { lte: now } }
+          : Filters?.expires === 'expiring'
+            ? { expiresAt: { gt: now } }
+            : {}),
+    };
+
     return this.prisma.license.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         game: { select: gameSummarySelect },

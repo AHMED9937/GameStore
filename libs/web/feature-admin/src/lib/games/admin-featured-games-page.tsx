@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button, Container, Text } from '@gamestore/shared/ui';
 import {
@@ -11,9 +11,12 @@ import {
   type AdminFeaturedGameItem,
   type AdminFeaturedGamesResponse,
 } from '@gamestore/web/data-access';
+import { AdminActionFeedback } from '../components/admin-action-feedback';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminPageHeader } from '../components/admin-page-header';
 import { AdminPageShell } from '../components/admin-page-shell';
+import { AdminTableSearchField } from '../components/admin-table-search-field';
+import { useAdminActionFeedback } from '../hooks/use-admin-action-feedback';
 import { useAdminMutation } from '../hooks/use-admin-mutation';
 import { useAdminResourceState } from '../hooks/use-admin-resource';
 import type { AdminAsyncState } from '../types/admin-async-state';
@@ -122,16 +125,19 @@ export function AdminFeaturedGamesPage({
   resourceState,
 }: AdminFeaturedGamesPageProps) {
   const isControlled = resourceState !== undefined;
+  const [availableSearch, setAvailableSearch] = useState('');
+  const [debouncedAvailableSearch, setDebouncedAvailableSearch] = useState('');
   const { state: fetchedState, refetch } = useAdminResourceState(
-    () => getAdminFeaturedGames(),
+    () => getAdminFeaturedGames(debouncedAvailableSearch),
     parseFeaturedData,
+    { deps: [debouncedAvailableSearch] },
   );
   const state = resourceState ?? fetchedState;
   const saveMutation = useAdminMutation<AdminFeaturedGamesResponse>();
+  const actionFeedback = useAdminActionFeedback();
   const [draftFeatured, setDraftFeatured] = useState<AdminFeaturedGameItem[] | null>(
     null,
   );
-  const [message, setMessage] = useState<string | null>(null);
 
   const serverFeatured =
     state.status === 'success' ? state.data.featured : [];
@@ -158,11 +164,18 @@ export function AdminFeaturedGamesPage({
     (draftFeatured.length !== serverFeatured.length ||
       draftFeatured.some((game, index) => game.id !== serverFeatured[index]?.id));
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedAvailableSearch(availableSearch.trim());
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [availableSearch]);
+
   const handleSave = useCallback(() => {
     if (!draftFeatured) {
       return;
     }
-    setMessage(null);
+    actionFeedback.clearForAction();
     saveMutation
       .mutate(() => updateAdminFeaturedGames(draftFeatured.map((game) => game.id)))
       .then((response) => {
@@ -170,18 +183,18 @@ export function AdminFeaturedGamesPage({
           return;
         }
         if (isSetupResponse(response)) {
-          setMessage(response.message);
+          actionFeedback.setError(response.message);
           return;
         }
         setDraftFeatured(null);
-        setMessage('Featured games saved.');
+        actionFeedback.setMessage('Featured games saved.');
         refetch();
       });
-  }, [draftFeatured, refetch, saveMutation]);
+  }, [actionFeedback, draftFeatured, refetch, saveMutation]);
 
   const handleReset = () => {
     setDraftFeatured(null);
-    setMessage(null);
+    actionFeedback.clear();
   };
 
   return (
@@ -215,11 +228,13 @@ export function AdminFeaturedGamesPage({
           }
         />
 
-        {message ? (
-          <Text tone="muted" style={{ marginBottom: '1rem' }}>
-            {message}
-          </Text>
-        ) : null}
+        <AdminActionFeedback
+          error={actionFeedback.error ?? saveMutation.error}
+          message={actionFeedback.message}
+          isPending={saveMutation.status === 'pending'}
+          pendingMessage="Saving featured games…"
+          testIdPrefix="admin-featured-games-action"
+        />
 
         <AdminAsyncView state={state}>
           {(data) => (
@@ -272,6 +287,15 @@ export function AdminFeaturedGamesPage({
 
               <section className={styles.featuredPanel}>
                 <Text tone="muted">Available published games</Text>
+                <div style={{ marginTop: '0.75rem' }}>
+                  <AdminTableSearchField
+                    label="Search"
+                    value={availableSearch}
+                    placeholder="Search available games…"
+                    ariaLabel="Filter available featured games by title or slug"
+                    onChange={setAvailableSearch}
+                  />
+                </div>
                 {available.length === 0 ? (
                   <Text tone="dim" style={{ marginTop: '1rem' }}>
                     All published games are already featured.

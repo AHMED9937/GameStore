@@ -7,7 +7,7 @@ describe('AdminAsyncView', () => {
     render(
       <AdminAsyncView state={{ status: 'idle' }}>{() => 'data'}</AdminAsyncView>,
     );
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders loading for loading state', () => {
@@ -16,19 +16,19 @@ describe('AdminAsyncView', () => {
         {() => 'data'}
       </AdminAsyncView>,
     );
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders setup banner with message', () => {
     render(
       <AdminAsyncView
-        state={{ status: 'setup', message: 'Admin games — not implemented yet' }}
+        state={{ status: 'setup', message: 'Admin games not implemented yet' }}
       >
         {() => 'data'}
       </AdminAsyncView>,
     );
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
-      'Admin games — not implemented yet',
+      'Admin games not implemented yet',
     );
   });
 
@@ -38,7 +38,19 @@ describe('AdminAsyncView', () => {
         {() => 'data'}
       </AdminAsyncView>,
     );
-    expect(screen.getByTestId('admin-error-banner').textContent).toBe('Forbidden');
+    expect(screen.getByTestId('admin-error-banner').textContent).toContain('Forbidden');
+  });
+
+  it('renders retry button when onRetry is provided', () => {
+    render(
+      <AdminAsyncView
+        state={{ status: 'error', message: 'Unavailable' }}
+        onRetry={() => undefined}
+      >
+        {() => 'data'}
+      </AdminAsyncView>,
+    );
+    expect(screen.getByTestId('admin-error-retry')).toBeTruthy();
   });
 
   it('renders empty state', () => {

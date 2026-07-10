@@ -90,6 +90,10 @@
   gap: 0.5rem;
 }
 
+.compactLoadingPanel {
+  min-height: 3.5rem;
+}
+
 .selectCell {
   width: 2.5rem;
 }

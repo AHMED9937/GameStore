@@ -100,4 +100,28 @@ describe('AdminOrdersService', () => {
     expect(result.failed[0]?.reason).toContain('Cannot delete completed order');
     expect(orders.deleteById).not.toHaveBeenCalled();
   });
+
+  it('maps orders using snapshots when game relation is missing', async () => {
+    vi.mocked(orders.findAll).mockResolvedValueOnce([
+      {
+        id: 'order-1',
+        status: 'completed',
+        orderType: 'one_time',
+        amount: { toString: () => '19.99' },
+        currency: 'USD',
+        buyerEmail: 'buyer@example.com',
+        owner: null,
+        game: null,
+        gameTitleSnapshot: 'Archived Game',
+        gameSlugSnapshot: 'archived-game',
+        license: null,
+        createdAt: new Date('2025-06-30T12:00:00.000Z'),
+      },
+    ] as never);
+
+    const result = await service.findAll();
+
+    expect(result[0]?.gameTitle).toBe('Archived Game');
+    expect(result[0]?.gameSlug).toBe('archived-game');
+  });
 });

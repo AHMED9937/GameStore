@@ -6,7 +6,7 @@ export type CatalogFilterOption = {
   platform: string | null;
 };
 
-export const CATALOG_PLATFORM_FILTERS: CatalogFilterOption[] = [
+export const CATALOG_PLATFORM_Filters: CatalogFilterOption[] = [
   { id: 'all', label: 'All Games', platform: null },
   { id: 'steam', label: 'Steam', platform: 'steam' },
   { id: 'epic', label: 'Epic Games', platform: 'epic' },

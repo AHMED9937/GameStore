@@ -19,7 +19,19 @@ test.describe('checkout errors', () => {
   });
 
   test('success page shows error for unknown session', async ({ page }) => {
-    await page.goto('/checkout/success');
+    await page.route('**/api/orders/by-session/cs_missing_e2e', async (route) => {
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          statusCode: 404,
+          message: 'No order found for session',
+        }),
+      });
+    });
+
+    await page.goto('/checkout/success?session_id=cs_missing_e2e');
     await expect(page.getByTestId('checkout-success-error')).toBeVisible();
+    await expect(page.getByText('Order not found.')).toBeVisible();
   });
 });

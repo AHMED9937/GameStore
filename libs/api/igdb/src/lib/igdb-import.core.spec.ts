@@ -85,6 +85,9 @@ describe('importIgdbGame', () => {
         coverImage: 'https://images.igdb.com/igdb/image/upload/t_1080p_2x/cover.jpg',
         coverCardImage: 'https://images.igdb.com/igdb/image/upload/t_1080p/cover.jpg',
         igdbCoverUrl: 'https://images.igdb.com/igdb/image/upload/t_thumb/cover.jpg',
+        metaTitle: 'Buy Halo — Steam Activation',
+        metaDescription: expect.stringContaining('Classic shooter.'),
+        ogImage: 'https://images.igdb.com/igdb/image/upload/t_1080p_2x/cover.jpg',
       }),
     });
     expect(createMany).toHaveBeenCalledWith({
@@ -96,5 +99,73 @@ describe('importIgdbGame', () => {
       ]),
     });
     expect(createMany.mock.calls[0]?.[0]?.data).toHaveLength(9);
+  });
+
+  it('preserves admin seo overrides on re-sync', async () => {
+    const client = {
+      getGameDetails: vi.fn().mockResolvedValue({
+        igdbId: 12345,
+        title: 'Halo',
+        summary: 'Updated summary from IGDB.',
+        releaseDate: new Date('2001-11-15T00:00:00.000Z'),
+        genres: ['Shooter'],
+        coverUrl: 'https://images.igdb.com/new-cover.jpg',
+        coverCardUrl: 'https://images.igdb.com/new-cover-card.jpg',
+        coverSourceUrl: 'https://images.igdb.com/new-thumb.jpg',
+      }),
+      getGameMedia: vi.fn().mockResolvedValue({ screenshots: [], videos: [] }),
+      getScreenshots: vi.fn().mockResolvedValue([]),
+      getVideos: vi.fn().mockResolvedValue([]),
+    } satisfies Pick<IgdbClient, 'getGameDetails' | 'getGameMedia' | 'getScreenshots' | 'getVideos'>;
+
+    const update = vi.fn().mockResolvedValue({
+      id: 'game-1',
+      slug: 'halo',
+      title: 'Halo',
+      igdbId: 12345,
+      platform: 'steam',
+      priceBase: { toString: () => '9.99' },
+      publishedAt: null,
+    });
+
+    const prisma = {
+      game: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'game-1',
+          slug: 'halo',
+          metaTitle: 'Admin Custom Title',
+          metaDescription: 'Admin custom description.',
+          ogImage: 'https://cdn.example.com/custom-og.jpg',
+        }),
+      },
+      $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+        callback({
+          game: {
+            update,
+            create: vi.fn(),
+          },
+          gameMedia: {
+            deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+            createMany: vi.fn(),
+          },
+        }),
+      ),
+    };
+
+    await importIgdbGame(prisma as never, client as never, {
+      igdbId: 12345,
+      priceBase: 9.99,
+      platform: 'steam',
+    });
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'game-1' },
+      data: expect.objectContaining({
+        description: 'Updated summary from IGDB.',
+        metaTitle: 'Admin Custom Title',
+        metaDescription: 'Admin custom description.',
+        ogImage: 'https://cdn.example.com/custom-og.jpg',
+      }),
+    });
   });
 });

@@ -25,12 +25,28 @@ import {
   type BulkActionResult,
 } from '../bulk-action.types';
 import { EntitlementCleanupService } from '../../entitlements/entitlement-cleanup.service';
+import { DiscordNotifyService } from '../../discord/discord-notify.service';
 import type {
   AdminGameAccountSummary,
   AdminGameMediaDto,
   AdminGameReadinessDto,
   AdminReadinessCheck,
 } from './admin-game.dto';
+import type {
+  AdminGameListFiltersDto,
+  AdminGameStatusFilter,
+} from './admin-game-list-filters.dto';
+import {
+  normalizeEnumFilter,
+  normalizeSearchTerm,
+} from '@gamestore/api/data-access';
+
+export type AdminGameDiscordDto = {
+  configured: boolean;
+  posted: boolean;
+  messageId: string | null;
+  announceDescription: string | null;
+};
 
 export type AdminGameDto = {
   id: string;
@@ -41,6 +57,9 @@ export type AdminGameDto = {
   description: string | null;
   coverImage: string | null;
   coverCardImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
   publishedAt: string | null;
   published: boolean;
   soldOut: boolean;
@@ -55,6 +74,7 @@ export type AdminGameDto = {
   requirementsRecommended: GameSystemRequirements | null;
   media: AdminGameMediaDto[];
   accountSummary: AdminGameAccountSummary;
+  discord: AdminGameDiscordDto;
 };
 
 export type AdminCreateGameDto = CreateGameDto & {
@@ -64,6 +84,7 @@ export type AdminCreateGameDto = CreateGameDto & {
   releaseDate?: string | null;
   requirementsMin?: GameSystemRequirements | null;
   requirementsRecommended?: GameSystemRequirements | null;
+  discordAnnounceDescription?: string | null;
 };
 
 export type AdminUpdateGameDto = Partial<AdminCreateGameDto>;
@@ -99,6 +120,16 @@ function slugifyTitle(title: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+function normalizeOptionalAdminString(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : null;
+}
+
 function toMediaDto(
   media: AdminGameRecord['media'][number],
 ): AdminGameMediaDto {
@@ -119,10 +150,11 @@ export class AdminGamesService {
     private readonly prisma: PrismaService,
     private readonly entitlementCleanup: EntitlementCleanupService,
     private readonly storeSettings: StoreSettingsRepository,
+    private readonly discordNotify: DiscordNotifyService,
   ) {}
 
-  async findAll(): Promise<AdminGameDto[]> {
-    const rows = await this.games.findAllAdmin();
+  async findAll(filters?: AdminGameListFiltersDto): Promise<AdminGameDto[]> {
+    const rows = await this.games.findAllAdmin(this.toGameFilters(filters));
     const summaries = await this.getAccountSummariesBatch(rows.map((row) => row.id));
     return rows.map((row) =>
       this.toAdminGameDtoSync(
@@ -130,6 +162,25 @@ export class AdminGamesService {
         summaries.get(row.id) ?? { total: 0, active: 0, hasActivePool: false },
       ),
     );
+  }
+
+  private toGameFilters(filters?: AdminGameListFiltersDto): {
+    q?: string;
+    platform?: string;
+    status?: AdminGameStatusFilter;
+  } {
+    const q = normalizeSearchTerm(filters?.q);
+    const platform = normalizeSearchTerm(filters?.platform);
+    const status = normalizeEnumFilter(filters?.status, [
+      'published',
+      'draft',
+      'sold_out',
+    ] as const);
+    return {
+      ...(q ? { q } : {}),
+      ...(platform ? { platform } : {}),
+      ...(status ? { status } : {}),
+    };
   }
 
   async findOne(id: string): Promise<AdminGameDto> {
@@ -145,11 +196,19 @@ export class AdminGamesService {
 
     try {
       const game = await this.games.create(this.buildCreateInput(dto));
-      const adminGame = await this.games.findByIdAdmin(game.id);
-      if (!adminGame) {
-        throw new NotFoundException(`No game found with id "${game.id}"`);
+      let adminGame = await this.findOne(game.id);
+      if (dto.discordAnnounceDescription !== undefined) {
+        await this.games.setDiscordAnnounceDescription(
+          game.id,
+          normalizeOptionalAdminString(dto.discordAnnounceDescription) ?? null,
+        );
+        adminGame = await this.findOne(game.id);
       }
-      return this.toAdminGameDto(adminGame);
+      if (dto.published === true) {
+        await this.syncDiscordForGame(adminGame, 'publish');
+        adminGame = await this.findOne(game.id);
+      }
+      return adminGame;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -198,9 +257,40 @@ export class AdminGamesService {
       }
     }
 
+    const becomingPublished =
+      dto.published === true && existing.publishedAt === null;
+    const becomingUnpublished =
+      dto.published === false && existing.publishedAt !== null;
+    const stayingPublished =
+      existing.publishedAt !== null && dto.published !== false;
+    const discordState = await this.games.getDiscordAnnouncementState(id);
+
+    if (becomingUnpublished && discordState.discordPublishMessageId) {
+      await this.deleteDiscordAnnouncement(
+        id,
+        discordState.discordPublishMessageId,
+      );
+    }
+
     try {
       await this.games.update(id, this.buildUpdateInput(dto, existing));
-      return this.findOne(id);
+      if (dto.discordAnnounceDescription !== undefined) {
+        await this.games.setDiscordAnnounceDescription(
+          id,
+          normalizeOptionalAdminString(dto.discordAnnounceDescription) ?? null,
+        );
+      }
+      let updated = await this.findOne(id);
+      if (becomingPublished) {
+        await this.syncDiscordForGame(updated, 'publish');
+        updated = await this.findOne(id);
+      } else if (stayingPublished && this.shouldSyncDiscordUpdate(dto)) {
+        await this.syncDiscordForGame(
+          this.applyDiscordDtoOverrides(updated, dto),
+          'update',
+        );
+      }
+      return updated;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -225,6 +315,13 @@ export class AdminGamesService {
     }
 
     await this.entitlementCleanup.prepareGameForDeletion(id);
+
+    const discordState = await this.games.getDiscordAnnouncementState(id);
+    if (discordState.discordPublishMessageId) {
+      await this.discordNotify.deleteGameAnnouncement(
+        discordState.discordPublishMessageId,
+      );
+    }
 
     try {
       await this.games.delete(id);
@@ -262,15 +359,25 @@ export class AdminGamesService {
     });
   }
 
-  async getFeaturedGames(): Promise<AdminFeaturedGamesDto> {
+  async getFeaturedGames(q?: string): Promise<AdminFeaturedGamesDto> {
     const games = await this.games.findPublishedEligibleForFeatured();
     const featured = games
       .filter((game) => game.featuredOrder !== null)
       .sort((a, b) => (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0))
       .map((game) => this.toFeaturedGameItemDto(game));
     const featuredIds = new Set(featured.map((game) => game.id));
+    const search = normalizeSearchTerm(q)?.toLowerCase();
     const available = games
       .filter((game) => !featuredIds.has(game.id))
+      .filter((game) => {
+        if (!search) {
+          return true;
+        }
+        return (
+          game.title.toLowerCase().includes(search) ||
+          game.slug.toLowerCase().includes(search)
+        );
+      })
       .map((game) => this.toFeaturedGameItemDto(game));
 
     return { featured, available };
@@ -417,9 +524,25 @@ export class AdminGamesService {
     return slugifyTitle(title);
   }
 
+  private async toDiscordDtoForGame(gameId: string): Promise<AdminGameDiscordDto> {
+    const state = await this.games.getDiscordAnnouncementState(gameId);
+    return {
+      configured: this.discordNotify.isWebhookConfigured(),
+      posted: Boolean(state.discordPublishMessageId),
+      messageId: state.discordPublishMessageId,
+      announceDescription: state.discordAnnounceDescription,
+    };
+  }
+
   private async toAdminGameDto(game: AdminGameRecord): Promise<AdminGameDto> {
-    const accountSummary = await this.getAccountSummary(game.id);
-    return this.toAdminGameDtoSync(game, accountSummary);
+    const [accountSummary, discord] = await Promise.all([
+      this.getAccountSummary(game.id),
+      this.toDiscordDtoForGame(game.id),
+    ]);
+    return {
+      ...this.toAdminGameDtoSync(game, accountSummary),
+      discord,
+    };
   }
 
   private toAdminGameDtoSync(
@@ -435,6 +558,9 @@ export class AdminGamesService {
       description: game.description,
       coverImage: game.coverImage,
       coverCardImage: game.coverCardImage,
+      metaTitle: game.metaTitle,
+      metaDescription: game.metaDescription,
+      ogImage: game.ogImage,
       publishedAt: game.publishedAt?.toISOString() ?? null,
       published: game.publishedAt !== null,
       soldOutManual: game.soldOut,
@@ -451,6 +577,12 @@ export class AdminGamesService {
       ),
       media: game.media.map(toMediaDto),
       accountSummary,
+      discord: {
+        configured: this.discordNotify.isWebhookConfigured(),
+        posted: false,
+        messageId: null,
+        announceDescription: null,
+      },
     };
   }
 
@@ -509,6 +641,102 @@ export class AdminGamesService {
     }
   }
 
+  private applyDiscordDtoOverrides(
+    game: AdminGameDto,
+    dto: AdminUpdateGameDto,
+  ): AdminGameDto {
+    const announceDescription =
+      dto.discordAnnounceDescription !== undefined
+        ? normalizeOptionalAdminString(dto.discordAnnounceDescription) ?? null
+        : game.discord.announceDescription;
+
+    return {
+      ...game,
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
+      ...(dto.priceBase !== undefined
+        ? { priceBase: String(dto.priceBase) }
+        : {}),
+      ...(dto.coverImage !== undefined ? { coverImage: dto.coverImage } : {}),
+      ...(dto.soldOut !== undefined
+        ? {
+            soldOutManual: dto.soldOut,
+            soldOut: resolveSoldOut(dto.soldOut, game.accountSummary.hasActivePool),
+          }
+        : {}),
+      discord: {
+        ...game.discord,
+        announceDescription,
+      },
+    };
+  }
+
+  private shouldSyncDiscordUpdate(dto: AdminUpdateGameDto): boolean {
+    return (
+      dto.title !== undefined ||
+      dto.slug !== undefined ||
+      dto.priceBase !== undefined ||
+      dto.coverImage !== undefined ||
+      dto.soldOut !== undefined ||
+      dto.discordAnnounceDescription !== undefined
+    );
+  }
+
+  private buildDiscordPayload(game: AdminGameDto) {
+    return {
+      title: game.title,
+      slug: game.slug,
+      coverUrl: game.coverImage ?? game.coverCardImage ?? game.igdbCoverUrl,
+      platform: game.platform,
+      price: game.priceBase,
+      soldOut: game.soldOut,
+      announceDescription: game.discord.announceDescription,
+    };
+  }
+
+  private async deleteDiscordAnnouncement(
+    gameId: string,
+    messageId: string,
+  ): Promise<void> {
+    try {
+      await this.discordNotify.deleteGameAnnouncement(messageId);
+      await this.games.setDiscordPublishMessageId(gameId, null);
+    } catch {
+      // Discord errors must not block admin APIs
+    }
+  }
+
+  private async syncDiscordForGame(
+    game: AdminGameDto,
+    intent: 'publish' | 'update',
+  ): Promise<void> {
+    try {
+      const payload = this.buildDiscordPayload(game);
+      if (intent === 'publish') {
+        const messageId = await this.discordNotify.publishGameAnnouncement(payload);
+        if (messageId) {
+          await this.games.setDiscordPublishMessageId(game.id, messageId);
+        }
+        return;
+      }
+
+      const messageId = game.discord.messageId;
+      if (messageId) {
+        await this.discordNotify.updateGameAnnouncement(messageId, payload);
+        return;
+      }
+
+      if (game.published) {
+        const newMessageId = await this.discordNotify.publishGameAnnouncement(payload);
+        if (newMessageId) {
+          await this.games.setDiscordPublishMessageId(game.id, newMessageId);
+        }
+      }
+    } catch {
+      // Discord errors must not block admin APIs
+    }
+  }
+
   private buildCreateInput(dto: AdminCreateGameDto): Prisma.GameCreateInput {
     const publishedAt =
       dto.published === true
@@ -524,6 +752,15 @@ export class AdminGamesService {
       priceBase: dto.priceBase,
       description: dto.description,
       coverImage: dto.coverImage,
+      ...(dto.metaTitle !== undefined
+        ? { metaTitle: normalizeOptionalAdminString(dto.metaTitle) }
+        : {}),
+      ...(dto.metaDescription !== undefined
+        ? { metaDescription: normalizeOptionalAdminString(dto.metaDescription) }
+        : {}),
+      ...(dto.ogImage !== undefined
+        ? { ogImage: normalizeOptionalAdminString(dto.ogImage) }
+        : {}),
       publishedAt,
       genres: dto.genres ?? [],
       releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : undefined,
@@ -555,6 +792,15 @@ export class AdminGamesService {
     }
     if (dto.coverImage !== undefined) {
       data.coverImage = dto.coverImage;
+    }
+    if (dto.metaTitle !== undefined) {
+      data.metaTitle = normalizeOptionalAdminString(dto.metaTitle);
+    }
+    if (dto.metaDescription !== undefined) {
+      data.metaDescription = normalizeOptionalAdminString(dto.metaDescription);
+    }
+    if (dto.ogImage !== undefined) {
+      data.ogImage = normalizeOptionalAdminString(dto.ogImage);
     }
     if (dto.genres !== undefined) {
       data.genres = dto.genres;

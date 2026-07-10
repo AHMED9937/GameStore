@@ -4,7 +4,8 @@ export type UserSubscriptionLicenseRecord = {
   id: string;
   licenseKey: string;
   status: string;
-  expiresAt: string | null;
+  validFrom: string;
+  expiresAt: string;
   game: {
     id: string;
     title: string;

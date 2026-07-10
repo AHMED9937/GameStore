@@ -62,9 +62,15 @@ describe('AdminGamesController', () => {
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
   const request = { headers: {}, ip: '127.0.0.1' };
 
+  it('findAll returns admin games and forwards filters', async () => {
+    const filters = { q: 'demo', platform: 'steam', status: 'published' as const };
+    await expect(controller.findAll(filters)).resolves.toEqual([sampleGame]);
+    expect(adminGames.findAll).toHaveBeenCalledWith(filters);
+  });
+
   it('findAll returns admin games', async () => {
-    await expect(controller.findAll()).resolves.toEqual([sampleGame]);
-    expect(adminGames.findAll).toHaveBeenCalled();
+    await expect(controller.findAll({})).resolves.toEqual([sampleGame]);
+    expect(adminGames.findAll).toHaveBeenCalledWith({});
   });
 
   it('findOne returns a game by id', async () => {

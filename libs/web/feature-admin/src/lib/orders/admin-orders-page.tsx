@@ -6,17 +6,26 @@ import {
   apiErrorMessage,
   bulkDeleteAdminOrders,
   getAdminOrders,
+  type AdminOrderListFilters,
 } from '@gamestore/web/data-access';
+import { AdminActionFeedback } from '../components/admin-action-feedback';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminBulkToolbar } from '../components/admin-bulk-toolbar';
 import { AdminPageShell } from '../components/admin-page-shell';
 import { useAdminRowSelection } from '../components/use-admin-row-selection';
 import type { AdminAsyncState } from '../types/admin-async-state';
+import { useAdminActionFeedback } from '../hooks/use-admin-action-feedback';
 import { useAdminListState } from '../hooks/use-admin-resource';
+import { useAdminListFilters } from '../hooks/use-admin-list-filters';
 import { formatBulkActionSummary } from '../utils/bulk-action-summary';
+import { resolveAdminTableRows } from '../utils/resolve-admin-table-rows';
 import { AdminOrdersEmpty } from './admin-orders-empty';
 import { AdminOrdersHeader } from './admin-orders-header';
 import { AdminOrdersTable } from './admin-orders-table';
+import {
+  AdminOrdersFilters,
+  type AdminOrderFilterDraft,
+} from './admin-orders-filters';
 import type { AdminOrderListItem } from './admin-orders.types';
 
 export type AdminOrdersPageProps = {
@@ -31,14 +40,36 @@ function canDeleteOrder(order: AdminOrderListItem): boolean {
   return order.status === 'pending' || order.status === 'failed';
 }
 
+const emptyOrderFilters: AdminOrderFilterDraft = {
+  q: '',
+  status: '',
+  orderType: '',
+};
+
 export function AdminOrdersPage({ listState }: AdminOrdersPageProps) {
   const isControlled = listState !== undefined;
-  const fetchedState = useAdminListState(() => getAdminOrders(), parseOrdersList);
+  const { draft, setDraft, activeFilters, hasActiveFilters } =
+    useAdminListFilters<AdminOrderFilterDraft>({
+      initial: emptyOrderFilters,
+      textKeys: ['q'],
+    });
+  const queryFilters = useMemo<AdminOrderListFilters>(
+    () => ({
+      ...(activeFilters.q ? { q: activeFilters.q } : {}),
+      ...(activeFilters.status ? { status: activeFilters.status } : {}),
+      ...(activeFilters.orderType ? { orderType: activeFilters.orderType } : {}),
+    }),
+    [activeFilters],
+  );
+  const { state: fetchedState } = useAdminListState(
+    () => getAdminOrders(queryFilters),
+    parseOrdersList,
+    [queryFilters],
+  );
   const state = listState ?? fetchedState;
   const [orders, setOrders] = useState<AdminOrderListItem[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const actionFeedback = useAdminActionFeedback();
 
   useEffect(() => {
     if (!isControlled && state.status === 'success') {
@@ -46,8 +77,7 @@ export function AdminOrdersPage({ listState }: AdminOrdersPageProps) {
     }
   }, [isControlled, state]);
 
-  const tableOrders =
-    isControlled && state.status === 'success' ? state.data : orders;
+  const tableOrders = resolveAdminTableRows(isControlled, state, orders);
 
   const orderById = useMemo(
     () => new Map(tableOrders.map((order) => [order.id, order])),
@@ -82,33 +112,43 @@ export function AdminOrdersPage({ listState }: AdminOrdersPageProps) {
       return;
     }
     setBulkLoading(true);
-    setActionError(null);
-    setActionMessage(null);
+    actionFeedback.clearForAction();
     try {
       const result = await bulkDeleteAdminOrders(selection.selectedIds);
-      setActionMessage(formatBulkActionSummary(result, 'deleted'));
+      actionFeedback.setMessage(formatBulkActionSummary(result, 'deleted'));
       selection.clearSelection();
       await refreshList();
     } catch (error: unknown) {
-      setActionError(apiErrorMessage(error));
+      actionFeedback.setError(apiErrorMessage(error));
     } finally {
       setBulkLoading(false);
     }
-  }, [isControlled, refreshList, selection]);
+  }, [actionFeedback, isControlled, refreshList, selection]);
 
   return (
     <Container>
       <AdminPageShell>
         <AdminOrdersHeader />
-        {actionError ? (
-          <p role="alert" data-testid="admin-orders-action-error">
-            {actionError}
-          </p>
-        ) : null}
-        {actionMessage ? (
-          <p data-testid="admin-orders-action-message">{actionMessage}</p>
-        ) : null}
-        <AdminAsyncView state={state} emptyMessage="No orders yet.">
+        <AdminOrdersFilters
+          draft={draft}
+          disabled={isControlled}
+          onDraftChange={(patch) => setDraft(patch)}
+        />
+        <AdminActionFeedback
+          error={actionFeedback.error}
+          message={actionFeedback.message}
+          isPending={bulkLoading}
+          pendingMessage="Deleting selected orders…"
+          testIdPrefix="admin-orders-action"
+        />
+        <AdminAsyncView
+          state={state}
+          emptyMessage={
+            hasActiveFilters
+              ? 'No orders match the current filters.'
+              : 'No orders yet.'
+          }
+        >
           {(items) =>
             items.length === 0 ? (
               <AdminOrdersEmpty />
@@ -126,12 +166,12 @@ export function AdminOrdersPage({ listState }: AdminOrdersPageProps) {
                       disabled={bulkLoading}
                       onClick={() => void handleBulkDelete()}
                     >
-                      Delete selected
+                      {bulkLoading ? 'Deleting…' : 'Delete selected'}
                     </Button>
                   </AdminBulkToolbar>
                 ) : null}
                 <AdminOrdersTable
-                  orders={tableOrders.length > 0 ? tableOrders : items}
+                  orders={tableOrders}
                   selection={
                     isControlled
                       ? undefined

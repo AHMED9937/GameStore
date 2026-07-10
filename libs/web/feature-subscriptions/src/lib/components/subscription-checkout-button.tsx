@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Button, Text } from '@gamestore/shared/ui';
+import { Button, SkeletonButton, Text } from '@gamestore/shared/ui';
 import {
   ApiError,
   apiErrorMessage,
@@ -64,7 +64,11 @@ export function SubscriptionCheckoutButton({
           loading ? 'subscription-checkout-loading' : 'subscription-checkout-button'
         }
       >
-        {loading ? 'Redirecting to secure checkout…' : 'Subscribe with card'}
+        {loading ? (
+          <SkeletonButton width="100%" height={20} rounded="sm" />
+        ) : (
+          'Subscribe with card'
+        )}
       </Button>
       {error ? (
         <div

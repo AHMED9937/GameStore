@@ -18,6 +18,7 @@ describe.skipIf(!hasDatabase)('Admin license → activation → Steam Guard', ()
   let app: INestApplication;
   let createdGameId = '';
   let licenseKey = '';
+  let licenseId = '';
 
   beforeAll(async () => {
     process.env.STEAM_ENCRYPTION_KEY = TEST_ENCRYPTION_KEY;
@@ -64,6 +65,7 @@ describe.skipIf(!hasDatabase)('Admin license → activation → Steam Guard', ()
       .expect(201);
 
     licenseKey = licenseResponse.body.licenseKey;
+    licenseId = licenseResponse.body.id;
     expect(licenseKey).toMatch(/^GS-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/);
   });
 
@@ -117,6 +119,27 @@ describe.skipIf(!hasDatabase)('Admin license → activation → Steam Guard', ()
 
     expect(response.body.code).toMatch(/^[A-Z0-9]{5}$/);
     expect(response.body.expiresInSeconds).toBeGreaterThan(0);
+  });
+
+  it('POST /api/admin/licenses/:id/revoke releases pool slot after activation', async () => {
+    const accountsBefore = await request(app.getHttpServer())
+      .get(`/api/admin/accounts?gameId=${createdGameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(accountsBefore.body[0].activeUsersCount).toBe(1);
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/licenses/${licenseId}/revoke`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    const accountsAfter = await request(app.getHttpServer())
+      .get(`/api/admin/accounts?gameId=${createdGameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(accountsAfter.body[0].activeUsersCount).toBe(0);
   });
 });
 

@@ -45,6 +45,7 @@ describe.skipIf(!hasDatabase)('Games API', () => {
       platform: expect.any(String),
       priceBase: expect.any(String),
     });
+    expect(response.headers['cache-control']).toContain('max-age=60');
   });
 
   it('GET /api/games/demo-game-1 returns a seeded game when present', async () => {
@@ -61,6 +62,9 @@ describe.skipIf(!hasDatabase)('Games API', () => {
       slug: 'demo-game-1',
       title: 'Stellar Odyssey',
       platform: 'steam',
+      metaTitle: expect.anything(),
+      metaDescription: expect.anything(),
+      ogImage: expect.anything(),
     });
   });
 

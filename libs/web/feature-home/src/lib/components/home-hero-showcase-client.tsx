@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { Game } from '@gamestore/web/data-access';
 import { formatGamePrice, getGameCardCover } from '@gamestore/web/data-access';
 import { Text } from '@gamestore/shared/ui';
 import Link from 'next/link';
+import { HomeHeroShowcaseSkeleton } from './home-hero-showcase-skeleton';
 import styles from './section.module.css';
 
 export type HomeHeroShowcaseClientProps = {
@@ -13,6 +14,7 @@ export type HomeHeroShowcaseClientProps = {
 
 export function HomeHeroShowcaseClient({ games }: HomeHeroShowcaseClientProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loadedCovers, setLoadedCovers] = useState<Record<string, boolean>>({});
   const count = games.length;
 
   const goTo = useCallback(
@@ -31,8 +33,37 @@ export function HomeHeroShowcaseClient({ games }: HomeHeroShowcaseClientProps) {
   }
 
   const activeGame = games[activeIndex];
+  const activeCover = getGameCardCover(activeGame);
   const prevGame = count > 1 ? games[(activeIndex - 1 + count) % count] : null;
   const nextGame = count > 1 ? games[(activeIndex + 1) % count] : null;
+  const isActiveCoverLoaded = loadedCovers[activeCover] === true;
+
+  useEffect(() => {
+    if (loadedCovers[activeCover]) {
+      return;
+    }
+
+    let cancelled = false;
+    const preloadImage = new Image();
+    const markLoaded = () => {
+      if (cancelled) {
+        return;
+      }
+      setLoadedCovers((current) => ({ ...current, [activeCover]: true }));
+    };
+
+    preloadImage.onload = markLoaded;
+    preloadImage.onerror = markLoaded;
+    preloadImage.src = activeCover;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCover, loadedCovers]);
+
+  if (!isActiveCoverLoaded) {
+    return <HomeHeroShowcaseSkeleton />;
+  }
 
   return (
     <div className={styles.showcaseCarousel} aria-label="Featured game showcase">
@@ -58,7 +89,7 @@ export function HomeHeroShowcaseClient({ games }: HomeHeroShowcaseClientProps) {
           aria-label={`View ${activeGame.title}`}
         >
           <img
-            src={getGameCardCover(activeGame)}
+            src={activeCover}
             alt={activeGame.title}
             className={styles.showcaseMainImage}
             loading="eager"

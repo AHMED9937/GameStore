@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
 import {
   GameAccountsRepository,
+  defaultLicenseExpiresAt,
   generateLicenseKey,
   OrdersRepository,
 } from '@gamestore/api/data-access';
@@ -218,7 +219,7 @@ export class PaymentFulfillmentService {
     const poolAccount = await this.gameAccounts.findAvailableForGame(gameId);
     if (!poolAccount) {
       this.logger.warn(
-        `No available pool account for game ${gameId} — license will be issued but activation may fail`,
+        `No available pool account for game ${gameId} license will be issued but activation may fail`,
       );
     }
   }
@@ -240,7 +241,7 @@ export class PaymentFulfillmentService {
             status: 'available',
             source: 'purchase',
             validFrom: input.validFrom,
-            expiresAt: null,
+            expiresAt: defaultLicenseExpiresAt(input.validFrom),
             buyerEmail: input.buyerEmail,
             game: { connect: { id: input.gameId } },
             ...(input.ownerId ? { owner: { connect: { id: input.ownerId } } } : {}),

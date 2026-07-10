@@ -1,8 +1,8 @@
-/** Hero / detail — 1080p @2x retina (~3840×2160 max box). IGDB's largest cover preset. */
+/** Hero / detail 1080p @2x retina (~3840×2160 max box). IGDB's largest cover preset. */
 export const IGDB_COVER_HERO_SIZE = '1080p_2x';
-/** Shop cards / grids — 1080p single (sharp on retina without full 4K payload). */
+/** Shop cards / grids 1080p single (sharp on retina without full 4K payload). */
 export const IGDB_COVER_CARD_SIZE = '1080p';
-/** Gallery screenshots — screenshot_huge @2x (~2560×1440 max). IGDB's largest screenshot preset. */
+/** Gallery screenshots screenshot_huge @2x (~2560×1440 max). IGDB's largest screenshot preset. */
 export const IGDB_SCREENSHOT_SIZE = 'screenshot_huge_2x';
 
 const IGDB_IMAGE_UPLOAD_PATTERN = /\/t_[^/]+\//;

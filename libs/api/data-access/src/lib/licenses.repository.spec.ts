@@ -30,7 +30,7 @@ describe('LicensesRepository', () => {
     });
   });
 
-  it('findByOwnerId filters by owner', async () => {
+  it('findByOwnerId Filters by owner', async () => {
     const prisma = createPrismaMock();
     const repo = new LicensesRepository(prisma as unknown as PrismaService);
 
@@ -45,6 +45,7 @@ describe('LicensesRepository', () => {
         status: true,
         source: true,
         expiresAt: true,
+        validFrom: true,
         game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
       },
     });
@@ -57,12 +58,66 @@ describe('LicensesRepository', () => {
     await repo.findAll();
 
     expect(prisma.license.findMany).toHaveBeenCalledWith({
+      where: {},
       orderBy: { createdAt: 'desc' },
       include: {
         game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
         owner: { select: { email: true } },
       },
     });
+  });
+
+  it('findAll applies combined Filters', async () => {
+    const prisma = createPrismaMock();
+    const repo = new LicensesRepository(prisma as unknown as PrismaService);
+
+    await repo.findAll({
+      game: 'Demo',
+      source: 'admin',
+      owner: 'owner@example.com',
+      status: 'available',
+      expires: 'expired',
+    });
+
+    expect(prisma.license.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          game: {
+            title: {
+              contains: 'Demo',
+              mode: 'insensitive',
+            },
+          },
+          source: {
+            equals: 'admin',
+            mode: 'insensitive',
+          },
+          status: {
+            equals: 'available',
+            mode: 'insensitive',
+          },
+          OR: [
+            {
+              owner: {
+                email: {
+                  contains: 'owner@example.com',
+                  mode: 'insensitive',
+                },
+              },
+            },
+            {
+              buyerEmail: {
+                contains: 'owner@example.com',
+                mode: 'insensitive',
+              },
+            },
+          ],
+          expiresAt: {
+            lte: expect.any(Date),
+          },
+        }),
+      }),
+    );
   });
 
   it('revoke sets status to revoked', async () => {

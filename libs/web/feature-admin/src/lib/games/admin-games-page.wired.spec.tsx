@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { getAdminGames } from '@gamestore/web/data-access';
+import {
+  applyDebouncedSearchFilter,
+  changeSelectFilter,
+} from '../testing/admin-list-filters.test-utils';
 import { AdminGamesPage } from './admin-games-page';
 
 vi.mock('@gamestore/web/data-access', async (importOriginal) => {
@@ -77,6 +81,53 @@ describe('AdminGamesPage wired', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('admin-row-checkbox-g1')).toBeTruthy();
+    });
+  });
+
+  it('requests API with game filters', async () => {
+    vi.mocked(getAdminGames).mockResolvedValue([
+      {
+        id: 'g1',
+        title: 'Demo Game',
+        slug: 'demo-game',
+        platform: 'steam',
+        priceBase: '29.99',
+        published: true,
+        soldOut: false,
+        soldOutManual: false,
+        featuredOrder: null,
+        igdbId: 100001,
+        accountSummary: { total: 1, active: 1, hasActivePool: true },
+        description: 'A long enough description for the wired filter test.',
+        coverImage: '/cover.png',
+        genres: ['Adventure'],
+        publishedAt: '2025-01-01T00:00:00.000Z',
+        releaseDate: null,
+        requirementsMin: null,
+        requirementsRecommended: null,
+        media: [],
+      },
+    ]);
+
+    render(<AdminGamesPage />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-games-table')).toBeTruthy();
+    });
+
+    await applyDebouncedSearchFilter(
+      'Filter games by title or slug',
+      'demo',
+    );
+    changeSelectFilter('Filter games by platform', 'steam');
+    changeSelectFilter('Filter games by status', 'published');
+
+    await waitFor(() => {
+      expect(getAdminGames).toHaveBeenLastCalledWith({
+        q: 'demo',
+        platform: 'steam',
+        status: 'published',
+      });
     });
   });
 

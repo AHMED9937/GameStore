@@ -25,6 +25,7 @@ describe('SubscriptionsService', () => {
               licenseKey: 'GS-ABCD-EF12-3456',
               status: 'available',
               expiresAt: new Date('2026-02-01T00:00:00.000Z'),
+              validFrom: new Date('2026-01-01T00:00:00.000Z'),
               game: {
                 id: 'game-1',
                 title: 'Demo Game',
@@ -60,6 +61,7 @@ describe('SubscriptionsService', () => {
             id: 'lic-1',
             licenseKey: 'GS-ABCD-EF12-3456',
             status: 'available',
+            validFrom: '2026-01-01T00:00:00.000Z',
             expiresAt: '2026-02-01T00:00:00.000Z',
             game: {
               id: 'game-1',

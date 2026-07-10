@@ -21,9 +21,11 @@ import {
 import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import {
   AdminAccountsService,
+  type AssignAdminAccountDto,
   type CreateAdminAccountDto,
   type UpdateAdminAccountDto,
 } from './admin-accounts.service';
+import type { AdminAccountListFiltersDto } from './admin-account-list-filters.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -36,8 +38,13 @@ export class AdminAccountsController {
   ) {}
 
   @Get()
-  findAll(@Query('gameId') gameId?: string) {
-    return this.accounts.findAll(gameId);
+  findAll(@Query() filters: AdminAccountListFiltersDto) {
+    return this.accounts.findAll(filters);
+  }
+
+  @Get('available')
+  findAvailable(@Query('q') query?: string) {
+    return this.accounts.findAvailable(query);
   }
 
   @Post('bulk-deactivate')
@@ -52,6 +59,29 @@ export class AdminAccountsController {
       ...auditContextFromRequest(request),
       userId: user.id,
       action: 'admin.account.bulk_deactivate',
+      resource: 'game_account',
+      resourceId: null,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(200)
+  async bulkDelete(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.accounts.bulkDelete(body.ids);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.bulk_delete',
       resource: 'game_account',
       resourceId: null,
       metadata: {
@@ -81,7 +111,46 @@ export class AdminAccountsController {
       action: 'admin.account.create',
       resource: 'game_account',
       resourceId: account.id,
-      metadata: { gameId: body.gameId, username: body.username },
+      metadata: { gameId: body.gameId ?? null, username: body.username },
+    });
+    return account;
+  }
+
+  @Post(':id/assign')
+  @HttpCode(200)
+  async assign(
+    @Param('id') id: string,
+    @Body() body: AssignAdminAccountDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.assignToGame(id, body);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.assign',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: { gameId: body.gameId, username: account.username },
+    });
+    return account;
+  }
+
+  @Post(':id/unassign')
+  @HttpCode(200)
+  async unassign(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.unassignFromGame(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.unassign',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: { username: account.username },
     });
     return account;
   }

@@ -8,6 +8,7 @@ export const THROTTLE_DEFAULTS = {
   limitLicenseValidate: 10,
   limitSteamGuard: 5,
   limitCheckout: 20,
+  limitIgdb: 10,
 } as const;
 
 export function parsePositiveInt(
@@ -33,6 +34,7 @@ export type ThrottleEnv = {
   throttleLimitLicenseValidate?: string;
   throttleLimitSteamGuard?: string;
   throttleLimitCheckout?: string;
+  throttleLimitIgdb?: string;
 };
 
 export function buildThrottlerModuleOptions(
@@ -79,6 +81,10 @@ export function throttleLimitCheckout(env: ThrottleEnv = process.env as Throttle
     env.throttleLimitCheckout,
     THROTTLE_DEFAULTS.limitCheckout,
   );
+}
+
+export function throttleLimitIgdb(env: ThrottleEnv = process.env as ThrottleEnv) {
+  return parsePositiveInt(env.throttleLimitIgdb, THROTTLE_DEFAULTS.limitIgdb);
 }
 
 export function throttleTtlMs(env: ThrottleEnv = process.env as ThrottleEnv) {

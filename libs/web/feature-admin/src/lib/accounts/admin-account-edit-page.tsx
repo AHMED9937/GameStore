@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Container, Text } from '@gamestore/shared/ui';
+import { Badge, Button, Container, SkeletonPanel, SkeletonText, Text } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
   deactivateAdminAccount,
@@ -31,7 +31,7 @@ export type AdminAccountEditPageProps = {
 
 function toFormValues(account: AdminAccountRecord): AdminAccountFormValues {
   return {
-    gameId: account.gameId,
+    gameId: account.gameId ?? '',
     gameTitle: account.gameTitle,
     username: account.username,
     platform: account.platform,
@@ -194,7 +194,8 @@ export function AdminAccountEditPage({ accountId }: AdminAccountEditPageProps) {
     return (
       <Container>
         <AdminPageShell>
-          <Text tone="dim">Loading account…</Text>
+          <SkeletonText width="28%" />
+          <SkeletonPanel height={120} style={{ marginTop: '0.75rem' }} />
         </AdminPageShell>
       </Container>
     );

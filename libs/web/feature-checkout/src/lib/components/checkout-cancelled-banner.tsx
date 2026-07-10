@@ -9,7 +9,7 @@ export function CheckoutCancelledBanner() {
       role="status"
       data-testid="checkout-cancelled-banner"
     >
-      Payment cancelled — you can try again when ready.
+      Payment cancelled you can try again when ready.
     </div>
   );
 }

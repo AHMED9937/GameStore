@@ -11,6 +11,8 @@ import { assertOwnedResourceAccess } from '@gamestore/api/auth';
 import {
   GameAccountsRepository,
   LicensesRepository,
+  defaultLicenseExpiresAt,
+  resolveLicenseExpiresAt,
 } from '@gamestore/api/data-access';
 import { SteamCryptoService } from '@gamestore/api/steam';
 import { EntitlementCleanupService } from '../entitlements/entitlement-cleanup.service';
@@ -60,8 +62,17 @@ export type UserLicenseSummary = {
   licenseKey: string;
   status: string;
   source: string;
-  expiresAt: string | null;
+  validFrom: string;
+  expiresAt: string;
   game: { id: string; title: string; slug: string };
+};
+
+export type LicenseListFilters = {
+  game?: string;
+  source?: string;
+  owner?: string;
+  status?: string;
+  expires?: 'lifetime' | 'expiring' | 'expired';
 };
 
 @Injectable()
@@ -89,7 +100,7 @@ export class LicensesService {
     if (license.status === 'revoked') {
       throw new ForbiddenException('License has been revoked');
     }
-    this.assertNotExpired(license.expiresAt);
+    this.assertNotExpired(license.expiresAt, license.validFrom);
 
     assertOwnedResourceAccess(
       user,
@@ -126,7 +137,7 @@ export class LicensesService {
     if (license.status === 'revoked') {
       throw new ForbiddenException('License has been revoked');
     }
-    this.assertNotExpired(license.expiresAt);
+    this.assertNotExpired(license.expiresAt, license.validFrom);
 
     if (license.status === 'activated') {
       this.assertActivateOwnership(license.ownerId, user);
@@ -171,13 +182,17 @@ export class LicensesService {
       licenseKey: row.licenseKey,
       status: row.status,
       source: row.source,
-      expiresAt: row.expiresAt?.toISOString() ?? null,
+      validFrom: row.validFrom.toISOString(),
+      expiresAt: resolveLicenseExpiresAt(
+        row.expiresAt,
+        row.validFrom,
+      ).toISOString(),
       game: row.game,
     }));
   }
 
-  findAll() {
-    return this.licenses.findAll();
+  findAll(Filters?: LicenseListFilters) {
+    return this.licenses.findAll(Filters);
   }
 
   async findOne(id: string) {
@@ -189,11 +204,14 @@ export class LicensesService {
   }
 
   create(dto: CreateLicenseDto) {
+    const validFrom = new Date();
     return this.licenses.create({
       licenseKey: dto.licenseKey,
       status: dto.status,
       buyerEmail: dto.buyerEmail,
       buyerCountry: dto.buyerCountry,
+      validFrom,
+      expiresAt: defaultLicenseExpiresAt(validFrom),
       game: { connect: { id: dto.gameId } },
       ...(dto.ownerId ? { owner: { connect: { id: dto.ownerId } } } : {}),
     });
@@ -224,7 +242,7 @@ export class LicensesService {
       dto.expiresAt === undefined
         ? undefined
         : dto.expiresAt === null || dto.expiresAt.trim() === ''
-          ? null
+          ? defaultLicenseExpiresAt(license.validFrom)
           : new Date(dto.expiresAt);
 
     if (expiresAt instanceof Date && Number.isNaN(expiresAt.getTime())) {
@@ -254,8 +272,12 @@ export class LicensesService {
     return { id, deleted: true as const };
   }
 
-  private assertNotExpired(expiresAt: Date | null | undefined): void {
-    if (expiresAt && expiresAt.getTime() <= Date.now()) {
+  private assertNotExpired(
+    expiresAt: Date | null | undefined,
+    validFrom: Date,
+  ): void {
+    const effectiveExpiry = resolveLicenseExpiresAt(expiresAt, validFrom);
+    if (effectiveExpiry.getTime() <= Date.now()) {
       throw new ForbiddenException('License has expired');
     }
   }
