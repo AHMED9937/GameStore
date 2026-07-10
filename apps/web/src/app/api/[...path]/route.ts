@@ -145,10 +145,10 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     const body = await upstream.text();
 
     if (shouldRevalidateGamesCatalog(pathname, request.method) && upstream.ok) {
-      revalidateTag('games');
+      revalidateTag('games', { expire: 0 });
       const slug = extractGameSlugFromAdminMutation(body);
       if (slug) {
-        revalidateTag(`game:${slug}`);
+        revalidateTag(`game:${slug}`, { expire: 0 });
       }
     }
 

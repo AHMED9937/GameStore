@@ -29,7 +29,7 @@ export function useAdminListFilters<T extends Record<string, string>>({
         const immediatePatch: Partial<T> = {};
         for (const [key, value] of Object.entries(patch) as [keyof T, string][]) {
           if (!textKeySet.has(key)) {
-            immediatePatch[key] = value;
+            immediatePatch[key] = value as T[keyof T];
           }
         }
         if (Object.keys(immediatePatch).length > 0) {

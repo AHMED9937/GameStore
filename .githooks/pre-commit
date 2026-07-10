@@ -1,0 +1,12 @@
+#!/bin/sh
+# Block commits with the wrong GitHub noreply identity in this repo.
+email=$(git config user.email)
+case "$email" in
+  *gitgoat2003*)
+    echo "pre-commit: user.email is '$email'."
+    echo "Use your AHMED9937 identity for this repo:"
+    echo "  git config user.email \"76742380+AHMED9937@users.noreply.github.com\""
+    echo "  git config user.name \"Ahmed Mohamed Faisal Mohamed\""
+    exit 1
+    ;;
+esac

@@ -73,7 +73,6 @@ export default function AdminLayout({
           </Link>
           <UserButton
             userProfileUrl="/account"
-            afterSignOutUrl="/admin/sign-in"
             appearance={{
               elements: {
                 avatarBox: styles.userAvatar,
@@ -88,7 +87,6 @@ export default function AdminLayout({
           <h1 className={styles.topbarTitle}>Administration</h1>
           <UserButton
             userProfileUrl="/account"
-            afterSignOutUrl="/admin/sign-in"
             appearance={{
               elements: {
                 avatarBox: styles.userAvatar,

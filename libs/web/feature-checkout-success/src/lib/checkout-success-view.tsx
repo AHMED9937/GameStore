@@ -1,6 +1,6 @@
 'use client';
 
-import type { OrderFulfillmentState } from '../types/order-fulfillment-state';
+import type { OrderFulfillmentState } from './types/order-fulfillment-state';
 import {
   CheckoutLicenseDisplay,
   CheckoutSuccessError,

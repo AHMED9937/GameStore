@@ -57,7 +57,6 @@ export function SiteHeader() {
             ) : null}
             <UserButton
               userProfileUrl="/account"
-              afterSignOutUrl="/"
               appearance={{
                 elements: {
                   avatarBox: styles.userAvatar,

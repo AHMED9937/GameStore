@@ -27,6 +27,7 @@ export async function generateSteamGuardCode(
   timeSeconds = Math.floor(Date.now() / 1000),
 ): Promise<string> {
   const keyBytes = decodeSharedSecret(sharedSecret);
+  const keyMaterial = Uint8Array.from(keyBytes);
   const buffer = new ArrayBuffer(8);
   const view = new DataView(buffer);
   view.setUint32(0, 0, false);
@@ -34,7 +35,7 @@ export async function generateSteamGuardCode(
 
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    keyBytes,
+    keyMaterial,
     { name: 'HMAC', hash: 'SHA-1' },
     false,
     ['sign'],
