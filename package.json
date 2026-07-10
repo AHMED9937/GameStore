@@ -11,7 +11,8 @@
     "discord:bot": "tsx apps/discord-bot/src/main.ts",
     "deploy:init-staging-env": "tsx scripts/deploy/init-staging-env.ts",
     "deploy:verify-env": "tsx scripts/deploy/verify-env-cli.ts",
-    "deploy:verify-env:test": "vitest run scripts/deploy/verify-env.spec.ts"
+    "deploy:verify-env:test": "vitest run scripts/deploy/verify-env.spec.ts",
+    "vercel-build": "pnpm db:generate && cd apps/web && node ../../node_modules/next/dist/bin/next build"
   },
   "prisma": {
     "seed": "tsx libs/api/prisma/prisma/seed.ts"

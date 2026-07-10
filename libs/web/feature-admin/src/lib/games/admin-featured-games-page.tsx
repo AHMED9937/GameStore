@@ -10,6 +10,7 @@ import {
   updateAdminFeaturedGames,
   type AdminFeaturedGameItem,
   type AdminFeaturedGamesResponse,
+  type SetupResponse,
 } from '@gamestore/web/data-access';
 import { AdminActionFeedback } from '../components/admin-action-feedback';
 import { AdminAsyncView } from '../components/admin-async-view';
@@ -133,7 +134,7 @@ export function AdminFeaturedGamesPage({
     { deps: [debouncedAvailableSearch] },
   );
   const state = resourceState ?? fetchedState;
-  const saveMutation = useAdminMutation<AdminFeaturedGamesResponse>();
+  const saveMutation = useAdminMutation<AdminFeaturedGamesResponse | SetupResponse>();
   const actionFeedback = useAdminActionFeedback();
   const [draftFeatured, setDraftFeatured] = useState<AdminFeaturedGameItem[] | null>(
     null,

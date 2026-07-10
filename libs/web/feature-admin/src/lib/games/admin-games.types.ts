@@ -119,28 +119,30 @@ export function toAdminGameInput(values: AdminGameFormValues) {
   };
 }
 
-export function parseAdminGameForm(data: Record<string, unknown>): AdminGameFormValues {
-  const genres = Array.isArray(data.genres) ? (data.genres as string[]) : [];
+export function parseAdminGameForm(data: unknown): AdminGameFormValues {
+  const record =
+    data && typeof data === 'object' ? (data as Record<string, unknown>) : {};
+  const genres = Array.isArray(record.genres) ? (record.genres as string[]) : [];
   return {
-    title: String(data.title ?? ''),
-    slug: String(data.slug ?? ''),
-    platform: String(data.platform ?? 'steam'),
-    description: String(data.description ?? ''),
-    priceBase: String(data.priceBase ?? ''),
-    coverImage: String(data.coverImage ?? ''),
-    releaseDate: data.releaseDate ? String(data.releaseDate).slice(0, 10) : '',
+    title: String(record.title ?? ''),
+    slug: String(record.slug ?? ''),
+    platform: String(record.platform ?? 'steam'),
+    description: String(record.description ?? ''),
+    priceBase: String(record.priceBase ?? ''),
+    coverImage: String(record.coverImage ?? ''),
+    releaseDate: record.releaseDate ? String(record.releaseDate).slice(0, 10) : '',
     genresText: genresArrayToText(genres),
-    requirementsMin: parseRequirementsField(data.requirementsMin),
-    requirementsRecommended: parseRequirementsField(data.requirementsRecommended),
-    metaTitle: String(data.metaTitle ?? ''),
-    metaDescription: String(data.metaDescription ?? ''),
-    ogImage: String(data.ogImage ?? ''),
-    published: Boolean(data.published),
-    soldOutManual: Boolean(data.soldOutManual),
+    requirementsMin: parseRequirementsField(record.requirementsMin),
+    requirementsRecommended: parseRequirementsField(record.requirementsRecommended),
+    metaTitle: String(record.metaTitle ?? ''),
+    metaDescription: String(record.metaDescription ?? ''),
+    ogImage: String(record.ogImage ?? ''),
+    published: Boolean(record.published),
+    soldOutManual: Boolean(record.soldOutManual),
     discordAnnounceDescription: String(
-      (data.discord as { announceDescription?: string | null } | undefined)
+      (record.discord as { announceDescription?: string | null } | undefined)
         ?.announceDescription ??
-        data.discordAnnounceDescription ??
+        record.discordAnnounceDescription ??
         '',
     ),
   };

@@ -61,7 +61,7 @@ export const getFeaturedGames = cache(async (): Promise<Game[]> => {
 });
 
 export function getGameCardCover(
-  game: Pick<Game, 'coverCardImage' | 'coverImage'>,
+  game: { coverCardImage?: string | null; coverImage?: string | null },
   fallback = '/og/default.png',
 ): string {
   return game.coverCardImage?.trim() || game.coverImage?.trim() || fallback;

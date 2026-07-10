@@ -53,12 +53,13 @@ export function SkeletonText({
 }
 
 export function SkeletonButton({
+  height = 42,
   className,
   ...props
-}: Omit<SkeletonProps, 'height'>) {
+}: SkeletonProps) {
   return (
     <Skeleton
-      height={42}
+      height={height}
       rounded="md"
       className={[styles.skeletonButton, className].filter(Boolean).join(' ')}
       {...props}

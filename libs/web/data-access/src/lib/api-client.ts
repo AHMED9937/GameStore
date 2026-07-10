@@ -47,8 +47,8 @@ export type ApiPublicCacheOptions = {
 
 type NextAwareRequestInit = RequestInit & {
   next?: {
-    revalidate?: number;
-    tags?: readonly string[];
+    revalidate?: number | false;
+    tags?: string[];
   };
 };
 
@@ -185,7 +185,7 @@ export async function apiGetPublic<T>(
           ...init,
           next: {
             revalidate: cache.revalidate,
-            tags: cache.tags,
+            tags: cache.tags ? [...cache.tags] : undefined,
           },
         }
       : { ...init };

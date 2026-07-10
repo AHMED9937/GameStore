@@ -31,13 +31,15 @@ export function SteamCredentialsView() {
 
     let cancelled = false;
 
+    const activationKey = key;
+
     async function load() {
       setLoading(true);
       setError(null);
       setSignInRequired(false);
 
       try {
-        const result = await activateLicense(key);
+        const result = await activateLicense(activationKey);
         if (!cancelled) {
           setUsername(result.account.username);
           setPassword(result.account.password);
