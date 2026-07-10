@@ -1,14 +1,22 @@
 import Link from 'next/link';
-import { Badge, Button } from '@gamestore/shared/ui';
+import { Badge } from '@gamestore/shared/ui';
 import { AdminTable } from '../components/admin-table';
+import { IconEdit, IconRevoke } from '../components/admin-action-icons';
+import { AdminRowActionButton } from '../components/admin-row-action-button';
+import {
+  AdminSelectableRow,
+  AdminSelectableTable,
+} from '../components/admin-selectable-table';
 import type { AdminLicenseListItem } from './admin-licenses.types';
 import { ADMIN_LICENSE_COLUMNS } from './licenses.constants';
+import type { AdminTableSelectionProps } from '../types/admin-table-selection';
 import styles from './licenses.module.css';
 
 export type AdminLicensesTableProps = {
   licenses: AdminLicenseListItem[];
   revokingId?: string | null;
   onRevoke?: (licenseId: string) => void;
+  selection?: AdminTableSelectionProps;
 };
 
 function statusVariant(
@@ -23,63 +31,97 @@ function statusVariant(
   return 'default';
 }
 
-function formatExpiresAt(expiresAt: string | null): string {
-  if (!expiresAt) {
-    return 'Lifetime';
-  }
-  try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(
-      new Date(expiresAt),
-    );
-  } catch {
-    return expiresAt;
-  }
+import { getLicenseExpiryState } from '@gamestore/web/feature-subscriptions';
+function renderRowCells(
+  license: AdminLicenseListItem,
+  revokingId: string | null,
+  onRevoke?: (licenseId: string) => void,
+) {
+  return (
+    <>
+      <td>
+        <code>{license.licenseKeyMasked}</code>
+      </td>
+      <td>{license.gameTitle}</td>
+      <td>{license.source}</td>
+      <td>{license.ownerEmail ?? '—'}</td>
+      <td>
+        <Badge variant={statusVariant(license.status)}>{license.status}</Badge>
+      </td>
+      <td>
+        {getLicenseExpiryState(license.expiresAt).label}
+      </td>
+      <td>
+        <div className={styles.tableActions}>
+          <Link
+            href={`/admin/licenses/${license.id}`}
+            aria-label={`Edit license ${license.licenseKeyMasked}`}
+            title={`Edit license ${license.licenseKeyMasked}`}
+          >
+            <AdminRowActionButton
+              label={`Edit license ${license.licenseKeyMasked}`}
+              icon={<IconEdit />}
+            />
+          </Link>
+          <AdminRowActionButton
+            label={`Revoke license ${license.licenseKeyMasked}`}
+            icon={<IconRevoke />}
+            disabled={
+              license.status === 'revoked' ||
+              !onRevoke ||
+              revokingId === license.id
+            }
+            onClick={() => onRevoke?.(license.id)}
+          />
+        </div>
+      </td>
+    </>
+  );
 }
 
 export function AdminLicensesTable({
   licenses,
   revokingId = null,
   onRevoke,
+  selection,
 }: AdminLicensesTableProps) {
+  if (!selection) {
+    return (
+      <div data-testid="admin-licenses-table">
+        <AdminTable columns={[...ADMIN_LICENSE_COLUMNS]} caption="Admin licenses">
+          {licenses.map((license) => (
+            <tr key={license.id}>
+              {renderRowCells(license, revokingId, onRevoke)}
+            </tr>
+          ))}
+        </AdminTable>
+      </div>
+    );
+  }
+
   return (
     <div data-testid="admin-licenses-table">
-      <AdminTable columns={[...ADMIN_LICENSE_COLUMNS]} caption="Admin licenses">
+      <AdminSelectableTable
+        columns={[...ADMIN_LICENSE_COLUMNS]}
+        caption="Admin licenses"
+        selectedCount={licenses.filter((license) => selection.isSelected(license.id)).length}
+        allVisibleSelected={selection.allVisibleSelected}
+        someVisibleSelected={selection.someVisibleSelected}
+        onToggleAllVisible={selection.toggleAllVisible}
+        selectionDisabled={selection.disabled}
+      >
         {licenses.map((license) => (
-          <tr key={license.id}>
-            <td>
-              <code>{license.licenseKeyMasked}</code>
-            </td>
-            <td>{license.gameTitle}</td>
-            <td>{license.source}</td>
-            <td>{license.ownerEmail ?? '—'}</td>
-            <td>
-              <Badge variant={statusVariant(license.status)}>{license.status}</Badge>
-            </td>
-            <td>{formatExpiresAt(license.expiresAt)}</td>
-            <td>
-              <div className={styles.tableActions}>
-                <Link href={`/admin/licenses/${license.id}`}>
-                  <Button type="button" variant="secondary">
-                    Edit
-                  </Button>
-                </Link>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={
-                    license.status === 'revoked' ||
-                    !onRevoke ||
-                    revokingId === license.id
-                  }
-                  onClick={() => onRevoke?.(license.id)}
-                >
-                  {revokingId === license.id ? 'Saving…' : 'Revoke'}
-                </Button>
-              </div>
-            </td>
-          </tr>
+          <AdminSelectableRow
+            key={license.id}
+            id={license.id}
+            selected={selection.isSelected(license.id)}
+            disabled={!selection.isRowSelectable(license.id) || selection.disabled}
+            onToggle={selection.toggleRow}
+          >
+            {renderRowCells(license, revokingId, onRevoke)}
+          </AdminSelectableRow>
         ))}
-      </AdminTable>
+      </AdminSelectableTable>
     </div>
   );
 }

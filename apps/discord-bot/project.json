@@ -1,0 +1,22 @@
+{
+  "name": "discord-bot",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/discord-bot/src",
+  "projectType": "application",
+  "tags": ["scope:discord", "type:app"],
+  "targets": {
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx apps/discord-bot/src/main.ts"
+      }
+    },
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{workspaceRoot}/coverage/apps/discord-bot"],
+      "options": {
+        "configFile": "apps/discord-bot/vitest.config.mts"
+      }
+    }
+  }
+}

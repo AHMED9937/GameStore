@@ -7,6 +7,7 @@ import { LicensesRepository } from './licenses.repository';
 import { OrdersRepository } from './orders.repository';
 import { SubscriptionPlansRepository } from './subscription-plans.repository';
 import { UserSubscriptionsRepository } from './user-subscriptions.repository';
+import { StoreSettingsRepository } from './store-settings.repository';
 
 @Module({
   imports: [PrismaModule],
@@ -18,6 +19,7 @@ import { UserSubscriptionsRepository } from './user-subscriptions.repository';
     OrdersRepository,
     SubscriptionPlansRepository,
     UserSubscriptionsRepository,
+    StoreSettingsRepository,
   ],
   exports: [
     GamesRepository,
@@ -27,6 +29,7 @@ import { UserSubscriptionsRepository } from './user-subscriptions.repository';
     OrdersRepository,
     SubscriptionPlansRepository,
     UserSubscriptionsRepository,
+    StoreSettingsRepository,
   ],
 })
 export class DataAccessModule {}

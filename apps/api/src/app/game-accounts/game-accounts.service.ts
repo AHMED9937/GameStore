@@ -8,7 +8,7 @@ import { GameAccountsRepository } from '@gamestore/api/data-access';
 import { SteamCryptoService } from '@gamestore/api/steam';
 
 export type CreateGameAccountDto = {
-  gameId: string;
+  gameId?: string;
   platform: string;
   username: string;
   password?: string;
@@ -34,7 +34,7 @@ export class GameAccountsService {
   ) {}
 
   findAll(gameId?: string) {
-    return this.accounts.findAll(gameId);
+    return this.accounts.findAll(gameId ? { gameId } : undefined);
   }
 
   async findOne(id: string) {
@@ -58,7 +58,7 @@ export class GameAccountsService {
       ...(dto.maxActiveUsers !== undefined
         ? { maxActiveUsers: dto.maxActiveUsers }
         : {}),
-      game: { connect: { id: dto.gameId } },
+      ...(dto.gameId ? { game: { connect: { id: dto.gameId } } } : {}),
     });
   }
 

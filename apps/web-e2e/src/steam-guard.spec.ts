@@ -76,7 +76,7 @@ test.describe('activation flow (real API)', () => {
     test.skip(!hasDatabase, 'DATABASE_URL is not set');
     test.skip(
       !hasSeedSteamSecrets,
-      'SEED_STEAM_PASSWORD and SEED_STEAM_SHARED_SECRET are required — re-run seed after setting them in .env',
+      'SEED_STEAM_PASSWORD and SEED_STEAM_SHARED_SECRET are required re-run seed after setting them in .env',
     );
 
     await page.goto('/my-games');

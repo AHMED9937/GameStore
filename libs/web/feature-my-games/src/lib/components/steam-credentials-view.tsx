@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Container, Text } from '@gamestore/shared/ui';
+import { Button, Card, Container, SkeletonPanel, SkeletonText, Text } from '@gamestore/shared/ui';
 import { SteamAccountLayout } from '@gamestore/web/feature-steam-access';
 import {
   ApiError,
@@ -31,13 +31,15 @@ export function SteamCredentialsView() {
 
     let cancelled = false;
 
+    const activationKey = key;
+
     async function load() {
       setLoading(true);
       setError(null);
       setSignInRequired(false);
 
       try {
-        const result = await activateLicense(key);
+        const result = await activateLicense(activationKey);
         if (!cancelled) {
           setUsername(result.account.username);
           setPassword(result.account.password);
@@ -75,9 +77,8 @@ export function SteamCredentialsView() {
       <section className={styles.sectionTight}>
         <Container>
           <Card className={styles.panel}>
-            <Text tone="muted" role="status">
-              Activating your Steam account…
-            </Text>
+            <SkeletonText width="48%" />
+            <SkeletonPanel height={96} style={{ marginTop: '0.75rem' }} />
           </Card>
         </Container>
       </section>

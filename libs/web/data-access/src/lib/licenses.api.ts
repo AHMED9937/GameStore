@@ -5,6 +5,7 @@ export type LicenseGameSummary = {
   title: string;
   slug: string;
   coverImage?: string | null;
+  coverCardImage?: string | null;
 };
 
 export type LicenseValidation = {
@@ -27,6 +28,9 @@ export type UserLicenseSummary = {
   id: string;
   licenseKey: string;
   status: string;
+  source: string;
+  validFrom: string;
+  expiresAt: string;
   game: { id: string; title: string; slug: string };
 };
 

@@ -1,10 +1,10 @@
-# Phase 2 — Frontend Scaffold Plan
+# Phase 2 Frontend Scaffold Plan
 
 This document is the **detailed execution plan for Phase 2** of GameStore. It expands [implementation_plan.md](./implementation_plan.md) into reviewable slices.
 
 **Parent plan:** [implementation_plan.md](./implementation_plan.md)  
 **Design reference:** [`../_docs_backup/mockup.html`](../_docs_backup/mockup.html)  
-**Theme (Phase 1 — done):** `libs/shared/theme`, `libs/shared/ui`, `/dev/theme-preview`
+**Theme (Phase 1 done):** `libs/shared/theme`, `libs/shared/ui`, `/dev/theme-preview`
 
 ---
 
@@ -26,8 +26,8 @@ Create all **customer-facing routes** and **component trees per page** with:
 
 | Phase | Status | Notes |
 |---|---|---|
-| Phase 0 — Nx + generators | ✅ Done | `@gamestore/workspace` plugin |
-| Phase 1 — Theme + UI preview | ✅ Done | Tokens from mockup, `/dev/theme-preview` |
+| Phase 0 Nx + generators | ✅ Done | `@gamestore/workspace` plugin |
+| Phase 1 Theme + UI preview | ✅ Done | Tokens from mockup, `/dev/theme-preview` |
 | `apps/web` | ✅ Exists | Next.js App Router |
 | `apps/api` | ✅ Exists | NestJS (API calls may 404 until Phase 6) |
 
@@ -46,11 +46,11 @@ Create all **customer-facing routes** and **component trees per page** with:
 
 ### Generator-first
 
-Use `@gamestore/workspace` generators — do not hand-create feature lib folder structures.
+Use `@gamestore/workspace` generators do not hand-create feature lib folder structures.
 
 ```bash
 pnpm nx g @gamestore/workspace:web-feature --name=<name> --route=<route>
-pnpm nx g @gamestore/workspace:web-page-tree --page=<name> --components=hero,filters,...
+pnpm nx g @gamestore/workspace:web-page-tree --page=<name> --components=hero,Filters,...
 ```
 
 ### Design alignment (mockup → Phase 2)
@@ -62,7 +62,7 @@ Phase 2 builds **structure + themed shells**, not full mockup polish. Map mockup
 | Header / nav | layout | `SiteHeader`, `SiteFooter` |
 | `.hero` | `/` | `HomeHero`, `HomeFeaturedGrid`, `HomePromoBanner` |
 | `.subscriptions` | `/` (partial) | `HomePromoBanner` |
-| `.catalog` + filters | `/shop` | `CatalogHero`, `CatalogSearch`, `CatalogFilters`, `CatalogGrid`, `GameCard` |
+| `.catalog` + Filters | `/shop` | `CatalogHero`, `CatalogSearch`, `CatalogFilters`, `CatalogGrid`, `GameCard` |
 | Game detail (implied) | `/games/[slug]` | `GameDetailHero`, `GameDetailInfo`, `GameDetailBuyPanel`, `GameDetailRequirements` |
 | Checkout flow | `/checkout`, `/checkout/success` | `CheckoutSummary`, `CheckoutPayment`, `CheckoutTerms`, `CheckoutSuccessMessage`, `CheckoutLicenseDisplay` |
 | Activation portal | `/my-games` | `LicenseKeyForm`, `ActivationSteps`, `CredentialsPanel`, `SteamGuardPanel` |
@@ -84,9 +84,9 @@ Work **one slice at a time**. After each slice: run verify commands → user rev
 
 ---
 
-### Slice 2.1 — App shell + layout (mockup header/footer)
+### Slice 2.1 App shell + layout (mockup header/footer)
 
-**Goal:** Global layout with theme, header, footer — no feature pages yet.
+**Goal:** Global layout with theme, header, footer no feature pages yet.
 
 **Generators / files:**
 
@@ -96,12 +96,12 @@ Work **one slice at a time**. After each slice: run verify commands → user rev
 
 | File | Action |
 |---|---|
-| `apps/web/src/app/layout.tsx` | Already has `ThemeProvider` + fonts — add header/footer slots |
-| `apps/web/src/components/layout/site-header.tsx` | **Create** — logo, nav links, activate CTA, cart icon shell |
-| `apps/web/src/components/layout/site-footer.tsx` | **Create** — brand, links, newsletter shell (from mockup footer) |
+| `apps/web/src/app/layout.tsx` | Already has `ThemeProvider` + fonts add header/footer slots |
+| `apps/web/src/components/layout/site-header.tsx` | **Create** logo, nav links, activate CTA, cart icon shell |
+| `apps/web/src/components/layout/site-footer.tsx` | **Create** brand, links, newsletter shell (from mockup footer) |
 | `apps/web/src/app/page.tsx` | Temporary placeholder until Slice 2.3 |
-| `apps/web/src/app/robots.ts` | **Create** — SEO setup shell |
-| `apps/web/src/app/sitemap.ts` | **Create** — SEO setup shell |
+| `apps/web/src/app/robots.ts` | **Create** SEO setup shell |
+| `apps/web/src/app/sitemap.ts` | **Create** SEO setup shell |
 
 **Header nav links (static):**
 
@@ -128,7 +128,7 @@ pnpm nx build web
 
 ---
 
-### Slice 2.2 — API client + BFF proxy
+### Slice 2.2 API client + BFF proxy
 
 **Goal:** Real HTTP wiring from web → API (errors/empty OK).
 
@@ -150,7 +150,7 @@ libs/web/data-access/
 │   └── lib/
 │       ├── api-client.ts       # apiGet, apiPost, ApiError
 │       ├── games.api.ts        # getGames(), getGameBySlug()
-│       └── licenses.api.ts     # validateLicense() — stub path for my-games
+│       └── licenses.api.ts     # validateLicense() stub path for my-games
 ```
 
 ```
@@ -186,7 +186,7 @@ pnpm nx dev web
 
 ---
 
-### Slice 2.3 — Feature pages + component trees
+### Slice 2.3 Feature pages + component trees
 
 **Goal:** All MVP routes with themed placeholder shells and component folders.
 
@@ -197,7 +197,7 @@ pnpm nx g @gamestore/workspace:web-feature --name=home --route=/
 pnpm nx g @gamestore/workspace:web-page-tree --page=home --components=hero,featured-grid,promo-banner
 
 pnpm nx g @gamestore/workspace:web-feature --name=catalog --route=/shop
-pnpm nx g @gamestore/workspace:web-page-tree --page=catalog --components=hero,search,filters,grid,card
+pnpm nx g @gamestore/workspace:web-page-tree --page=catalog --components=hero,search,Filters,grid,card
 
 pnpm nx g @gamestore/workspace:web-feature --name=game-detail --route=/games/[slug]
 pnpm nx g @gamestore/workspace:web-page-tree --page=game-detail --components=hero,info,buy-panel,requirements
@@ -205,7 +205,7 @@ pnpm nx g @gamestore/workspace:web-page-tree --page=game-detail --components=her
 pnpm nx g @gamestore/workspace:web-feature --name=checkout --route=/checkout
 pnpm nx g @gamestore/workspace:web-page-tree --page=checkout --components=summary,payment,terms
 
-# checkout success route — add app route manually or second web-feature
+# checkout success route add app route manually or second web-feature
 pnpm nx g @gamestore/workspace:web-feature --name=my-games --route=/my-games
 pnpm nx g @gamestore/workspace:web-page-tree --page=my-games --components=license-form,activation-steps,credentials,steam-guard
 
@@ -232,7 +232,7 @@ pnpm nx g @gamestore/workspace:web-page-tree --page=contact --components=form,in
 
 - Each component renders its **section name** + themed container (glass card where appropriate)
 - Catalog page uses mockup-inspired filter bar + search input (UI only, no filter logic)
-- Game cards show `<EmptyState>` — not sample game titles
+- Game cards show `<EmptyState>` not sample game titles
 
 **Verify:**
 
@@ -250,9 +250,9 @@ pnpm nx build web
 
 ---
 
-### Slice 2.4 — SEO shell
+### Slice 2.4 SEO shell
 
-**Goal:** SEO file structure only — no full metadata.
+**Goal:** SEO file structure only no full metadata.
 
 ```bash
 pnpm nx g @gamestore/workspace:seo-lib
@@ -287,7 +287,7 @@ pnpm nx g @gamestore/workspace:e2e-spec --app=web --name=seo-setup
 
 ---
 
-### Slice 2.5 — Unit tests (mocks in tests only)
+### Slice 2.5 Unit tests (mocks in tests only)
 
 **Goal:** One smoke test per feature lib.
 
@@ -324,7 +324,7 @@ pnpm nx run-many -t test --projects=feature-home,feature-catalog,...
 
 ---
 
-### Slice 2.6 — E2E tests (real browser, real API)
+### Slice 2.6 E2E tests (real browser, real API)
 
 **Goal:** Playwright smoke suite for navigation and pages.
 
@@ -340,10 +340,10 @@ pnpm nx g @gamestore/workspace:e2e-spec --app=web --name=seo-setup
 | `theme.spec.ts` | `/dev/theme-preview` still works (regression) |
 | `navigation.spec.ts` | All header links return 200 |
 | `pages.spec.ts` | Each MVP route shows expected section heading |
-| `responsive.spec.ts` | Home + `/shop` at 375px viewport — no layout crash |
+| `responsive.spec.ts` | Home + `/shop` at 375px viewport no layout crash |
 | `seo-setup.spec.ts` | `/dev/seo-preview` shows setup message |
 
-**Config:** `apps/web-e2e/playwright.config.mts` — use `pnpm nx dev web` as webServer.
+**Config:** `apps/web-e2e/playwright.config.mts` use `pnpm nx dev web` as webServer.
 
 **Verify:**
 
@@ -445,7 +445,7 @@ pnpm exec playwright test --config=apps/web-e2e/playwright.config.mts
 | File | Role |
 |---|---|
 | [implementation_plan.md](./implementation_plan.md) | Full monorepo blueprint (Phases 0–6) |
-| **PHASE_2_PLAN.md** | **This file** — Phase 2 slice-by-slice plan |
+| **PHASE_2_PLAN.md** | **This file** Phase 2 slice-by-slice plan |
 | [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md) | Product MVP priorities |
 | [`../_docs_backup/mockup.html`](../_docs_backup/mockup.html) | Visual design reference |
 

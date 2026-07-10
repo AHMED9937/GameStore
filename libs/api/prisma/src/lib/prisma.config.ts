@@ -5,7 +5,7 @@ export class PrismaConfig {
     return {
       status: 'setup',
       integration: 'prisma',
-      message: `Prisma ${action} — not implemented yet`,
+      message: `Prisma ${action} not implemented yet`,
     };
   }
 }

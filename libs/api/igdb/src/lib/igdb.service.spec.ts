@@ -29,7 +29,8 @@ describe('IgdbService', () => {
     await expect(service.search('halo')).resolves.toEqual({
       status: 'setup',
       integration: 'igdb',
-      message: 'IGDB search — not implemented yet',
+      message:
+        'IGDB search is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.',
     });
   });
 });

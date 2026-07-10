@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
 } from '@nestjs/common';
 import {
@@ -17,11 +18,13 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
+import { BulkIdsDto } from '../dto/bulk-ids.dto';
 import {
   AdminSubscriptionPlansService,
   type CreateAdminSubscriptionPlanDto,
   type UpdateAdminSubscriptionPlanDto,
 } from './admin-subscription-plans.service';
+import type { AdminSubscriptionPlanListFiltersDto } from './admin-subscription-plan-list-filters.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -34,8 +37,31 @@ export class AdminSubscriptionPlansController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.plans.findAll();
+  findAll(@Query() filters: AdminSubscriptionPlanListFiltersDto) {
+    return this.plans.findAll(filters);
+  }
+
+  @Post('bulk-delete')
+  @HttpCode(200)
+  async bulkDelete(
+    @Body() body: BulkIdsDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.plans.bulkDelete(body.ids);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.subscription_plan.bulk_delete',
+      resource: 'subscription_plan',
+      resourceId: null,
+      metadata: {
+        ids: body.ids,
+        succeeded: result.succeeded,
+        failed: result.failed,
+      },
+    });
+    return result;
   }
 
   @Get(':id')

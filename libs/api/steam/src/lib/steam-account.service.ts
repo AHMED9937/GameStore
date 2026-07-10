@@ -14,7 +14,7 @@ export class SteamAccountService {
       return {
         status: 'setup' as const,
         integration: SteamConfig.integration,
-        message: 'Steam — not configured',
+        message: 'Steam not configured',
         encryption: env.encryptionKey,
       };
     }

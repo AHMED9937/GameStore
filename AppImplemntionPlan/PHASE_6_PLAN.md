@@ -1,15 +1,15 @@
-# Phase 6 — Backend CRUD + Frontend Connection + E2E
+# Phase 6 Backend CRUD + Frontend Connection + E2E
 
 This document is the **detailed execution plan for Phase 6** of GameStore. It expands [implementation_plan.md](./implementation_plan.md) into reviewable slices.
 
 **Parent plan:** [implementation_plan.md](./implementation_plan.md)  
-**Previous phase:** Phase 5 — Steam setup (✅ complete)
+**Previous phase:** Phase 5 Steam setup (✅ complete)
 
 ---
 
 ## Phase 6 goal
 
-Replace API stubs with **real Prisma CRUD** against Neon, wire the storefront to return **real DB data** for games and license validation, and add full-stack e2e coverage. **Stripe, Steam, SEO, and orders remain setup-only** — no payment capture, no TOTP, no `generateMetadata`.
+Replace API stubs with **real Prisma CRUD** against Neon, wire the storefront to return **real DB data** for games and license validation, and add full-stack e2e coverage. **Stripe, Steam, SEO, and orders remain setup-only** no payment capture, no TOTP, no `generateMetadata`.
 
 **Not in Phase 6:** Stripe webhook license creation, real Steam Guard codes, account assignment / cooldowns, PPP pricing logic, IGDB sync, admin UI, `Order` model, dynamic SEO.
 
@@ -19,25 +19,25 @@ Replace API stubs with **real Prisma CRUD** against Neon, wire the storefront to
 
 | Phase / item | Status | Notes |
 |---|---|---|
-| Phase 0 — Nx + `@gamestore/workspace` | ✅ Done | `api-resource`, `api-module`, `e2e-spec` generators |
-| Phase 1 — Theme + UI | ✅ Done | `EmptyState`, `Card`, `Button`, etc. |
-| Phase 2 — Frontend scaffold | ✅ Done | BFF proxy, `apiGet` / `apiPost`, feature pages |
-| Phase 3 — Prisma + Neon | ✅ Done | Schema, seed, `PrismaModule`, `GET /api/health/db` |
-| Phase 4 — Stripe setup | ✅ Done | Setup-text payment routes |
-| Phase 5 — Steam setup | ✅ Done | Setup-text guard routes |
+| Phase 0 Nx + `@gamestore/workspace` | ✅ Done | `api-resource`, `api-module`, `e2e-spec` generators |
+| Phase 1 Theme + UI | ✅ Done | `EmptyState`, `Card`, `Button`, etc. |
+| Phase 2 Frontend scaffold | ✅ Done | BFF proxy, `apiGet` / `apiPost`, feature pages |
+| Phase 3 Prisma + Neon | ✅ Done | Schema, seed, `PrismaModule`, `GET /api/health/db` |
+| Phase 4 Stripe setup | ✅ Done | Setup-text payment routes |
+| Phase 5 Steam setup | ✅ Done | Setup-text guard routes |
 | `apps/api` (NestJS) | ✅ Done | Global prefix `api`, port **3333** |
 | `apps/web` (Next.js) | ✅ Done | Port **3000** (dev) / **4200** (e2e start) |
 | Seed data | ✅ Done | 3 games, 2 licenses (`DEMO-KEY-0001`, `DEMO-KEY-0002`) |
 
 ---
 
-## Schema context (Phase 3 — used in Phase 6)
+## Schema context (Phase 3 used in Phase 6)
 
 | Model | Phase 6 usage |
 |---|---|
-| `Game` | List + get by slug; public catalog filters `publishedAt IS NOT NULL` |
+| `Game` | List + get by slug; public catalog Filters `publishedAt IS NOT NULL` |
 | `GamePricingRegion` | **Not exposed** in Phase 6 (PPP later) |
-| `GameAccount` | Admin CRUD via API only — no password decryption |
+| `GameAccount` | Admin CRUD via API only no password decryption |
 | `License` | `POST /licenses/validate` looks up `licenseKey`; admin list/create/revoke |
 
 **Seed keys for manual / e2e testing:**
@@ -66,7 +66,7 @@ Replace API stubs with **real Prisma CRUD** against Neon, wire the storefront to
 | Layer | Location | Pattern |
 |---|---|---|
 | Repositories + domain services | `libs/api/data-access/` | Inject `PrismaService` |
-| HTTP controllers | `apps/api/src/app/*/` | Thin — delegate to lib services |
+| HTTP controllers | `apps/api/src/app/*/` | Thin delegate to lib services |
 | Integration setup text | `libs/api/stripe`, `libs/api/steam` | Unchanged |
 
 **Generator note:** `api-resource` templates use `@Controller('api/<resource>')` which **double-prefixes** with Nest's global `api` prefix. Use `@Controller('games')` not `@Controller('api/games')`. Fix templates or hand-edit after generate.
@@ -91,18 +91,18 @@ Prisma `Decimal` fields (`priceBase`) serialize as strings in JSON. Map to `numb
 
 | Item | Status |
 |---|---|
-| `apps/api/.../games.controller.ts` | Stub — `GET /games` → `[]`, `GET /games/:slug` → `404` |
+| `apps/api/.../games.controller.ts` | Stub `GET /games` → `[]`, `GET /games/:slug` → `404` |
 | `libs/api/data-access/` | **Not created** |
 | `POST /api/licenses/validate` | **Not routed** |
 | `GET/POST /api/game-accounts` | **Not routed** |
 | `GET /api/orders` | **Not routed** (no `Order` model in schema) |
-| `libs/web/data-access/games.api.ts` | Calls real API — gets empty `[]` today |
-| `libs/web/data-access/licenses.api.ts` | `validateLicense()` typed as `SetupResponse` — wrong for Phase 6 |
-| `feature-catalog` `CatalogGrid` | Already calls `getGames()` — shows empty state |
-| `feature-game-detail` | Already calls `getGameBySlug()` — shows 404 empty state |
-| `feature-my-games` `LicenseKeyForm` | Static `readOnly` input — not wired |
-| Stripe / Steam routes | Setup text — **keep as-is** |
-| SEO | File shell from Phase 2 — **no changes** |
+| `libs/web/data-access/games.api.ts` | Calls real API gets empty `[]` today |
+| `libs/web/data-access/licenses.api.ts` | `validateLicense()` typed as `SetupResponse` wrong for Phase 6 |
+| `feature-catalog` `CatalogGrid` | Already calls `getGames()` shows empty state |
+| `feature-game-detail` | Already calls `getGameBySlug()` shows 404 empty state |
+| `feature-my-games` `LicenseKeyForm` | Static `readOnly` input not wired |
+| Stripe / Steam routes | Setup text **keep as-is** |
+| SEO | File shell from Phase 2 **no changes** |
 
 ---
 
@@ -114,7 +114,7 @@ Prisma `Decimal` fields (`priceBase`) serialize as strings in JSON. Map to `numb
 |---|---|---|
 | GET | `/api/games` | Published games, ordered by `title` |
 | GET | `/api/games/:slug` | Single game by slug or `404` |
-| POST | `/api/games` | Create (admin / e2e) — validate unique slug |
+| POST | `/api/games` | Create (admin / e2e) validate unique slug |
 | PUT | `/api/games/:id` | Update by id |
 | DELETE | `/api/games/:id` | Delete by id (cascade per schema) |
 
@@ -152,7 +152,7 @@ Prisma `Decimal` fields (`priceBase`) serialize as strings in JSON. Map to `numb
 }
 ```
 
-### Game accounts (API only — no storefront UI)
+### Game accounts (API only no storefront UI)
 
 | Method | Route | Behavior |
 |---|---|---|
@@ -163,7 +163,7 @@ Prisma `Decimal` fields (`priceBase`) serialize as strings in JSON. Map to `numb
 
 Do **not** return `passwordEncrypted` or `sharedSecret` in public responses.
 
-### Orders (setup only — deferred)
+### Orders (setup only deferred)
 
 No `Order` model exists yet. Add a minimal setup controller:
 
@@ -187,7 +187,7 @@ Work **one slice at a time**. After each slice: run verify commands → user rev
 
 ---
 
-### Slice 6.1 — Data-access library shell
+### Slice 6.1 Data-access library shell
 
 **Goal:** Create `libs/api/data-access` with repository pattern wired to `PrismaService`.
 
@@ -213,8 +213,8 @@ libs/api/data-access/
 
 **`GamesRepository` methods (implement with real Prisma):**
 
-- `findPublished()` — `where: { publishedAt: { not: null } }`, `orderBy: { title: 'asc' }`
-- `findBySlug(slug)` — `findUnique({ where: { slug } })`
+- `findPublished()` `where: { publishedAt: { not: null } }`, `orderBy: { title: 'asc' }`
+- `findBySlug(slug)` `findUnique({ where: { slug } })`
 - `findById(id)`, `create(dto)`, `update(id, dto)`, `delete(id)`
 
 **Wire in `apps/api/src/app/app.module.ts`:**
@@ -227,7 +227,7 @@ imports: [PrismaModule, DataAccessModule, StripeModule, SteamModule],
 
 **Unit tests** (`games.repository.spec.ts`):
 
-- Mock `PrismaService` with `vi.fn()` — assert correct `findMany` / `findUnique` calls
+- Mock `PrismaService` with `vi.fn()` assert correct `findMany` / `findUnique` calls
 - No real DB in unit tests
 
 **Verify:**
@@ -245,7 +245,7 @@ pnpm nx test api-data-access
 
 ---
 
-### Slice 6.2 — Games API (replace stub)
+### Slice 6.2 Games API (replace stub)
 
 **Goal:** Replace `GamesController` stub with real Prisma-backed handlers.
 
@@ -257,7 +257,7 @@ apps/api/src/app/games/
 └── games.service.ts       # thin wrapper over GamesRepository
 ```
 
-Or move service into `libs/api/data-access` and keep controller thin in `apps/api` (preferred — matches Stripe lib pattern).
+Or move service into `libs/api/data-access` and keep controller thin in `apps/api` (preferred matches Stripe lib pattern).
 
 **Behavior:**
 
@@ -286,7 +286,7 @@ curl -i http://localhost:3333/api/games/bad-slug   # expect 404
 
 ---
 
-### Slice 6.3 — Licenses API (validate + CRUD)
+### Slice 6.3 Licenses API (validate + CRUD)
 
 **Goal:** Implement license repository and `POST /api/licenses/validate`.
 
@@ -300,7 +300,7 @@ apps/api/src/app/licenses/
 
 **`LicensesRepository`:**
 
-- `findByKey(licenseKey)` — include `game: { select: { id, title, slug } }`
+- `findByKey(licenseKey)` include `game: { select: { id, title, slug } }`
 - `findAll()`, `findById(id)`, `create(dto)`, `revoke(id)`
 
 **`POST /api/licenses/validate`:**
@@ -333,9 +333,9 @@ curl -X POST http://localhost:3333/api/licenses/validate \
 
 ---
 
-### Slice 6.4 — Game accounts API (admin CRUD)
+### Slice 6.4 Game accounts API (admin CRUD)
 
-**Goal:** Expose game-account management for ops / e2e — **no frontend page** in Phase 6.
+**Goal:** Expose game-account management for ops / e2e **no frontend page** in Phase 6.
 
 **Files:**
 
@@ -364,7 +364,7 @@ curl -X POST http://localhost:3333/api/game-accounts/<id>/deactivate
 
 ---
 
-### Slice 6.5 — Orders setup routes (optional thin slice)
+### Slice 6.5 Orders setup routes (optional thin slice)
 
 **Goal:** Satisfy implementation_plan orders mention without an `Order` model.
 
@@ -381,11 +381,11 @@ apps/api/src/app/orders/
 {
   "status": "setup",
   "integration": "orders",
-  "message": "Orders — not implemented yet"
+  "message": "Orders not implemented yet"
 }
 ```
 
-**Skip this slice** if you prefer to defer until an `Order` model is added — not blocking storefront.
+**Skip this slice** if you prefer to defer until an `Order` model is added not blocking storefront.
 
 **Exit criteria:**
 
@@ -394,18 +394,18 @@ apps/api/src/app/orders/
 
 ---
 
-### Slice 6.6 — Frontend: catalog + game detail (real data)
+### Slice 6.6 Frontend: catalog + game detail (real data)
 
 **Goal:** Storefront displays seeded games without code changes beyond types.
 
 **`libs/web/data-access/src/lib/games.api.ts`:**
 
 - Expand `Game` type to match API DTO (`description`, `platform`, `priceBase`, `coverImage`)
-- `getGames()` / `getGameBySlug()` unchanged — already call real API
+- `getGames()` / `getGameBySlug()` unchanged already call real API
 
 **`feature-catalog`:**
 
-- `CatalogGrid` already maps games — verify cards show **Stellar Odyssey**, etc.
+- `CatalogGrid` already maps games verify cards show **Stellar Odyssey**, etc.
 - Optional: link `CatalogCard` to `/games/${game.slug}`
 
 **`feature-game-detail`:**
@@ -416,7 +416,7 @@ apps/api/src/app/orders/
 **Verify:**
 
 ```bash
-pnpm nx dev api    # :3333 — requires DATABASE_URL + seed
+pnpm nx dev api    # :3333 requires DATABASE_URL + seed
 pnpm nx dev web    # :3000
 # /shop → 3 game cards
 # /games/demo-game-1 → Stellar Odyssey
@@ -431,7 +431,7 @@ pnpm nx dev web    # :3000
 
 ---
 
-### Slice 6.7 — Frontend: license validation
+### Slice 6.7 Frontend: license validation
 
 **Goal:** Wire `LicenseKeyForm` to `POST /api/licenses/validate`.
 
@@ -458,7 +458,7 @@ export async function validateLicense(
 - Success: show game title + status
 - Error: show `ApiError` message (404 → "License not found")
 
-**Optional:** Pass validated `licenseKey` into `SteamGuardPanel` / `requestSteamGuardCode(licenseKey)` — Steam still returns setup text.
+**Optional:** Pass validated `licenseKey` into `SteamGuardPanel` / `requestSteamGuardCode(licenseKey)` Steam still returns setup text.
 
 **Verify:**
 
@@ -476,7 +476,7 @@ export async function validateLicense(
 
 ---
 
-### Slice 6.8 — API e2e tests
+### Slice 6.8 API e2e tests
 
 **Goal:** CRUD + validate specs against real Neon (skip when `DATABASE_URL` unset).
 
@@ -503,7 +503,7 @@ describe.skipIf(!hasDatabase)('Games API', () => { ... });
 
 Use unique slugs to avoid clashing with seed data; clean up in `afterAll` if delete fails.
 
-**Existing specs** (`payments`, `steam`, `health-db`) must still pass — setup text unchanged.
+**Existing specs** (`payments`, `steam`, `health-db`) must still pass setup text unchanged.
 
 **Verify:**
 
@@ -519,7 +519,7 @@ pnpm nx e2e api-e2e
 
 ---
 
-### Slice 6.9 — Web e2e tests
+### Slice 6.9 Web e2e tests
 
 **Goal:** Full-stack assertions for catalog + license flow.
 
@@ -538,7 +538,7 @@ apps/web-e2e/src/
 - Skip or `test.skip(!process.env.DATABASE_URL)` when DB unavailable locally
 - Alternative for local dev without Neon: keep catalog test DB-gated only in CI
 
-**`checkout.spec.ts` / `steam-guard.spec.ts`:** unchanged — still assert setup messages.
+**`checkout.spec.ts` / `steam-guard.spec.ts`:** unchanged still assert setup messages.
 
 **Verify:**
 
@@ -623,7 +623,7 @@ curl -X POST http://localhost:3333/api/licenses/validate \
 | [implementation_plan.md](./implementation_plan.md) | Full monorepo blueprint (Phases 0–6) |
 | [PHASE_3_PLAN.md](./PHASE_3_PLAN.md) | Prisma + Neon (✅ done) |
 | [PHASE_5_PLAN.md](./PHASE_5_PLAN.md) | Steam setup (✅ done) |
-| **PHASE_6_PLAN.md** | **This file** — CRUD + storefront wiring |
+| **PHASE_6_PLAN.md** | **This file** CRUD + storefront wiring |
 | [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md) | Product MVP priorities |
 
 ---

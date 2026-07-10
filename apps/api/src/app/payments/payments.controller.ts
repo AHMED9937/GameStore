@@ -13,7 +13,11 @@ import {
   buildDefaultRouteThrottle,
   throttleLimitCheckout,
 } from '../../security/throttle.config';
-import { CreateCheckoutDto, PaymentsService } from './payments.service';
+import {
+  CreateCheckoutDto,
+  CreateSubscriptionCheckoutDto,
+  PaymentsService,
+} from './payments.service';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -52,6 +56,31 @@ export class PaymentsController {
       metadata: {
         gameId: body.gameId,
         gameSlug: body.slug,
+        sessionIdHint: result.sessionId.slice(0, 12),
+      },
+    });
+
+    return result;
+  }
+
+  @Throttle(buildDefaultRouteThrottle(throttleLimitCheckout()))
+  @Post('subscription-checkout')
+  @HttpCode(200)
+  async subscriptionCheckout(
+    @Body() body: CreateSubscriptionCheckoutDto,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.payments.createSubscriptionCheckout(body, user);
+
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'payment.subscription_checkout.create',
+      resource: 'subscription_plan',
+      resourceId: body.planSlug,
+      metadata: {
+        planSlug: body.planSlug,
         sessionIdHint: result.sessionId.slice(0, 12),
       },
     });

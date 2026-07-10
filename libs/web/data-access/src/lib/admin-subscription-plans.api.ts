@@ -1,4 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
+import type { BulkActionResult } from './admin.types';
 
 export type AdminSubscriptionPlanGameRecord = {
   id: string;
@@ -51,8 +52,25 @@ export type UpdateAdminSubscriptionPlanInput = {
   gameIds?: string[];
 };
 
-export function getAdminSubscriptionPlans() {
-  return apiGet<AdminSubscriptionPlanListRecord[]>('/admin/subscription-plans');
+export type AdminSubscriptionPlanListFilters = {
+  q?: string;
+  status?: 'active' | 'inactive';
+};
+
+export function getAdminSubscriptionPlans(
+  filters: AdminSubscriptionPlanListFilters = {},
+) {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  return apiGet<AdminSubscriptionPlanListRecord[]>(
+    `/admin/subscription-plans${suffix}`,
+  );
 }
 
 export function getAdminSubscriptionPlan(id: string) {
@@ -72,4 +90,10 @@ export function updateAdminSubscriptionPlan(
 
 export function deleteAdminSubscriptionPlan(id: string) {
   return apiDelete<{ id: string; deleted: true }>(`/admin/subscription-plans/${id}`);
+}
+
+export function bulkDeleteAdminSubscriptionPlans(ids: string[]) {
+  return apiPost<BulkActionResult>('/admin/subscription-plans/bulk-delete', {
+    ids,
+  });
 }

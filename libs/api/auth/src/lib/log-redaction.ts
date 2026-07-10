@@ -33,7 +33,7 @@ export function redactForAuditLog(value: unknown): unknown {
   return redacted;
 }
 
-/** Store only a hint of license keys in audit metadata — never the full key. */
+/** Store only a hint of license keys in audit metadata never the full key. */
 export function licenseKeyAuditHint(licenseKey: string): string {
   const trimmed = licenseKey.trim();
   if (trimmed.length <= 4) {

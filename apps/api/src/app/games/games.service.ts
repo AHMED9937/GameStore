@@ -3,8 +3,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GamesRepository } from '@gamestore/api/data-access';
+import {
+  DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+  GameAccountsRepository,
+  GamesRepository,
+  StoreSettingsRepository,
+  resolveSoldOut,
+} from '@gamestore/api/data-access';
+import {
+  type GameSystemRequirements,
+  parseStoredGameSystemRequirements,
+  serializeGameSystemRequirements,
+} from '@gamestore/shared/game-requirements';
 import { Prisma } from '@prisma/client';
+import {
+  STORE_DEFAULT_ACTIVATION_MEDIA_ID,
+  STORE_DEFAULT_ACTIVATION_TITLE,
+} from './activation-video.constants';
 
 export type GameDto = {
   id: string;
@@ -14,6 +29,8 @@ export type GameDto = {
   platform: string;
   priceBase: string;
   coverImage: string | null;
+  coverCardImage: string | null;
+  soldOut: boolean;
 };
 
 export type GameMediaDto = {
@@ -27,8 +44,11 @@ export type GameMediaDto = {
 export type GameDetailDto = GameDto & {
   genres: string[];
   releaseDate: string | null;
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: GameMediaDto[];
 };
 
@@ -39,26 +59,34 @@ export type CreateGameDto = {
   priceBase: number | string;
   description?: string;
   coverImage?: string;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: string | null;
   publishedAt?: string | null;
   genres?: string[];
   releaseDate?: string | null;
-  requirementsMin?: string | null;
-  requirementsRecommended?: string | null;
+  requirementsMin?: GameSystemRequirements | null;
+  requirementsRecommended?: GameSystemRequirements | null;
 };
 
 type GameForDto = {
   id: string;
   slug: string;
   title: string;
-  description: string | null;
+  description?: string | null;
   platform: string;
   priceBase: { toString(): string };
   coverImage: string | null;
+  coverCardImage: string | null;
+  soldOut?: boolean;
 };
 
 type GameForDetailDto = GameForDto & {
   genres: string[];
   releaseDate: Date | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: string | null;
   requirementsMin: string | null;
   requirementsRecommended: string | null;
   media: Array<{
@@ -75,11 +103,23 @@ function toDto(game: GameForDto): GameDto {
     id: game.id,
     slug: game.slug,
     title: game.title,
-    description: game.description,
+    description: game.description ?? null,
     platform: game.platform,
     priceBase: game.priceBase.toString(),
     coverImage: game.coverImage,
+    coverCardImage: game.coverCardImage,
+    soldOut: game.soldOut ?? false,
   };
+}
+
+function normalizeOptionalString(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : null;
 }
 
 function toDetailDto(game: GameForDetailDto): GameDetailDto {
@@ -87,8 +127,13 @@ function toDetailDto(game: GameForDetailDto): GameDetailDto {
     ...toDto(game),
     genres: game.genres,
     releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
-    requirementsMin: game.requirementsMin,
-    requirementsRecommended: game.requirementsRecommended,
+    metaTitle: game.metaTitle ?? null,
+    metaDescription: game.metaDescription ?? null,
+    ogImage: game.ogImage ?? null,
+    requirementsMin: parseStoredGameSystemRequirements(game.requirementsMin),
+    requirementsRecommended: parseStoredGameSystemRequirements(
+      game.requirementsRecommended,
+    ),
     media: game.media.map((item) => ({
       id: item.id,
       type: item.type,
@@ -99,13 +144,107 @@ function toDetailDto(game: GameForDetailDto): GameDetailDto {
   };
 }
 
+function withDefaultActivationMedia(
+  media: GameForDetailDto['media'],
+  defaultActivationUrl: string | null,
+): GameForDetailDto['media'] {
+  if (!defaultActivationUrl) {
+    return media;
+  }
+
+  const hasActivation = media.some((item) => item.type === 'activation');
+  if (hasActivation) {
+    return media;
+  }
+
+  return [
+    ...media,
+    {
+      id: STORE_DEFAULT_ACTIVATION_MEDIA_ID,
+      type: 'activation',
+      url: defaultActivationUrl,
+      title: STORE_DEFAULT_ACTIVATION_TITLE,
+      sortOrder: 0,
+    },
+  ];
+}
+
+function toGameWriteInput(
+  dto: Partial<CreateGameDto>,
+): Prisma.GameUpdateInput {
+  const {
+    requirementsMin,
+    requirementsRecommended,
+    publishedAt,
+    releaseDate,
+    metaTitle,
+    metaDescription,
+    ogImage,
+    ...rest
+  } = dto;
+
+  return {
+    ...rest,
+    ...(metaTitle !== undefined
+      ? { metaTitle: normalizeOptionalString(metaTitle) }
+      : {}),
+    ...(metaDescription !== undefined
+      ? { metaDescription: normalizeOptionalString(metaDescription) }
+      : {}),
+    ...(ogImage !== undefined
+      ? { ogImage: normalizeOptionalString(ogImage) }
+      : {}),
+    ...(publishedAt !== undefined
+      ? { publishedAt: publishedAt ? new Date(publishedAt) : null }
+      : {}),
+    ...(releaseDate !== undefined
+      ? { releaseDate: releaseDate ? new Date(releaseDate) : null }
+      : {}),
+    ...(requirementsMin !== undefined
+      ? { requirementsMin: serializeGameSystemRequirements(requirementsMin) }
+      : {}),
+    ...(requirementsRecommended !== undefined
+      ? {
+          requirementsRecommended: serializeGameSystemRequirements(
+            requirementsRecommended,
+          ),
+        }
+      : {}),
+  };
+}
+
 @Injectable()
 export class GamesService {
-  constructor(private readonly games: GamesRepository) {}
+  constructor(
+    private readonly games: GamesRepository,
+    private readonly gameAccounts: GameAccountsRepository,
+    private readonly storeSettings: StoreSettingsRepository,
+  ) {}
 
   async findAll(): Promise<GameDto[]> {
-    const games = await this.games.findPublished();
-    return games.map(toDto);
+    const rows = await this.games.findPublished();
+    const poolFlags = await this.gameAccounts.getActivePoolFlagsByGameIds(
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) =>
+      toDto({
+        ...row,
+        soldOut: resolveSoldOut(row.soldOut, poolFlags.get(row.id) ?? false),
+      }),
+    );
+  }
+
+  async findFeatured(limit = 5): Promise<GameDto[]> {
+    const rows = await this.games.findFeaturedPublished(limit);
+    const poolFlags = await this.gameAccounts.getActivePoolFlagsByGameIds(
+      rows.map((row) => row.id),
+    );
+    return rows.map((row) =>
+      toDto({
+        ...row,
+        soldOut: resolveSoldOut(row.soldOut, poolFlags.get(row.id) ?? false),
+      }),
+    );
   }
 
   async findBySlug(slug: string): Promise<GameDetailDto> {
@@ -113,7 +252,20 @@ export class GamesService {
     if (!game) {
       throw new NotFoundException(`No game found for slug "${slug}"`);
     }
-    return toDetailDto(game);
+
+    const [poolFlags, defaultActivationUrl] = await Promise.all([
+      this.gameAccounts.getActivePoolFlagsByGameIds([game.id]),
+      this.storeSettings.get(DEFAULT_ACTIVATION_VIDEO_URL_KEY),
+    ]);
+
+    return toDetailDto({
+      ...game,
+      soldOut: resolveSoldOut(
+        game.soldOut,
+        poolFlags.get(game.id) ?? false,
+      ),
+      media: withDefaultActivationMedia(game.media, defaultActivationUrl),
+    });
   }
 
   async create(dto: CreateGameDto): Promise<GameDto> {
@@ -141,10 +293,7 @@ export class GamesService {
 
   async update(id: string, dto: Partial<CreateGameDto>): Promise<GameDto> {
     try {
-      const game = await this.games.update(id, {
-        ...dto,
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
-      });
+      const game = await this.games.update(id, toGameWriteInput(dto));
       return toDto(game);
     } catch (error) {
       if (

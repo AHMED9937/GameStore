@@ -5,9 +5,33 @@ import {
   ApiError,
   apiErrorMessage,
   getGameBySlug,
+  isTransientApiError,
   type GameDetail,
 } from '@gamestore/web/data-access';
 import type { CheckoutAsyncState } from '../types/checkout-async-state';
+
+const MAX_TRANSIENT_RETRIES = 2;
+const TRANSIENT_RETRY_DELAYS_MS = [1000, 2000];
+
+async function loadGameWithRetry(slug: string): Promise<GameDetail> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= MAX_TRANSIENT_RETRIES; attempt += 1) {
+    try {
+      return await getGameBySlug(slug);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientApiError(error) || attempt >= MAX_TRANSIENT_RETRIES) {
+        throw error;
+      }
+      await new Promise((resolve) => {
+        setTimeout(resolve, TRANSIENT_RETRY_DELAYS_MS[attempt] ?? 2000);
+      });
+    }
+  }
+
+  throw lastError;
+}
 
 export function useCheckoutGame(
   slug: string | null,
@@ -25,9 +49,16 @@ export function useCheckoutGame(
     let cancelled = false;
     setState({ status: 'loading' });
 
-    getGameBySlug(slug.trim())
+    loadGameWithRetry(slug.trim())
       .then((game) => {
         if (!cancelled) {
+          if (game.soldOut) {
+            setState({
+              status: 'error',
+              message: 'This game is currently sold out.',
+            });
+            return;
+          }
           setState({ status: 'success', data: game });
         }
       })

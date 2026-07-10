@@ -1,4 +1,4 @@
-# Phase 3 — Prisma + Neon Database Plan
+# Phase 3 Prisma + Neon Database Plan
 
 This document is the **detailed execution plan for Phase 3** of GameStore. It expands [implementation_plan.md](./implementation_plan.md) into reviewable slices.
 
@@ -9,7 +9,7 @@ This document is the **detailed execution plan for Phase 3** of GameStore. It ex
 
 ## Phase 3 goal
 
-Install **Prisma**, connect to **Neon PostgreSQL**, define the **initial schema**, run **migrations**, add a **seed script**, and verify connectivity with a **real health query** — no fake DB layer in application code.
+Install **Prisma**, connect to **Neon PostgreSQL**, define the **initial schema**, run **migrations**, add a **seed script**, and verify connectivity with a **real health query** no fake DB layer in application code.
 
 **Not in Phase 3:** full game CRUD wiring to the storefront (Phase 6), Stripe/Steam implementation, full SEO metadata, business rules (queues, PPP logic).
 
@@ -19,12 +19,12 @@ Install **Prisma**, connect to **Neon PostgreSQL**, define the **initial schema*
 
 | Phase / item | Status | Notes |
 |---|---|---|
-| Phase 0 — Nx + `@gamestore/workspace` | ✅ Done | `integration-lib` generator exists |
-| Phase 1 — Theme + UI | ✅ Done | |
-| Phase 2 — Frontend scaffold | ✅ Done | Real API client + BFF proxy |
+| Phase 0 Nx + `@gamestore/workspace` | ✅ Done | `integration-lib` generator exists |
+| Phase 1 Theme + UI | ✅ Done | |
+| Phase 2 Frontend scaffold | ✅ Done | Real API client + BFF proxy |
 | `apps/api` (NestJS) | ✅ Done | Runs on port **3333** by default |
 | `apps/web` (Next.js) | ✅ Done | Runs on port **3000**; BFF at `/api/*` |
-| Games API stub | ✅ Temporary | `GamesController` returns `[]` — replaced in Phase 6 with Prisma |
+| Games API stub | ✅ Temporary | `GamesController` returns `[]` replaced in Phase 6 with Prisma |
 
 ---
 
@@ -45,17 +45,17 @@ Install **Prisma**, connect to **Neon PostgreSQL**, define the **initial schema*
 pnpm nx g @gamestore/workspace:integration-lib --name=prisma
 ```
 
-Extend generated files — do not hand-scaffold `libs/api/prisma` with different conventions.
+Extend generated files do not hand-scaffold `libs/api/prisma` with different conventions.
 
 ### Port & env (current conventions)
 
 | Service | Port | Env var |
 |---|---|---|
-| Next.js (`web`) | 3000 | — |
+| Next.js (`web`) | 3000 | |
 | NestJS (`api`) | 3333 | `PORT` (optional) |
 | Neon | cloud | `DATABASE_URL`, `DIRECT_URL` |
 
-`API_URL` in `.env` must point to Nest (**3333**), never Next (**3000**) — avoids BFF proxy loops.
+`API_URL` in `.env` must point to Nest (**3333**), never Next (**3000**) avoids BFF proxy loops.
 
 ---
 
@@ -65,7 +65,7 @@ Work **one slice at a time**. After each slice: run verify commands → user rev
 
 ---
 
-### Slice 3.1 — Neon project setup (manual, outside repo)
+### Slice 3.1 Neon project setup (manual, outside repo)
 
 **Goal:** Create a Neon PostgreSQL database and connection strings.
 
@@ -75,11 +75,11 @@ Work **one slice at a time**. After each slice: run verify commands → user rev
 2. Copy **pooled** connection string (`?sslmode=require`)
 3. Copy **direct** connection string (for migrations)
 4. Create branches:
-   - `main` — production
-   - `dev` — local development
-   - `ci` — CI pipeline (optional)
+   - `main` production
+   - `dev` local development
+   - `ci` CI pipeline (optional)
 
-**Add to `.env` (local only — never commit):**
+**Add to `.env` (local only never commit):**
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
@@ -101,7 +101,7 @@ DIRECT_URL="postgresql://USER:PASSWORD@HOST/DB?sslmode=require"
 
 ---
 
-### Slice 3.2 — Generate Prisma integration lib
+### Slice 3.2 Generate Prisma integration lib
 
 **Goal:** Scaffold `libs/api/prisma` via the workspace generator.
 
@@ -153,7 +153,7 @@ pnpm nx run api-prisma:prisma-generate
 
 ---
 
-### Slice 3.3 — Initial Prisma schema
+### Slice 3.3 Initial Prisma schema
 
 **Goal:** Define MVP models aligned with domain docs.
 
@@ -177,9 +177,9 @@ pnpm nx run api-prisma:prisma-generate
 | `platform` | `String` | e.g. `steam`, `epic` |
 | `priceBase` | `Decimal` | Base price |
 | `coverImage` | `String?` | |
-| `metaTitle` | `String?` | SEO — used post-plan |
-| `metaDescription` | `String?` | SEO — used post-plan |
-| `ogImage` | `String?` | SEO — used post-plan |
+| `metaTitle` | `String?` | SEO used post-plan |
+| `metaDescription` | `String?` | SEO used post-plan |
+| `ogImage` | `String?` | SEO used post-plan |
 | `publishedAt` | `DateTime?` | null = draft |
 | `createdAt` | `DateTime @default(now())` | |
 | `updatedAt` | `DateTime @updatedAt` | |
@@ -203,8 +203,8 @@ pnpm nx run api-prisma:prisma-generate
 | `gameId` | `String` → `Game` |
 | `platform` | `String` |
 | `username` | `String` |
-| `passwordEncrypted` | `String` | AES later — store placeholder in seed |
-| `sharedSecret` | `String` | Steam TOTP — Phase 5 |
+| `passwordEncrypted` | `String` | AES later store placeholder in seed |
+| `sharedSecret` | `String` | Steam TOTP Phase 5 |
 | `region` | `String @default("global")` |
 | `activeUsersCount` | `Int @default(0)` |
 | `isActive` | `Boolean @default(true)` |
@@ -241,7 +241,7 @@ pnpm nx run api-prisma:prisma-generate
 
 ---
 
-### Slice 3.4 — Migrate + seed
+### Slice 3.4 Migrate + seed
 
 **Goal:** Apply schema to Neon `dev` branch and insert real test rows.
 
@@ -250,7 +250,7 @@ pnpm nx run api-prisma:prisma-migrate -- --name init
 pnpm nx run api-prisma:db-seed
 ```
 
-**Seed script (`prisma/seed.ts`) — real rows, no mocks:**
+**Seed script (`prisma/seed.ts`) real rows, no mocks:**
 
 | Entity | Seed data |
 |---|---|
@@ -259,7 +259,7 @@ pnpm nx run api-prisma:db-seed
 | `GameAccount` | 1 account per game (placeholder encrypted password) |
 | `License` | 1–2 `available` license keys for testing |
 
-**Do not** seed fake Stripe/Steam data — only catalog + license scaffolding.
+**Do not** seed fake Stripe/Steam data only catalog + license scaffolding.
 
 **Verify:**
 
@@ -277,9 +277,9 @@ pnpm nx run api-prisma:prisma-studio   # optional visual check
 
 ---
 
-### Slice 3.5 — NestJS Prisma module wiring
+### Slice 3.5 NestJS Prisma module wiring
 
-**Goal:** Inject `PrismaService` into `apps/api` — singleton, graceful shutdown.
+**Goal:** Inject `PrismaService` into `apps/api` singleton, graceful shutdown.
 
 **Files:**
 
@@ -303,7 +303,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 }
 ```
 
-**Keep `GamesController` stub for now** — Phase 6 replaces it with real Prisma queries. Phase 3 only proves DB connectivity.
+**Keep `GamesController` stub for now** Phase 6 replaces it with real Prisma queries. Phase 3 only proves DB connectivity.
 
 **Verify:**
 
@@ -319,7 +319,7 @@ pnpm nx dev api
 
 ---
 
-### Slice 3.6 — Database health endpoint
+### Slice 3.6 Database health endpoint
 
 **Goal:** Real HTTP health check against Neon.
 
@@ -343,7 +343,7 @@ await prisma.$queryRaw`SELECT 1`;
 return { status: 'ok', latencyMs: Date.now() - start };
 ```
 
-**On failure:** return `503` with `{ status: "error", message: "..." }` — real error, not fake OK.
+**On failure:** return `503` with `{ status: "error", message: "..." }` real error, not fake OK.
 
 **Generate via:**
 
@@ -366,9 +366,9 @@ curl http://localhost:3333/api/health/db
 
 ---
 
-### Slice 3.7 — Tests
+### Slice 3.7 Tests
 
-**Goal:** Prove DB connectivity in tests — mocks only in unit specs.
+**Goal:** Prove DB connectivity in tests mocks only in unit specs.
 
 | Test | Type | Location | Asserts |
 |---|---|---|---|
@@ -378,7 +378,7 @@ curl http://localhost:3333/api/health/db
 
 **Integration test notes:**
 
-- Use Neon `dev` or `ci` branch — never prod `main`
+- Use Neon `dev` or `ci` branch never prod `main`
 - Skip integration tests in CI if `DATABASE_URL` unset (with clear message)
 
 **Verify:**
@@ -476,7 +476,7 @@ pnpm nx test api-prisma
 |---|---|
 | [implementation_plan.md](./implementation_plan.md) | Full monorepo blueprint (Phases 0–6) |
 | [PHASE_2_PLAN.md](./PHASE_2_PLAN.md) | Frontend scaffold (✅ done) |
-| **PHASE_3_PLAN.md** | **This file** — Prisma + Neon slice-by-slice |
+| **PHASE_3_PLAN.md** | **This file** Prisma + Neon slice-by-slice |
 | [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md) | Product MVP priorities |
 
 ---

@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Input, Text } from '@gamestore/shared/ui';
-import { getAdminGames, isSetupResponse } from '@gamestore/web/data-access';
+import { AdminGameMultiSearchField } from '../components/admin-game-multi-search-field';
 import type { AdminSubscriptionPlanFormValues } from './admin-subscription-plans.types';
 import { SUBSCRIPTION_INTERVAL_OPTIONS } from './subscriptions.constants';
 import styles from './subscriptions.module.css';
@@ -18,26 +17,6 @@ export function AdminSubscriptionPlanForm({
   disabled = false,
   onValuesChange,
 }: AdminSubscriptionPlanFormProps) {
-  const [publishedGames, setPublishedGames] = useState<
-    { id: string; title: string; slug: string }[]
-  >([]);
-
-  useEffect(() => {
-    if (disabled) {
-      return;
-    }
-    void getAdminGames().then((result) => {
-      if (isSetupResponse(result) || !Array.isArray(result)) {
-        return;
-      }
-      setPublishedGames(
-        result
-          .filter((game) => game.published)
-          .map((game) => ({ id: game.id, title: game.title, slug: game.slug })),
-      );
-    });
-  }, [disabled]);
-
   const updateField = <K extends keyof AdminSubscriptionPlanFormValues>(
     field: K,
     nextValue: AdminSubscriptionPlanFormValues[K],
@@ -46,13 +25,6 @@ export function AdminSubscriptionPlanForm({
       ...values,
       [field]: nextValue,
     });
-  };
-
-  const toggleGame = (gameId: string) => {
-    const nextIds = values.gameIds.includes(gameId)
-      ? values.gameIds.filter((id) => id !== gameId)
-      : [...values.gameIds, gameId];
-    updateField('gameIds', nextIds);
   };
 
   return (
@@ -124,25 +96,12 @@ export function AdminSubscriptionPlanForm({
       </div>
       <div className={styles.formField}>
         <Text tone="muted">Published games in plan</Text>
-        <div className={styles.gamePicker} data-testid="admin-subscription-plan-games">
-          {publishedGames.length === 0 ? (
-            <Text tone="dim">No published games available.</Text>
-          ) : (
-            publishedGames.map((game) => (
-              <label key={game.id} className={styles.gameOption}>
-                <input
-                  type="checkbox"
-                  checked={values.gameIds.includes(game.id)}
-                  disabled={disabled}
-                  onChange={() => toggleGame(game.id)}
-                />
-                <span>
-                  {game.title} <Text tone="dim">({game.slug})</Text>
-                </span>
-              </label>
-            ))
-          )}
-        </div>
+        <AdminGameMultiSearchField
+          value={values.gameIds}
+          disabled={disabled}
+          gameFilter="published"
+          onChange={(gameIds) => updateField('gameIds', gameIds)}
+        />
       </div>
     </div>
   );

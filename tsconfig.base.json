@@ -38,6 +38,9 @@
       "@gamestore/web/feature-my-games": [
         "./libs/web/feature-my-games/src/index.ts"
       ],
+      "@gamestore/web/feature-subscriptions": [
+        "./libs/web/feature-subscriptions/src/index.ts"
+      ],
       "@gamestore/web/feature-steam-access": [
         "./libs/web/feature-steam-access/src/index.ts"
       ],
@@ -49,6 +52,10 @@
         "./libs/web/feature-admin/src/index.ts"
       ],
       "@gamestore/shared/seo": ["./libs/shared/seo/src/index.ts"],
+      "@gamestore/shared/marketing": ["./libs/shared/marketing/src/index.ts"],
+      "@gamestore/shared/game-requirements": [
+        "./libs/shared/game-requirements/src/index.ts"
+      ],
       "@gamestore/api/prisma": ["./libs/api/prisma/src/index.ts"],
       "@gamestore/api/stripe": ["./libs/api/stripe/src/index.ts"],
       "@gamestore/api/steam": ["./libs/api/steam/src/index.ts"],

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Container, Text } from '@gamestore/shared/ui';
+import { Badge, Button, Container, SkeletonPanel, SkeletonText, Text } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
   deleteAdminSubscriptionPlan,
@@ -122,7 +122,8 @@ export function AdminSubscriptionPlanEditPage({
     return (
       <Container>
         <AdminPageShell>
-          <Text tone="dim">Loading plan…</Text>
+          <SkeletonText width="26%" />
+          <SkeletonPanel height={120} style={{ marginTop: '0.75rem' }} />
         </AdminPageShell>
       </Container>
     );

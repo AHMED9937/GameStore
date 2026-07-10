@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Badge, Button, Container, Input, Text } from '@gamestore/shared/ui';
+import { Badge, Button, Container, Input, SkeletonPanel, SkeletonText, Text } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
   deleteAdminLicense,
@@ -16,6 +16,12 @@ import {
 import { AdminPageHeader } from '../components/admin-page-header';
 import { AdminPageShell } from '../components/admin-page-shell';
 import { AdminLicenseDeleteSection } from './admin-license-delete-section';
+import {
+  DEFAULT_LICENSE_VALIDITY_YEARS,
+  formatLicenseExpiryLabel,
+  resolveLicenseExpiresAt,
+  toDatetimeLocalValue,
+} from './licenses.utils';
 import styles from './licenses.module.css';
 
 export type AdminLicenseDetailPageProps = {
@@ -29,24 +35,22 @@ type BuyerFormValues = {
 };
 
 function toBuyerFormValues(license: AdminLicenseRecord): BuyerFormValues {
+  const resolvedExpiry = resolveLicenseExpiresAt(
+    license.expiresAt,
+    license.validFrom,
+  );
   return {
     buyerEmail: license.buyerEmail ?? '',
     buyerCountry: license.buyerCountry ?? '',
-    expiresAt: license.expiresAt
-      ? license.expiresAt.slice(0, 16)
-      : '',
+    expiresAt: toDatetimeLocalValue(resolvedExpiry),
   };
 }
 
-function formatValidityLabel(iso: string | null): string {
-  if (!iso) {
-    return 'Lifetime';
-  }
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
+function formatValidityLabel(
+  expiresAt: string | null,
+  validFrom: string,
+): string {
+  return formatLicenseExpiryLabel(expiresAt, validFrom);
 }
 
 function statusVariant(
@@ -129,7 +133,7 @@ export function AdminLicenseDetailPage({ licenseId }: AdminLicenseDetailPageProp
           buyerCountry: values.buyerCountry.trim() || undefined,
           expiresAt: values.expiresAt.trim()
             ? new Date(values.expiresAt).toISOString()
-            : null,
+            : resolveLicenseExpiresAt(null, license.validFrom).toISOString(),
         });
         if (isSetupResponse(result)) {
           setError(result.message);
@@ -204,7 +208,8 @@ export function AdminLicenseDetailPage({ licenseId }: AdminLicenseDetailPageProp
     return (
       <Container>
         <AdminPageShell>
-          <Text tone="dim">Loading license…</Text>
+          <SkeletonText width="24%" />
+          <SkeletonPanel height={120} style={{ marginTop: '0.75rem' }} />
         </AdminPageShell>
       </Container>
     );
@@ -256,7 +261,9 @@ export function AdminLicenseDetailPage({ licenseId }: AdminLicenseDetailPageProp
           <Text tone="muted">
             Valid from {new Date(license.validFrom).toLocaleString()}
           </Text>
-          <Text tone="muted">Expires {formatValidityLabel(license.expiresAt)}</Text>
+          <Text tone="muted">
+            Expires {formatValidityLabel(license.expiresAt, license.validFrom)}
+          </Text>
           {license.subscriptionId ? (
             <Text tone="muted">Subscription {license.subscriptionId}</Text>
           ) : null}
@@ -303,7 +310,9 @@ export function AdminLicenseDetailPage({ licenseId }: AdminLicenseDetailPageProp
                 />
               </div>
               <div className={styles.formField}>
-                <Text tone="muted">Expires at (leave blank for lifetime)</Text>
+                <Text tone="muted">
+                  Expires at (defaults to {DEFAULT_LICENSE_VALIDITY_YEARS} years)
+                </Text>
                 <Input
                   name="expiresAt"
                   type="datetime-local"

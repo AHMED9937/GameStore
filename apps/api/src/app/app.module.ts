@@ -26,9 +26,17 @@ import { PaymentsController } from './payments/payments.controller';
 import { PaymentsService } from './payments/payments.service';
 import { PaymentsWebhookController } from './payments/payments-webhook.controller';
 import { PaymentFulfillmentService } from './payments/payment-fulfillment.service';
+import { SubscriptionFulfillmentService } from './payments/subscription-fulfillment.service';
+import { SubscriptionPlansController } from './subscription-plans/subscription-plans.controller';
+import { SubscriptionPlansService } from './subscription-plans/subscription-plans.service';
+import { SubscriptionsController } from './subscriptions/subscriptions.controller';
+import { SubscriptionsService } from './subscriptions/subscriptions.service';
 import { SteamController } from './steam/steam.controller';
 import { SteamGuardAppService } from './steam/steam-guard-app.service';
+import { StoreSettingsController } from './store-settings/store-settings.controller';
+import { StoreSettingsService } from './store-settings/store-settings.service';
 import { AdminModule } from './admin/admin.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
 
 @Module({
   imports: [
@@ -39,6 +47,7 @@ import { AdminModule } from './admin/admin.module';
     StripeModule,
     SteamModule,
     AdminModule,
+    EntitlementsModule,
   ],
   controllers: [
     AppController,
@@ -50,7 +59,10 @@ import { AdminModule } from './admin/admin.module';
     OrdersController,
     PaymentsController,
     PaymentsWebhookController,
+    SubscriptionPlansController,
+    SubscriptionsController,
     SteamController,
+    StoreSettingsController,
   ],
   providers: [
     AppService,
@@ -61,7 +73,11 @@ import { AdminModule } from './admin/admin.module';
     OrdersService,
     PaymentsService,
     PaymentFulfillmentService,
+    SubscriptionFulfillmentService,
+    SubscriptionPlansService,
+    SubscriptionsService,
     SteamGuardAppService,
+    StoreSettingsService,
     {
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,

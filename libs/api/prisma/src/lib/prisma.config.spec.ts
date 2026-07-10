@@ -6,7 +6,7 @@ describe('PrismaConfig', () => {
     expect(PrismaConfig.getSetupResponse('health')).toEqual({
       status: 'setup',
       integration: 'prisma',
-      message: 'Prisma health — not implemented yet',
+      message: 'Prisma health not implemented yet',
     });
   });
 });

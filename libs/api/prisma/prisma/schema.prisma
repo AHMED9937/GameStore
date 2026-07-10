@@ -16,6 +16,7 @@ model Game {
   platform        String
   priceBase       Decimal  @db.Decimal(10, 2)
   coverImage      String?
+  coverCardImage  String?
   metaTitle       String?
   metaDescription String?
   ogImage         String?
@@ -27,6 +28,10 @@ model Game {
   igdbCoverUrl    String?
   requirementsMin         String? @db.Text
   requirementsRecommended String? @db.Text
+  featuredOrder   Int?
+  soldOut         Boolean  @default(false)
+  discordPublishMessageId String?
+  discordAnnounceDescription String? @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -37,6 +42,8 @@ model Game {
   orders               Order[]
   subscriptionPlanGames SubscriptionPlanGame[]
 
+  @@index([featuredOrder])
+  @@index([publishedAt])
   @@map("games")
 }
 
@@ -73,7 +80,7 @@ model GamePricingRegion {
 
 model GameAccount {
   id                String    @id @default(cuid())
-  gameId            String
+  gameId            String?
   platform          String
   username          String
   passwordEncrypted String
@@ -87,7 +94,7 @@ model GameAccount {
   lastHealthCheck          DateTime?
   createdAt         DateTime  @default(now())
 
-  game     Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game     Game?     @relation(fields: [gameId], references: [id], onDelete: SetNull)
   licenses License[]
 
   @@index([gameId, isActive])
@@ -162,21 +169,23 @@ model License {
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  gameId          String
-  ownerId         String?
-  licenseId       String?  @unique
-  stripeSessionId String   @unique
-  stripePaymentId String?
-  orderType       String   @default("one_time")
-  amount          Decimal  @db.Decimal(10, 2)
-  currency        String   @default("USD") @db.VarChar(3)
-  status          String   @default("pending")
-  buyerEmail      String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                String   @id @default(cuid())
+  gameId            String?
+  gameTitleSnapshot String?
+  gameSlugSnapshot  String?
+  ownerId           String?
+  licenseId         String?  @unique
+  stripeSessionId   String   @unique
+  stripePaymentId   String?
+  orderType         String   @default("one_time")
+  amount            Decimal  @db.Decimal(10, 2)
+  currency          String   @default("USD") @db.VarChar(3)
+  status            String   @default("pending")
+  buyerEmail        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  game    Game     @relation(fields: [gameId], references: [id], onDelete: Restrict)
+  game    Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
   license License? @relation(fields: [licenseId], references: [id], onDelete: SetNull)
   owner   User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
@@ -232,4 +241,13 @@ model UserSubscription {
 
   @@index([userId, status])
   @@map("user_subscriptions")
+}
+
+/// Key-value store settings (e.g. default activation video URL).
+model StoreSetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("store_settings")
 }

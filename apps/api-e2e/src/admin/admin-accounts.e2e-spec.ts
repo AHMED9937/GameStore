@@ -18,6 +18,7 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
   let app: INestApplication;
   let steamGameId = '';
   let createdAccountId = '';
+  let secondAccountId = '';
   const slug = `e2e-admin-accounts-${Date.now()}`;
 
   beforeAll(async () => {
@@ -149,15 +150,152 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
     expect(response.body.isActive).toBe(true);
   });
 
-  it('DELETE /api/admin/accounts/:id removes the pool account', async () => {
+  it('POST /api/admin/accounts creates unassigned inventory account', async () => {
     const response = await request(app.getHttpServer())
-      .delete(`/api/admin/accounts/${createdAccountId}`)
+      .post('/api/admin/accounts')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        username: `inventory-${slug}`,
+        password: TEST_PASSWORD,
+        sharedSecret: TEST_SHARED_SECRET,
+        region: 'global',
+      })
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      gameId: null,
+      gameTitle: null,
+      username: `inventory-${slug}`,
+      isActive: true,
+    });
+  });
+
+  it('GET /api/admin/accounts/available returns searchable inventory', async () => {
+    const response = await request(app.getHttpServer())
+      .get(`/api/admin/accounts/available?q=inventory-${slug}`)
       .set(authAs(E2E_TOKENS.admin))
       .expect(200);
 
-    expect(response.body).toEqual({
-      id: createdAccountId,
-      deleted: true,
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ username: `inventory-${slug}`, gameId: null }),
+      ]),
+    );
+  });
+
+  it('POST /api/admin/accounts/:id/assign links inventory account to a game', async () => {
+    const inventory = await request(app.getHttpServer())
+      .get(`/api/admin/accounts/available?q=inventory-${slug}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    const inventoryId = inventory.body[0].id as string;
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${inventoryId}/assign`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ gameId: steamGameId })
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: inventoryId,
+      gameId: steamGameId,
+    });
+  });
+
+  it('POST /api/admin/accounts/:id/unassign is blocked while account is active', async () => {
+    const linked = await request(app.getHttpServer())
+      .get(`/api/admin/accounts?gameId=${steamGameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    const inventoryAccount = linked.body.find(
+      (row: { username: string }) => row.username === `inventory-${slug}`,
+    );
+    expect(inventoryAccount?.id).toBeTruthy();
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${inventoryAccount.id}/unassign`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(400);
+  });
+
+  it('POST /api/admin/accounts/:id/unassign returns account to inventory after deactivation', async () => {
+    const linked = await request(app.getHttpServer())
+      .get(`/api/admin/accounts?gameId=${steamGameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    const inventoryAccount = linked.body.find(
+      (row: { username: string }) => row.username === `inventory-${slug}`,
+    );
+
+    await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${inventoryAccount.id}/deactivate`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${inventoryAccount.id}/unassign`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: inventoryAccount.id,
+      gameId: null,
+      gameTitle: null,
+    });
+  });
+
+  it('POST /api/admin/accounts/bulk-deactivate marks multiple accounts inactive', async () => {
+    const secondResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        gameId: steamGameId,
+        username: `pool-${slug}-second`,
+        password: TEST_PASSWORD,
+        sharedSecret: TEST_SHARED_SECRET,
+        region: 'global',
+      })
+      .expect(201);
+
+    secondAccountId = secondResponse.body.id;
+
+    const bulkResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts/bulk-deactivate')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [createdAccountId, secondAccountId] })
+      .expect(200);
+
+    expect(bulkResponse.body).toEqual({
+      succeeded: [createdAccountId, secondAccountId],
+      failed: [],
+    });
+
+    const listResponse = await request(app.getHttpServer())
+      .get(`/api/admin/accounts?gameId=${steamGameId}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    for (const account of listResponse.body.filter(
+      (row: { id: string }) =>
+        row.id === createdAccountId || row.id === secondAccountId,
+    )) {
+      expect(account.isActive).toBe(false);
+    }
+  });
+
+  it('POST /api/admin/accounts/bulk-delete removes inactive deletable accounts', async () => {
+    const bulkResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts/bulk-delete')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [createdAccountId, secondAccountId] })
+      .expect(200);
+
+    expect(bulkResponse.body).toEqual({
+      succeeded: [createdAccountId, secondAccountId],
+      failed: [],
     });
 
     await request(app.getHttpServer())
@@ -166,6 +304,7 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
       .expect(404);
 
     createdAccountId = '';
+    secondAccountId = '';
   });
 
   it('POST /api/admin/accounts returns 400 for non-Steam games', async () => {

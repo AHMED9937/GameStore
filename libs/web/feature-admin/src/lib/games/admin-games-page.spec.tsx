@@ -14,19 +14,19 @@ describe('AdminGamesPage', () => {
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_GAMES_SETUP_MESSAGE,
     );
-    expect(screen.getByTestId('admin-games-toolbar')).toBeTruthy();
+    expect(screen.getByTestId('admin-games-filters')).toBeTruthy();
   });
 
   it('renders loading spinner', () => {
     render(<AdminGamesPage listState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {
     render(
       <AdminGamesPage listState={{ status: 'error', message: 'Forbidden' }} />,
     );
-    expect(screen.getByTestId('admin-error-banner').textContent).toBe('Forbidden');
+    expect(screen.getByTestId('admin-error-banner').textContent).toContain('Forbidden');
   });
 
   it('renders empty table state', () => {
@@ -47,7 +47,12 @@ describe('AdminGamesPage', () => {
               platform: 'PC',
               priceBase: '29.99',
               published: true,
+              soldOut: true,
+              soldOutManual: true,
+              featuredOrder: null,
               igdbId: 100001,
+              hasActivePool: true,
+              readinessLabel: 'Published',
             },
           ],
         }}
@@ -55,5 +60,6 @@ describe('AdminGamesPage', () => {
     );
     expect(screen.getByTestId('admin-games-table')).toBeTruthy();
     expect(screen.getByText('Demo Game')).toBeTruthy();
+    expect(screen.getByTestId('admin-games-table').textContent).toContain('Sold out');
   });
 });

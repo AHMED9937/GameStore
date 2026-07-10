@@ -28,29 +28,6 @@ export function splitMedia(media: GameMedia[]) {
   return { videos, screenshots, activation };
 }
 
-export type RequirementRow = {
-  label: string;
-  value: string;
-};
-
-export function parseRequirements(text: string): RequirementRow[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const colonIndex = line.indexOf(':');
-      if (colonIndex === -1) {
-        return { label: 'Note', value: line };
-      }
-
-      return {
-        label: line.slice(0, colonIndex).trim(),
-        value: line.slice(colonIndex + 1).trim(),
-      };
-    });
-}
-
 export function formatReleaseDate(isoDate: string): string {
   const date = new Date(`${isoDate}T00:00:00`);
   if (Number.isNaN(date.getTime())) {
@@ -76,4 +53,30 @@ export function formatPlatformLabel(platform: string): string {
     default:
       return platform;
   }
+}
+
+export type PlatformAccessMode = 'offline' | 'online';
+
+export function getPlatformAccessMode(platform: string): PlatformAccessMode {
+  return platform.toLowerCase() === 'steam' ? 'offline' : 'online';
+}
+
+export function getPlatformAccessBadgeLabel(platform: string): string {
+  return getPlatformAccessMode(platform) === 'offline' ? 'Offline' : 'Online';
+}
+
+export function getPlatformAccessTitle(platform: string): string {
+  const store = formatPlatformLabel(platform);
+  return getPlatformAccessMode(platform) === 'offline'
+    ? `Offline ${store} account`
+    : `Online ${store} account`;
+}
+
+export function getPlatformAccessSummary(platform: string): string {
+  if (getPlatformAccessMode(platform) === 'offline') {
+    return 'Shared account access in offline mode single-player only, no online features.';
+  }
+
+  const store = formatPlatformLabel(platform);
+  return `Shared ${store} account with online play sign in with your personal profile for saves and multiplayer.`;
 }

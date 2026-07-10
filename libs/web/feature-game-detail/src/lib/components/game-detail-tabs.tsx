@@ -56,7 +56,7 @@ export function GameDetailTabs({ game }: GameDetailTabsProps) {
         <section className="detail-section">
           <h2 className="detail-section-title">Product Description</h2>
           <p className="detail-section-lead">
-            Everything included with your purchase — instant access, secure delivery, and ongoing
+            Everything included with your purchase instant access, secure delivery, and ongoing
             support.
           </p>
           <GameDetailInfoGrid items={getProductDetails(game.platform)} />

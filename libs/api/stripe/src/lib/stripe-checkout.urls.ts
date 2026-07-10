@@ -3,12 +3,21 @@ export function resolveSiteUrl(siteUrl?: string): string {
   return base.replace(/\/$/, '');
 }
 
+export function buildSubscriptionCheckoutUrls(planSlug: string, siteUrl?: string) {
+  const base = resolveSiteUrl(siteUrl);
+
+  return {
+    successUrl: `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${base}/subscriptions?plan=${encodeURIComponent(planSlug)}&cancelled=1`,
+  };
+}
+
 export function buildCheckoutUrls(gameSlug: string, siteUrl?: string) {
   const base = resolveSiteUrl(siteUrl);
 
   return {
     successUrl: `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${base}/checkout?game=${encodeURIComponent(gameSlug)}&cancelled=1`,
+    cancelUrl: `${base}/checkout?game=${encodeURIComponent(gameSlug)}&cancelled=1&session_id={CHECKOUT_SESSION_ID}`,
   };
 }
 
@@ -34,7 +43,7 @@ export function resolveStripeProductImage(
       return trimmed;
     }
   } catch {
-    // Relative path (e.g. /og/default.png) — omit for Stripe.
+    // Relative path (e.g. /og/default.png) omit for Stripe.
   }
 
   return undefined;

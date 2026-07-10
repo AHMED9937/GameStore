@@ -5,7 +5,7 @@ export class IgdbConfig {
     return {
       status: 'setup' as const,
       integration: 'igdb',
-      message: `IGDB ${action} — not implemented yet`,
+      message: `IGDB ${action} is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.`,
     };
   }
 

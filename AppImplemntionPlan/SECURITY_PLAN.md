@@ -1,4 +1,4 @@
-# Security Plan — Clerk Auth + Neon Sync (7-Layer Roadmap)
+# Security Plan Clerk Auth + Neon Sync (7-Layer Roadmap)
 
 This document is the **security execution plan** for GameStore. It implements the **7-layer API security model** (foundation → production-ready) using **Clerk** for identity and **Neon/Prisma** as the source of truth for roles and ownership.
 
@@ -36,7 +36,7 @@ flowchart BT
 | Layer | Name | Frontend (`apps/web`) | Backend (`apps/api`) |
 |-------|------|------------------------|----------------------|
 | **1** | HTTPS + CORS | Vercel HTTPS; secure cookies via Clerk | TLS in prod; CORS allowlist; `helmet` headers |
-| **2** | JWT Authentication | `@clerk/nextjs` `auth()`, middleware | `ClerkAuthGuard` — verify Bearer JWT via JWKS |
+| **2** | JWT Authentication | `@clerk/nextjs` `auth()`, middleware | `ClerkAuthGuard` verify Bearer JWT via JWKS |
 | **3** | Role-Based Authorization | Route groups `/admin/*` = admin only | `@Roles('admin')` + `RolesGuard` |
 | **4** | Ownership Policies | Hide UI; API enforces anyway | `ownerId` checks; admin bypass |
 | **5** | Refresh Tokens & Logout | Clerk session + `<SignOutButton>` | Trust Clerk JWT `exp`; optional session revoke webhook |
@@ -49,7 +49,7 @@ flowchart BT
 
 | Item | Status |
 |------|--------|
-| Phase 6 — CRUD + storefront | ✅ Done |
+| Phase 6 CRUD + storefront | ✅ Done |
 | Neon + Prisma (`libs/api/prisma`) | ✅ Done |
 | BFF proxy `apps/web/src/app/api/[...path]` | ✅ Done |
 | Clerk account + application | ⏳ Create in [clerk.com](https://clerk.com) |
@@ -65,7 +65,7 @@ flowchart BT
 | `User` model in Prisma | **Not created** |
 | `License.ownerId` / `Order.ownerId` | **Not on schema** |
 | CORS / helmet / throttler | **Not configured** in `main.ts` |
-| Admin routes | **Not separated** — all CRUD is open |
+| Admin routes | **Not separated** all CRUD is open |
 | Audit logging | **Not implemented** |
 
 ---
@@ -138,7 +138,7 @@ model AuditLog {
 }
 ```
 
-Extend existing models (Phase 7 `Order` may be added later — include `ownerId` when Order lands):
+Extend existing models (Phase 7 `Order` may be added later include `ownerId` when Order lands):
 
 ```prisma
 model License {
@@ -158,14 +158,14 @@ Migration + seed: optional dev `admin` user row linked manually after first Cler
 |-------|--------|------|-------|
 | `GET /games`, `GET /games/:slug` | ✅ | ✅ | ✅ |
 | `GET /health`, `GET /health/db` | ✅ | ✅ | ✅ |
-| `POST /payments/webhook` | ✅ (Stripe sig) | — | — |
+| `POST /payments/webhook` | ✅ (Stripe sig) | | |
 | `POST /licenses/validate` | ✅* | ✅ | ✅ |
 | `POST /steam/guard-code` | ❌ | ✅ (own license) | ✅ |
 | `GET /orders` (own) | ❌ | ✅ | ✅ (all) |
 | `POST/PUT/DELETE /games` | ❌ | ❌ | ✅ |
 | `POST /licenses`, `GET /licenses`, `POST .../revoke` | ❌ | ❌ | ✅ |
 | `GET/POST /game-accounts` | ❌ | ❌ | ✅ |
-| `POST /webhooks/clerk` | ✅ (Clerk sig) | — | — |
+| `POST /webhooks/clerk` | ✅ (Clerk sig) | | |
 
 \* `POST /licenses/validate` stays public for license-key flow but gets **strict rate limiting** (Layer 6). Logged-in users can also validate keys they own.
 
@@ -175,7 +175,7 @@ Migration + seed: optional dev `admin` user row linked manually after first Cler
 
 | Setting | User app | Admin |
 |---------|----------|-------|
-| Sign-up | Enabled on `/sign-up` | **Disabled** — no `/admin/sign-up` route |
+| Sign-up | Enabled on `/sign-up` | **Disabled** no `/admin/sign-up` route |
 | Sign-in | `/sign-in` | `/sign-in` (redirects to `/admin` after login) |
 | User creation | Self-service | **Clerk Dashboard invite** or manual user create |
 | Role assignment | Default `publicMetadata.role = "user"` | Set `publicMetadata.role = "admin"` in Dashboard only |
@@ -209,7 +209,7 @@ CLERK_WEBHOOK_SECRET=whsec_...
 # Nest verifies JWTs from this Clerk instance (same keys)
 CLERK_JWT_ISSUER=https://<your-clerk-domain>.clerk.accounts.dev
 
-# CORS (NestJS — comma-separated origins)
+# CORS (NestJS comma-separated origins)
 CORS_ORIGINS=http://localhost:3000,http://localhost:4200
 
 # Rate limiting
@@ -260,16 +260,16 @@ Work **one slice at a time**. After each slice: verify → user reviews → say 
 
 ---
 
-### Slice S.1 — Clerk + Neon user sync
+### Slice S.1 Clerk + Neon user sync
 
 **Goal:** `User` model, Clerk webhook, JIT sync fallback.
 
 **Tasks:**
 
 1. Migration: `User`, `AuditLog`, `License.ownerId`
-2. `libs/api/auth` — `UsersRepository`, `ClerkWebhookController`
-3. `POST /api/webhooks/clerk` — verify `svix` signature; upsert/delete `User`
-4. `ClerkAuthGuard` — verify JWT; if user missing in DB, JIT upsert from token claims (`sub`, `email`, `role` from metadata)
+2. `libs/api/auth` `UsersRepository`, `ClerkWebhookController`
+3. `POST /api/webhooks/clerk` verify `svix` signature; upsert/delete `User`
+4. `ClerkAuthGuard` verify JWT; if user missing in DB, JIT upsert from token claims (`sub`, `email`, `role` from metadata)
 5. Install: `@clerk/nextjs`, `@clerk/backend` (Nest JWT verify)
 
 **Frontend:**
@@ -293,7 +293,7 @@ curl http://localhost:3333/api/health   # still public
 
 ---
 
-### Slice S.2 — Layer 1: HTTPS + CORS
+### Slice S.2 Layer 1: HTTPS + CORS
 
 **Goal:** Secure transport and origin policy.
 
@@ -329,7 +329,7 @@ app.enableCors({
 
 ---
 
-### Slice S.3 — Layer 2: JWT authentication
+### Slice S.3 Layer 2: JWT authentication
 
 **Goal:** Every protected Nest route requires valid Clerk JWT.
 
@@ -341,8 +341,8 @@ app.enableCors({
 
 **Frontend:**
 
-- `middleware.ts` — `clerkMiddleware()`; protect `/admin/*`, `/account/*` (if added)
-- `libs/web/data-access/api-client.ts` — attach token on client:
+- `middleware.ts` `clerkMiddleware()`; protect `/admin/*`, `/account/*` (if added)
+- `libs/web/data-access/api-client.ts` attach token on client:
 
 ```typescript
 // client-side only
@@ -368,7 +368,7 @@ curl -H "Authorization: Bearer <clerk-jwt>" ... # 200 for admin
 
 ---
 
-### Slice S.4 — Layer 3: Role-based authorization (admin vs user)
+### Slice S.4 Layer 3: Role-based authorization (admin vs user)
 
 **Goal:** Admin-only routes; admin has **login only**.
 
@@ -379,8 +379,8 @@ curl -H "Authorization: Bearer <clerk-jwt>" ... # 200 for admin
 
 **Frontend:**
 
-- `/admin/sign-in` — `<SignIn />` only (no sign-up link)
-- `/sign-up` — user registration only
+- `/admin/sign-in` `<SignIn />` only (no sign-up link)
+- `/sign-up` user registration only
 - `middleware.ts`:
 
 ```typescript
@@ -411,7 +411,7 @@ if (req.nextUrl.pathname.startsWith('/admin')) {
 
 ---
 
-### Slice S.5 — Layer 4: Ownership policies
+### Slice S.5 Layer 4: Ownership policies
 
 **Goal:** Users access only their licenses/orders; admins access all.
 
@@ -421,7 +421,7 @@ if (req.nextUrl.pathname.startsWith('/admin')) {
   - `license.ownerId === currentUser.id` OR admin
   - `order.ownerId === currentUser.id` OR admin
 - On purchase (Phase 7): set `license.ownerId` / `order.ownerId` from JWT `userId`
-- `POST /licenses/validate` — if key has `ownerId`, require matching user (or admin)
+- `POST /licenses/validate` if key has `ownerId`, require matching user (or admin)
 
 **Frontend:**
 
@@ -440,7 +440,7 @@ if (req.nextUrl.pathname.startsWith('/admin')) {
 
 ---
 
-### Slice S.6 — Layer 5: Refresh tokens & logout
+### Slice S.6 Layer 5: Refresh tokens & logout
 
 **Goal:** Secure sessions via Clerk (Clerk handles refresh); explicit logout.
 
@@ -452,7 +452,7 @@ if (req.nextUrl.pathname.startsWith('/admin')) {
 
 **Backend:**
 
-- Trust Clerk JWT `exp` — no custom refresh token storage
+- Trust Clerk JWT `exp` no custom refresh token storage
 - Optional: handle Clerk `session.revoked` webhook → audit log entry
 
 **Verify:**
@@ -469,7 +469,7 @@ if (req.nextUrl.pathname.startsWith('/admin')) {
 
 ---
 
-### Slice S.7 — Layer 6: Rate limiting
+### Slice S.7 Layer 6: Rate limiting
 
 **Goal:** Stop abuse on auth and sensitive endpoints.
 
@@ -503,7 +503,7 @@ pnpm add @nestjs/throttler
 
 ---
 
-### Slice S.8 — Layer 7: Logging & auditing
+### Slice S.8 Layer 7: Logging & auditing
 
 **Goal:** Audit trail for security-relevant events.
 
@@ -518,7 +518,7 @@ pnpm add @nestjs/throttler
 
 **Admin API (future slice):**
 
-- `GET /api/audit-logs` — admin only, paginated
+- `GET /api/audit-logs` admin only, paginated
 
 **Frontend:**
 
@@ -537,7 +537,7 @@ pnpm add @nestjs/throttler
 
 ---
 
-### Slice S.9 — Tests & e2e
+### Slice S.9 Tests & e2e
 
 **Goal:** Security regressions caught in CI.
 
@@ -560,13 +560,13 @@ Use Clerk **testing tokens** or mock JWKS in e2e (test-only).
 
 ## Full exit criteria (security phase)
 
-- [ ] **Layer 1** — HTTPS + CORS configured
-- [ ] **Layer 2** — JWT auth on protected Nest routes; BFF forwards token
-- [ ] **Layer 3** — `admin` / `user` roles; admin login-only
-- [ ] **Layer 4** — Ownership on licenses (and orders when added)
-- [ ] **Layer 5** — Clerk sessions + logout
-- [ ] **Layer 6** — Rate limiting on sensitive endpoints
-- [ ] **Layer 7** — Audit log + structured logging
+- [ ] **Layer 1** HTTPS + CORS configured
+- [ ] **Layer 2** JWT auth on protected Nest routes; BFF forwards token
+- [ ] **Layer 3** `admin` / `user` roles; admin login-only
+- [ ] **Layer 4** Ownership on licenses (and orders when added)
+- [ ] **Layer 5** Clerk sessions + logout
+- [ ] **Layer 6** Rate limiting on sensitive endpoints
+- [ ] **Layer 7** Audit log + structured logging
 - [ ] Clerk ↔ Neon user sync via webhook + JIT
 - [ ] Documented in `.env.example`
 
@@ -621,7 +621,7 @@ pnpm nx dev web
 
 | File | Role |
 |------|------|
-| **SECURITY_PLAN.md** | **This file** — Clerk + 7-layer security |
+| **SECURITY_PLAN.md** | **This file** Clerk + 7-layer security |
 | [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) | Phases 7–10 (after security) |
 | [PHASE_6_PLAN.md](./PHASE_6_PLAN.md) | CRUD + storefront (✅ done) |
 | [implementation_plan.md](./implementation_plan.md) | Monorepo blueprint |

@@ -47,10 +47,12 @@ describe.skipIf(!hasDatabase)('Game accounts API', () => {
       }
       expect(account).toMatchObject({
         id: expect.any(String),
-        gameId: expect.any(String),
         username: expect.any(String),
         platform: expect.any(String),
       });
+      expect(
+        account.gameId === null || typeof account.gameId === 'string',
+      ).toBe(true);
     }
   });
 

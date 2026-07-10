@@ -5,6 +5,7 @@ import {
   ipThrottleTracker,
   parsePositiveInt,
   steamGuardThrottleTracker,
+  throttleLimitIgdb,
   THROTTLE_DEFAULTS,
 } from './throttle.config';
 
@@ -60,5 +61,10 @@ describe('throttle.config', () => {
     expect(
       buildDefaultRouteThrottle(10, { throttleTtlMs: '60000' }).default.limit,
     ).toBe(10);
+  });
+
+  it('throttleLimitIgdb reads env override', () => {
+    expect(throttleLimitIgdb({ throttleLimitIgdb: '5' })).toBe(5);
+    expect(throttleLimitIgdb({})).toBe(THROTTLE_DEFAULTS.limitIgdb);
   });
 });

@@ -1,17 +1,17 @@
-# Stripe Phase — End-to-End Plan
+# Stripe Phase End-to-End Plan
 
 **Goal:** From **Stripe env configuration** through **buying a published game with Stripe Checkout** to **receiving a license key** on the success page (ready for Steam activation in [STEAM_PHASE_PLAN.md](./STEAM_PHASE_PLAN.md)).
 
-**Status:** Planning — Stripe shell ✅; real checkout / orders / fulfillment ❌  
+**Status:** Planning Stripe shell ✅; real checkout / orders / fulfillment ❌  
 **Prerequisite for:** Steam phase buyer path via **paid purchase** (alternative to admin-generated keys)
 
 **Related plans:**
 
 | Document | Relationship |
 |----------|----------------|
-| [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) Phase 7 | Original slice breakdown — merged and expanded here |
+| [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) Phase 7 | Original slice breakdown merged and expanded here |
 | [STEAM_PHASE_PLAN.md](./STEAM_PHASE_PLAN.md) | Activation after purchase (Phase 8) |
-| [SECURITY_PLAN.md](./SECURITY_PLAN.md) | Clerk auth, throttling — should be done before production checkout |
+| [SECURITY_PLAN.md](./SECURITY_PLAN.md) | Clerk auth, throttling should be done before production checkout |
 
 ---
 
@@ -22,8 +22,8 @@ flowchart TB
   subgraph buyer ["Buyer"]
     B0[Browse published game]
     B1[Click Buy now]
-    B2[Checkout page — order summary]
-    B3[Pay with card — Stripe hosted Checkout]
+    B2[Checkout page order summary]
+    B3[Pay with card Stripe hosted Checkout]
     B4[Return to /checkout/success?session_id=...]
     B5[See license key on success page]
     B6[Optional: key also in My Games if signed in]
@@ -190,7 +190,7 @@ On successful payment:
 | `Order.status` | When set | Buyer-facing meaning |
 |----------------|----------|----------------------|
 | `pending` | Checkout session created; payment not confirmed | “Processing payment…” |
-| `completed` | Webhook `checkout.session.completed` fulfilled | License issued — success UI |
+| `completed` | Webhook `checkout.session.completed` fulfilled | License issued success UI |
 | `failed` | Session expired, payment failed, or async payment failed | “Payment did not complete” |
 | `refunded` | Post-MVP: `charge.refunded` webhook | License revoked (out of MVP UI) |
 
@@ -264,7 +264,7 @@ stateDiagram-v2
 | Checkout API 401/403 | “Sign in to continue.” (if auth required) | Link to sign-in |
 | Network / timeout | “Could not reach the server. Try again.” | Retry |
 
-**Cancel return:** Stripe `cancel_url` → `/checkout?game={slug}&cancelled=1`. In **success** (game loaded) state, show non-blocking info banner: “Payment cancelled — you can try again when ready.” Do **not** treat cancel as **error**.
+**Cancel return:** Stripe `cancel_url` → `/checkout?game={slug}&cancelled=1`. In **success** (game loaded) state, show non-blocking info banner: “Payment cancelled you can try again when ready.” Do **not** treat cancel as **error**.
 
 ### 5.3 Success page (`/checkout/success?session_id={id}`)
 
@@ -296,7 +296,7 @@ stateDiagram-v2
 
 - Interval: 1 s → 2 s → 3 s (backoff); max ~12 attempts or 45 s total
 - Stop on `completed`, `failed`, or timeout
-- Use `GET /api/orders/by-session/:sessionId` — see §SP.5 response shapes
+- Use `GET /api/orders/by-session/:sessionId` see §SP.5 response shapes
 
 ### 5.4 Game detail buy CTA
 
@@ -304,7 +304,7 @@ stateDiagram-v2
 |-------|----------|
 | Default | **Buy now** link enabled for published games |
 | Unpublished game | Button hidden or disabled with “Coming soon” |
-| Loading (optional) | Rare — game already loaded on detail page |
+| Loading (optional) | Rare game already loaded on detail page |
 
 No separate checkout loading on game detail; navigation to checkout page owns fetch state.
 
@@ -325,9 +325,9 @@ Status badges: `completed` = success tone, `pending` = warning, `failed` = error
 
 Add to `libs/shared/theme` (or checkout module CSS):
 
-- `.checkout-banner-info` — cancelled payment (not an error)
-- `.checkout-banner-error` — failed / timeout
-- `.checkout-loading` — spinner region with `aria-live="polite"`
+- `.checkout-banner-info` cancelled payment (not an error)
+- `.checkout-banner-error` failed / timeout
+- `.checkout-loading` spinner region with `aria-live="polite"`
 - License key block: `user-select: all`, copy button with “Copied!” feedback
 
 ### 5.7 `data-testid` contract (for e2e)
@@ -347,7 +347,7 @@ Add to `libs/shared/theme` (or checkout module CSS):
 
 ---
 
-## 6. Environment setup (Slice SP.0 — start here)
+## 6. Environment setup (Slice SP.0 start here)
 
 ### 6.1 Variables
 
@@ -356,7 +356,7 @@ Add to `libs/shared/theme` (or checkout module CSS):
 STRIPE_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
-# Required — obtain from Stripe CLI (see below)
+# Required obtain from Stripe CLI (see below)
 STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Checkout redirect URLs
@@ -396,9 +396,9 @@ Use Stripe test card `4242 4242 4242 4242`, any future expiry, any CVC.
 
 ## 7. Implementation slices (in order)
 
-Work **one slice at a time** — backend + frontend together where noted.
+Work **one slice at a time** backend + frontend together where noted.
 
-### SP.1 — Order model + repository
+### SP.1 Order model + repository
 
 | Task | Detail |
 |------|--------|
@@ -412,7 +412,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### SP.2 — Real Stripe client + checkout session
+### SP.2 Real Stripe client + checkout session
 
 **Backend:** `libs/api/stripe`
 
@@ -425,7 +425,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 | SP.2.5 | `success_url`: `${NEXT_PUBLIC_SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}` |
 | SP.2.6 | `cancel_url`: `${NEXT_PUBLIC_SITE_URL}/games/${slug}` or `/checkout?game=${slug}` |
 | SP.2.7 | `customer_email` optional when user signed in |
-| SP.2.8 | Return `{ sessionId, url }` — not setup JSON |
+| SP.2.8 | Return `{ sessionId, url }` not setup JSON |
 | SP.2.9 | Health: `{ status: 'ok' \| 'misconfigured', env: StripeEnvStatus }` |
 
 **Checkout session params (reference):**
@@ -449,7 +449,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### SP.3 — Payments API + pending order
+### SP.3 Payments API + pending order
 
 **`apps/api/src/app/payments/`**
 
@@ -458,7 +458,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 | SP.3.1 | `PaymentsService` orchestrates game lookup + order + Stripe |
 | SP.3.2 | `POST /api/payments/checkout` body: `{ gameId: string }` or `{ slug: string }` |
 | SP.3.3 | Validate game exists, `publishedAt != null`, `priceBase > 0` |
-| SP.3.4 | Optional auth: `@CurrentUser()` — pass `userId` into session metadata |
+| SP.3.4 | Optional auth: `@CurrentUser()` pass `userId` into session metadata |
 | SP.3.5 | Create `Order` with `status: pending` **before** returning session URL |
 | SP.3.6 | Throttle checkout route (reuse `THROTTLE_LIMIT_DEFAULT` or new `THROTTLE_LIMIT_CHECKOUT`) |
 | SP.3.7 | Audit: `payment.checkout.create` |
@@ -467,7 +467,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### SP.4 — Webhook: signature + fulfillment
+### SP.4 Webhook: signature + fulfillment
 
 **`StripeWebhookController` + `StripeWebhookService`**
 
@@ -483,13 +483,13 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 **Fulfillment (`fulfill`):**
 
-1. Load pending `Order` by `stripeSessionId` (or create from metadata if missing — defensive)
+1. Load pending `Order` by `stripeSessionId` (or create from metadata if missing defensive)
 2. Generate unique `licenseKey`
 3. Create `License` (`status: available`, `gameId`, `buyerEmail` from `session.customer_details?.email`, `ownerId` from metadata `userId` if present)
 4. Update `Order`: `status: completed`, `licenseId`, `stripePaymentId`, `amount`, `buyerEmail`, `ownerId`
 5. Audit: `payment.webhook.completed`, `license.create.from_order`
 
-**Also handle (SP.4b — failed states):**
+**Also handle (SP.4b failed states):**
 
 | Stripe event | Order update |
 |--------------|--------------|
@@ -500,54 +500,54 @@ Do **not** create a license on failed events.
 
 ---
 
-### SP.5 — Buyer order lookup (success page API)
+### SP.5 Buyer order lookup (success page API)
 
 | Task | Detail |
 |------|--------|
-| SP.5.1 | `GET /api/orders/by-session/:sessionId` — `@Public` with session token rules |
-| SP.5.2 | Response shapes below — drive **loading / pending / success / error** UI |
+| SP.5.1 | `GET /api/orders/by-session/:sessionId` `@Public` with session token rules |
+| SP.5.2 | Response shapes below drive **loading / pending / success / error** UI |
 | SP.5.3 | Ownership: if `order.ownerId` set, require matching user (`403`); else allow by `session_id` |
 | SP.5.4 | Replace `OrdersController` admin stubs with real `GET /api/orders` (admin) |
 
 **Response shapes (critical for UI states):**
 
 ```typescript
-// 200 — success (fulfillment complete)
+// 200 success (fulfillment complete)
 {
   status: 'completed';
   order: { id, amount, currency, buyerEmail, createdAt };
   license: { licenseKey, status, game: { id, title, slug } };
 }
 
-// 202 — pending (webhook not processed yet)
+// 202 pending (webhook not processed yet)
 {
   status: 'pending';
-  message?: 'Payment received — issuing your license…';
+  message?: 'Payment received issuing your license…';
 }
 
-// 200 — failed (payment did not complete)
+// 200 failed (payment did not complete)
 {
   status: 'failed';
   message: 'Payment was not completed.';
 }
 
-// 404 — unknown session
-// 403 — session belongs to another signed-in user
+// 404 unknown session
+// 403 session belongs to another signed-in user
 ```
 
-**Alternative:** `GET /api/payments/session/:sessionId` under payments module — either is fine; pick one.
+**Alternative:** `GET /api/payments/session/:sessionId` under payments module either is fine; pick one.
 
 ---
 
-### SP.6 — Frontend: game detail → checkout (all UI states)
+### SP.6 Frontend: game detail → checkout (all UI states)
 
 | Task | Detail |
 |------|--------|
-| SP.6.1 | Enable `GameDetailBuyButton` — `Link` to `/checkout?game={slug}` |
+| SP.6.1 | Enable `GameDetailBuyButton` `Link` to `/checkout?game={slug}` |
 | SP.6.2 | Remove “Checkout connects in a later phase” copy |
-| SP.6.3 | `CheckoutPage` + `useCheckoutGame(slug)` hook — `CheckoutAsyncState<GameDetail>` |
-| SP.6.4 | `CheckoutAsyncView` — render loading / error / success per §5.2 |
-| SP.6.5 | `CheckoutSummary` — only in **success** state: cover, title, platform, price |
+| SP.6.3 | `CheckoutPage` + `useCheckoutGame(slug)` hook `CheckoutAsyncState<GameDetail>` |
+| SP.6.4 | `CheckoutAsyncView` render loading / error / success per §5.2 |
+| SP.6.5 | `CheckoutSummary` only in **success** state: cover, title, platform, price |
 | SP.6.6 | `createCheckout({ gameId })` → `{ sessionId, url }`; **paying** sub-state on button |
 | SP.6.7 | Redirect `window.location.href = url` on checkout API success |
 | SP.6.8 | Cancel banner when `?cancelled=1` (info, not error) |
@@ -556,34 +556,34 @@ Do **not** create a license on failed events.
 
 ---
 
-### SP.7 — Frontend: success page (loading · pending · success · failed)
+### SP.7 Frontend: success page (loading · pending · success · failed)
 
 | Task | Detail |
 |------|--------|
-| SP.7.1 | `useOrderFulfillment(sessionId)` — `OrderFulfillmentState` + poll logic (§5.3) |
+| SP.7.1 | `useOrderFulfillment(sessionId)` `OrderFulfillmentState` + poll logic (§5.3) |
 | SP.7.2 | **error** if `session_id` missing from URL |
 | SP.7.3 | **loading** on first request; **pending** on `202` / `status: pending` |
 | SP.7.4 | **success**: `CheckoutSuccessMessage` + `CheckoutLicenseDisplay` (key + copy + My Games link) |
-| SP.7.5 | **error**: `failed` order, 404, 403, poll timeout — distinct copy per case |
+| SP.7.5 | **error**: `failed` order, 404, 403, poll timeout distinct copy per case |
 | SP.7.6 | `CheckoutAsyncView` or dedicated `CheckoutSuccessView` for all branches |
 | SP.7.7 | Signed-in: license also in `GET /api/licenses/mine` via `ownerId` |
 | SP.7.8 | Vitest: each state via mocked API responses; Playwright: success + error paths |
 
 ---
 
-### SP.8 — Admin orders
+### SP.8 Admin orders
 
 | Task | Detail |
 |------|--------|
 | SP.8.1 | Real `AdminOrdersController` → `OrdersService.findAll()` |
 | SP.8.2 | `admin-orders.api.ts` typed list (not `SetupResponse`) |
 | SP.8.3 | `admin-orders-page.tsx`: table with **status badges** (pending / completed / failed) |
-| SP.8.4 | `AdminAsyncView` — loading / empty / error / success (§5.5) |
+| SP.8.4 | `AdminAsyncView` loading / empty / error / success (§5.5) |
 | SP.8.5 | Mask license keys in list (`GS-****-XXXX`) |
 
 ---
 
-### SP.9 — BFF + infra fixes
+### SP.9 BFF + infra fixes
 
 | Task | Detail |
 |------|--------|
@@ -593,7 +593,7 @@ Do **not** create a license on failed events.
 
 ---
 
-### SP.10 — Tests
+### SP.10 Tests
 
 | Spec | Asserts |
 |------|---------|
@@ -644,7 +644,7 @@ Do **not** create a license on failed events.
 | GET | `/api/payments/health` | Public | Stripe env status |
 | POST | `/api/payments/checkout` | Optional | `{ gameId }` → `{ sessionId, url }` |
 | GET | `/api/orders/by-session/:sessionId` | Public* | See §SP.5 response shapes (`completed` / `pending` / `failed`) |
-| POST | `/api/payments/webhook` | Stripe sig | Raw body — no JSON from client |
+| POST | `/api/payments/webhook` | Stripe sig | Raw body no JSON from client |
 
 \*MVP: `session_id` acts as receipt token; tighten with auth when `ownerId` set.
 
@@ -684,10 +684,10 @@ Do **not** create a license on failed events.
 
 | Scenario | Expected UI |
 |----------|-------------|
-| `/checkout` (no `?game=`) | idle / empty — “Select a game” |
-| `/checkout?game=bad-slug` | **error** — game not found |
-| Cancel on Stripe | Return with `?cancelled=1` — info banner, can retry |
-| `/checkout/success` (no `session_id`) | **error** — invalid session |
+| `/checkout` (no `?game=`) | idle / empty “Select a game” |
+| `/checkout?game=bad-slug` | **error** game not found |
+| Cancel on Stripe | Return with `?cancelled=1` info banner, can retry |
+| `/checkout/success` (no `session_id`) | **error** invalid session |
 | Stop webhook / wrong secret | **pending** then **timeout error** with My Games hint |
 | Decline card `4000 0000 0000 0002` | Stay on Stripe; or return failed if configured |
 
@@ -729,11 +729,11 @@ Update [STEAM_PHASE_PLAN.md](./STEAM_PHASE_PLAN.md) buyer path: **purchase via S
 | Risk | Mitigation |
 |------|------------|
 | Webhook arrives after user hits success page | **pending** state + poll with backoff (§5.3) |
-| Guest checkout — no `ownerId` | License still shown on success page; validate by key in My Games |
-| Price tampering | Never trust client price — always read `priceBase` from DB |
+| Guest checkout no `ownerId` | License still shown on success page; validate by key in My Games |
+| Price tampering | Never trust client price always read `priceBase` from DB |
 | Double license on webhook retry | Unique `stripeSessionId` + idempotent fulfill |
 | Next proxy breaks webhook signature | Dev: forward to `:3333`; prod: API URL or fix proxy headers |
 
 ---
 
-*Next step: **SP.0** — run `stripe listen`, set `STRIPE_WEBHOOK_SECRET`, then **SP.1** Order migration.*
+*Next step: **SP.0** run `stripe listen`, set `STRIPE_WEBHOOK_SECRET`, then **SP.1** Order migration.*

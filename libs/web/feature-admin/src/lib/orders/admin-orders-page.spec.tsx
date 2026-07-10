@@ -31,6 +31,20 @@ const mockOrders = [
     licenseSource: null,
     createdAt: '2025-06-29T12:00:00.000Z',
   },
+  {
+    id: 'order-3',
+    status: 'failed',
+    orderType: 'one_time',
+    amount: '14.99',
+    currency: 'USD',
+    buyerEmail: null,
+    ownerEmail: null,
+    gameTitle: 'Canceled Game',
+    gameSlug: 'canceled-game',
+    licenseKeyMasked: null,
+    licenseSource: null,
+    createdAt: '2025-06-28T12:00:00.000Z',
+  },
 ];
 
 describe('AdminOrdersPage', () => {
@@ -45,11 +59,12 @@ describe('AdminOrdersPage', () => {
     expect(screen.getByText('(purchase)')).toBeTruthy();
     expect(screen.getByTestId('order-status-order-1').textContent).toBe('completed');
     expect(screen.getByTestId('order-status-order-2').textContent).toBe('pending');
+    expect(screen.getByTestId('order-status-order-3').textContent).toBe('Canceled');
   });
 
   it('renders loading spinner', () => {
     render(<AdminOrdersPage listState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {

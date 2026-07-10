@@ -48,6 +48,6 @@ describe('AdminLicenseDetailPage', () => {
       'admin',
     );
     expect(screen.getByDisplayValue('buyer@example.com')).toBeTruthy();
-    expect(document.querySelector('input[name="expiresAt"]')).toBeTruthy();
+    expect(screen.getByText(/defaults to 2 years/i)).toBeTruthy();
   });
 });

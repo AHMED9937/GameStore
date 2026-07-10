@@ -9,6 +9,7 @@ function createPrismaMock() {
       findUnique: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({ id: 'order-1', status: 'completed' }),
+      delete: vi.fn().mockResolvedValue({ id: 'order-1' }),
     },
   };
 }
@@ -92,5 +93,14 @@ describe('OrdersRepository', () => {
       where: { stripeSessionId: 'cs_test_abc' },
       data: { status: 'failed' },
     });
+  });
+
+  it('deleteById removes an order row', async () => {
+    const prisma = createPrismaMock();
+    const repo = new OrdersRepository(prisma as unknown as PrismaService);
+
+    await repo.deleteById('order-1');
+
+    expect(prisma.order.delete).toHaveBeenCalledWith({ where: { id: 'order-1' } });
   });
 });

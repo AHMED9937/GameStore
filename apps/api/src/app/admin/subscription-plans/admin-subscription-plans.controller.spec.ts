@@ -34,9 +34,10 @@ describe('AdminSubscriptionPlansController', () => {
     create: vi.fn().mockResolvedValue(samplePlan),
     update: vi.fn().mockResolvedValue(samplePlan),
     remove: vi.fn().mockResolvedValue({ id: 'plan-1', deleted: true }),
+    bulkDelete: vi.fn().mockResolvedValue({ succeeded: ['plan-1'], failed: [] }),
   } satisfies Pick<
     AdminSubscriptionPlansService,
-    'findAll' | 'findOne' | 'create' | 'update' | 'remove'
+    'findAll' | 'findOne' | 'create' | 'update' | 'remove' | 'bulkDelete'
   >;
 
   const auditLogService = {
@@ -90,5 +91,15 @@ describe('AdminSubscriptionPlansController', () => {
     await expect(
       controller.remove('plan-1', user, request),
     ).resolves.toEqual({ id: 'plan-1', deleted: true });
+  });
+
+  it('bulkDelete records bulk audit metadata', async () => {
+    await controller.bulkDelete({ ids: ['plan-1', 'plan-2'] }, user, request);
+    expect(plans.bulkDelete).toHaveBeenCalledWith(['plan-1', 'plan-2']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.subscription_plan.bulk_delete',
+      }),
+    );
   });
 });

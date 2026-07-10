@@ -122,6 +122,48 @@ describe.skipIf(!hasDatabase)('Admin subscription plans API', () => {
 
     planId = '';
   });
+
+  it('POST /api/admin/subscription-plans/bulk-delete removes multiple plans', async () => {
+    if (!gameId) {
+      return;
+    }
+
+    const ts = Date.now();
+    const createPlan = async (suffix: string) => {
+      const slug = `e2e-bulk-plan-${suffix}-${ts}`;
+      const response = await request(app.getHttpServer())
+        .post('/api/admin/subscription-plans')
+        .set(authAs(E2E_TOKENS.admin))
+        .send({
+          name: `E2E Bulk Plan ${suffix}`,
+          slug,
+          stripePriceId: `price_${slug}`,
+          interval: 'month',
+          gameIds: [gameId],
+        })
+        .expect(201);
+      return response.body.id as string;
+    };
+
+    const planA = await createPlan('a');
+    const planB = await createPlan('b');
+
+    const bulkResponse = await request(app.getHttpServer())
+      .post('/api/admin/subscription-plans/bulk-delete')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ ids: [planA, planB] })
+      .expect(200);
+
+    expect(bulkResponse.body).toEqual({
+      succeeded: [planA, planB],
+      failed: [],
+    });
+
+    await request(app.getHttpServer())
+      .get(`/api/admin/subscription-plans/${planA}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(404);
+  });
 });
 
 if (!hasDatabase) {

@@ -9,6 +9,7 @@ import {
   getAdminGame,
   isSetupResponse,
   updateAdminGame,
+  type AdminGameDiscord,
 } from '@gamestore/web/data-access';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminPageHeader } from '../components/admin-page-header';
@@ -17,6 +18,8 @@ import type { AdminAsyncState } from '../types/admin-async-state';
 import { useAdminResourceState } from '../hooks/use-admin-resource';
 import { AdminGameAccountsSection } from './admin-game-accounts-section';
 import { AdminGameDeleteSection } from './admin-game-delete-section';
+import { AdminGameIgdbPanel } from './admin-game-igdb-panel';
+import { AdminGameMarketingSection } from './admin-game-marketing-section';
 import { AdminGameForm } from './admin-game-form';
 import { AdminGameFormActions } from './admin-game-form-actions';
 import { AdminGameMediaSection } from './admin-game-media-section';
@@ -25,6 +28,7 @@ import {
   parseAdminGameForm,
   toAdminGameInput,
   type AdminGameFormValues,
+  type AdminGameIgdbMeta,
   type AdminGameTab,
 } from './admin-games.types';
 import styles from './games.module.css';
@@ -36,11 +40,33 @@ export type AdminGameEditPageProps = {
 
 export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps) {
   const router = useRouter();
-  const fetchedState = useAdminResourceState(
-    () => getAdminGame(gameId),
-    parseAdminGameForm,
-    { deps: [gameId] },
-  );
+  const [igdbMeta, setIgdbMeta] = useState<AdminGameIgdbMeta | null>(null);
+  const [coverCardImage, setCoverCardImage] = useState<string | null>(null);
+  const [hasActivePool, setHasActivePool] = useState(false);
+  const [discordMeta, setDiscordMeta] = useState<AdminGameDiscord | null>(null);
+
+  const loadGame = useCallback(async () => {
+    const result = await getAdminGame(gameId);
+    if (!isSetupResponse(result) && result && typeof result === 'object') {
+      setIgdbMeta({
+        igdbId: result.igdbId ?? null,
+        igdbSyncedAt: result.igdbSyncedAt ?? null,
+        igdbCoverUrl: result.igdbCoverUrl ?? null,
+      });
+      setCoverCardImage(result.coverCardImage ?? null);
+      setHasActivePool(result.accountSummary.hasActivePool);
+      setDiscordMeta(result.discord ?? null);
+    }
+    return result;
+  }, [gameId]);
+
+  const {
+    state: fetchedState,
+    refetch,
+    isRefetching,
+  } = useAdminResourceState(loadGame, parseAdminGameForm, {
+    deps: [gameId],
+  });
   const state = formState ?? fetchedState;
   const isControlled = formState !== undefined;
   const [values, setValues] = useState<AdminGameFormValues | null>(null);
@@ -49,6 +75,7 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [accountsVersion, setAccountsVersion] = useState(0);
 
   const resolvedValues =
     isControlled && state.status === 'success'
@@ -75,6 +102,9 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
         }
 
         setValues(parseAdminGameForm(result));
+        setCoverCardImage(result.coverCardImage ?? null);
+        setHasActivePool(result.accountSummary.hasActivePool);
+        setDiscordMeta(result.discord ?? null);
         setSavedMessage('Game saved.');
       } catch (submitError: unknown) {
         setError(apiErrorMessage(submitError));
@@ -123,13 +153,28 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
           description={`Update catalog details for game ${gameId}.`}
         />
         {state.status !== 'success' ? (
-          <AdminAsyncView state={state}>{() => null}</AdminAsyncView>
+          <AdminAsyncView
+            state={state}
+            onRetry={isControlled ? undefined : refetch}
+            isRetrying={isRefetching}
+          >
+            {() => null}
+          </AdminAsyncView>
         ) : null}
         {resolvedValues ? (
           <form onSubmit={(event) => void handleSubmit(event)}>
+            <AdminGameIgdbPanel
+              gameId={gameId}
+              igdbId={igdbMeta?.igdbId ?? null}
+              igdbSyncedAt={igdbMeta?.igdbSyncedAt ?? null}
+              igdbCoverUrl={igdbMeta?.igdbCoverUrl ?? null}
+              disabled={saving || deleting || isControlled}
+              onSynced={() => void refetch()}
+            />
             <AdminGameForm
               mode="edit"
               values={resolvedValues}
+              coverCardImage={coverCardImage}
               disabled={saving || deleting || isControlled}
               activeTab={activeTab}
               onTabChange={setActiveTab}
@@ -144,19 +189,70 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
                 <AdminGameAccountsSection
                   gameId={gameId}
                   disabled={saving || deleting || isControlled}
+                  onAccountsChange={() => {
+                    setAccountsVersion((version) => version + 1);
+                    void refetch();
+                  }}
+                />
+              }
+              marketingSection={
+                <AdminGameMarketingSection
+                  discord={
+                    discordMeta ?? {
+                      configured: false,
+                      posted: false,
+                      messageId: null,
+                      announceDescription: null,
+                    }
+                  }
+                  announceDescription={resolvedValues.discordAnnounceDescription}
+                  preview={{
+                    title: resolvedValues.title,
+                    slug: resolvedValues.slug,
+                    priceBase: resolvedValues.priceBase,
+                    platform: resolvedValues.platform,
+                    soldOut:
+                      resolvedValues.soldOutManual ||
+                      (resolvedValues.published && !hasActivePool),
+                    coverImage: resolvedValues.coverImage,
+                  }}
+                  disabled={saving || deleting || isControlled}
+                  onAnnounceDescriptionChange={(discordAnnounceDescription) => {
+                    if (isControlled) {
+                      return;
+                    }
+                    setValues((current) =>
+                      current
+                        ? { ...current, discordAnnounceDescription }
+                        : { ...resolvedValues, discordAnnounceDescription },
+                    );
+                  }}
                 />
               }
               publishSection={
                 <AdminGameReadinessPanel
                   gameId={gameId}
                   published={resolvedValues.published}
+                  soldOutManual={resolvedValues.soldOutManual}
+                  hasActivePool={hasActivePool}
                   disabled={saving || deleting || isControlled}
+                  refreshKey={accountsVersion}
                   onPublishedChange={(published) => {
                     if (isControlled) {
                       return;
                     }
                     setValues((current) =>
                       current ? { ...current, published } : { ...resolvedValues, published },
+                    );
+                  }}
+                  onSoldOutManualChange={(soldOutManual) => {
+                    if (isControlled) {
+                      return;
+                    }
+                    setValues((current) =>
+                      current
+                        ? { ...current, soldOutManual }
+                        : { ...resolvedValues, soldOutManual },
                     );
                   }}
                 />

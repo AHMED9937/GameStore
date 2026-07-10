@@ -1,8 +1,9 @@
 import type { LicenseGameSummary } from '@gamestore/web/data-access';
+import { getGameCardCover } from '@gamestore/web/data-access';
 import styles from './steam-access.module.css';
 
 export type PurchaseGameCardProps = {
-  game: Pick<LicenseGameSummary, 'title' | 'coverImage'>;
+  game: Pick<LicenseGameSummary, 'title' | 'coverImage' | 'coverCardImage'>;
   coverFallback?: string;
 };
 
@@ -10,7 +11,7 @@ export function PurchaseGameCard({
   game,
   coverFallback = '/og/default.png',
 }: PurchaseGameCardProps) {
-  const coverSrc = game.coverImage?.trim() || coverFallback;
+  const coverSrc = getGameCardCover(game, coverFallback);
 
   return (
     <aside className={styles.gameCard} data-testid="steam-game-card">

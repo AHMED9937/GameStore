@@ -75,30 +75,72 @@ export function getProductDetails(platform: string): ProductDetailItem[] {
       title: 'Secure payments',
       icon: 'card',
       description:
-        'We offer secure payment methods via Stripe and PayPal, ensuring a protected transaction.',
+        'We offer secure payment methods via Stripe and Paypal, ensuring a protected transaction.',
+    },
+  ];
+}
+
+function getSteamImportantInformation(): ImportantInfoItem[] {
+  return [
+    {
+      title: 'Offline Steam account',
+      icon: 'users',
+      description:
+        'This product provides access to a Steam account in offline mode. It is designed for single-player mode only, without online features.',
+    },
+    {
+      title: 'No activation key',
+      icon: 'key',
+      description:
+        'This is not a game key but a shared account. You are not purchasing an individual game license.',
+    },
+    {
+      title: 'Non-transferable account',
+      icon: 'lock',
+      description:
+        'This account is shared and cannot be linked or transferred to your personal Steam account.',
+    },
+    {
+      title: 'Incompatible with cloud gaming services',
+      icon: 'gamepad',
+      description:
+        'It is not possible to play this game via cloud gaming services such as PlayKey, Geforce Now, Google Stadia, Loudplay, Drova, etc.',
+    },
+    {
+      title: 'Modifications not allowed',
+      icon: 'alert',
+      description:
+        'It is strictly forbidden to modify account information (email address, password, etc.). Any modification attempt may result in deactivation of your access.',
+    },
+    {
+      title: 'Shared account',
+      icon: 'share',
+      description:
+        'This account is shared with other users. You must not attempt to take control of it or make changes.',
     },
   ];
 }
 
 export function getImportantInformation(platform: string): ImportantInfoItem[] {
+  if (platform.toLowerCase() === 'steam') {
+    return getSteamImportantInformation();
+  }
+
   const store = platformStoreLabel(platform);
   const accountLabel =
-    platform.toLowerCase() === 'steam'
-      ? 'Steam'
-      : platform.toLowerCase() === 'epic'
-        ? 'Epic Games'
-        : 'Microsoft Store';
+    platform.toLowerCase() === 'epic' ? 'Epic Games' : 'Microsoft Store';
 
   return [
     {
       title: `Online ${store} account`,
       icon: 'users',
-      description: `This product provides access to a shared ${store} account with online features available. You can sign in with your personal account so progress and saves are managed by ${accountLabel === 'Microsoft Store' ? 'Xbox' : accountLabel}.`,
+      description: `This product provides access to a shared ${store} account with online features available. You can sign in with your personal account so progress and saves are managed by ${accountLabel}.`,
     },
     {
       title: 'No activation key',
       icon: 'key',
-      description: `This is not a game key but a shared account. You are not purchasing an individual game license.`,
+      description:
+        'This is not a game key but a shared account. You are not purchasing an individual game license.',
     },
     {
       title: 'Non-transferable account',

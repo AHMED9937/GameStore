@@ -94,6 +94,29 @@ export function authAs(token: string): { Authorization: string } {
   return { Authorization: bearerToken(token) };
 }
 
+/** Restore shared seed game when another e2e file unpublishes it. */
+export async function ensurePublishedDemoGame(
+  prisma: PrismaService,
+): Promise<{ id: string; slug: string } | null> {
+  const game = await prisma.game.findFirst({
+    where: { slug: 'demo-game-1' },
+    select: { id: true, slug: true, publishedAt: true },
+  });
+
+  if (!game) {
+    return null;
+  }
+
+  if (!game.publishedAt) {
+    await prisma.game.update({
+      where: { id: game.id },
+      data: { publishedAt: new Date() },
+    });
+  }
+
+  return { id: game.id, slug: game.slug };
+}
+
 export async function closeE2eApp(app: INestApplication | undefined): Promise<void> {
   clearE2eUsers();
   if (app) {

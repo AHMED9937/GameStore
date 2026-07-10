@@ -1,15 +1,15 @@
-# Phase 5 — Steam Integration Plan (Setup Only)
+# Phase 5 Steam Integration Plan (Setup Only)
 
 This document is the **detailed execution plan for Phase 5** of GameStore. It expands [implementation_plan.md](./implementation_plan.md) into reviewable slices.
 
 **Parent plan:** [implementation_plan.md](./implementation_plan.md)  
-**Previous phase:** Phase 4 — Stripe setup (✅ complete)
+**Previous phase:** Phase 4 Stripe setup (✅ complete)
 
 ---
 
 ## Phase 5 goal
 
-Install **`steam-totp`** as a dependency, document env vars, scaffold the **Steam integration lib**, add **setup-text API routes**, and wire **`feature-my-games`** so the Guard button displays the API response — **no TOTP generation, no password encryption, no account logic yet**.
+Install **`steam-totp`** as a dependency, document env vars, scaffold the **Steam integration lib**, add **setup-text API routes**, and wire **`feature-my-games`** so the Guard button displays the API response **no TOTP generation, no password encryption, no account logic yet**.
 
 **Not in Phase 5:** real `generateAuthCode()`, decrypting `GameAccount.passwordEncrypted`, license-to-account assignment, cooldown enforcement, queues, or full activation portal business rules (later phases).
 
@@ -19,11 +19,11 @@ Install **`steam-totp`** as a dependency, document env vars, scaffold the **Stea
 
 | Phase / item | Status | Notes |
 |---|---|---|
-| Phase 0 — Nx + `@gamestore/workspace` | ✅ Done | `integration-lib` generator exists |
-| Phase 1 — Theme + UI | ✅ Done | |
-| Phase 2 — Frontend scaffold | ✅ Done | `/my-games` + `SteamGuardPanel` shell |
-| Phase 3 — Prisma + Neon | ✅ Done | `GameAccount` model with `sharedSecret`, `passwordEncrypted` |
-| Phase 4 — Stripe setup | ✅ Done | Pattern to mirror: lib → routes → data-access → UI → e2e |
+| Phase 0 Nx + `@gamestore/workspace` | ✅ Done | `integration-lib` generator exists |
+| Phase 1 Theme + UI | ✅ Done | |
+| Phase 2 Frontend scaffold | ✅ Done | `/my-games` + `SteamGuardPanel` shell |
+| Phase 3 Prisma + Neon | ✅ Done | `GameAccount` model with `sharedSecret`, `passwordEncrypted` |
+| Phase 4 Stripe setup | ✅ Done | Pattern to mirror: lib → routes → data-access → UI → e2e |
 | `apps/api` (NestJS) | ✅ Done | Port **3333**; BFF at Next `/api/*` |
 | `apps/web` (Next.js) | ✅ Done | Port **3000** (dev) / **4200** (e2e start) |
 | `apps/api-e2e` | ✅ Done | Vitest + supertest against `AppModule` |
@@ -31,7 +31,7 @@ Install **`steam-totp`** as a dependency, document env vars, scaffold the **Stea
 
 ---
 
-## Schema context (Phase 3 — for future implementation)
+## Schema context (Phase 3 for future implementation)
 
 `GameAccount` in `libs/api/prisma/prisma/schema.prisma` already has fields Phase 5+ will use:
 
@@ -42,7 +42,7 @@ Install **`steam-totp`** as a dependency, document env vars, scaffold the **Stea
 | `lockedUntil` | Cooldown after guard code request |
 | `activeUsersCount` | Concurrent activation limits |
 
-**Phase 5 does not read or write these fields** — setup text only.
+**Phase 5 does not read or write these fields** setup text only.
 
 ---
 
@@ -63,13 +63,13 @@ Install **`steam-totp`** as a dependency, document env vars, scaffold the **Stea
 pnpm nx g @gamestore/workspace:integration-lib --name=steam
 ```
 
-Extend generated files — match conventions from `libs/api/stripe` (Phase 4).
+Extend generated files match conventions from `libs/api/stripe` (Phase 4).
 
 ### Port & env (current conventions)
 
 | Service | Port | Env var |
 |---|---|---|
-| Next.js (`web`) | 3000 (dev) | — |
+| Next.js (`web`) | 3000 (dev) | |
 | NestJS (`api`) | 3333 | `PORT` (optional) |
 | Neon | cloud | `DATABASE_URL`, `DIRECT_URL` |
 
@@ -97,7 +97,7 @@ Extend generated files — match conventions from `libs/api/stripe` (Phase 4).
 | `POST /api/steam/guard-code` | **Not routed** |
 | `GET /api/steam/health` | **Not routed** |
 | `SteamGuardPanel` | Static hardcoded setup message |
-| `requestSteamGuardCode()` in `licenses.api.ts` | Exists — calls `/steam/guard-code` (will 404 until 5.3) |
+| `requestSteamGuardCode()` in `licenses.api.ts` | Exists calls `/steam/guard-code` (will 404 until 5.3) |
 
 ---
 
@@ -107,7 +107,7 @@ Work **one slice at a time**. After each slice: run verify commands → user rev
 
 ---
 
-### Slice 5.1 — Steam library (shell)
+### Slice 5.1 Steam library (shell)
 
 **Goal:** Scaffold `libs/api/steam` with config + setup-text services. Install `steam-totp` but do not call it.
 
@@ -126,8 +126,8 @@ libs/api/steam/
 │   ├── index.ts
 │   └── lib/
 │       ├── steam.config.ts           # reads env; validates format only
-│       ├── steam-guard.service.ts    # setup text — TODO(implement-steam)
-│       ├── steam-account.service.ts  # setup text — TODO(implement-steam)
+│       ├── steam-guard.service.ts    # setup text TODO(implement-steam)
+│       ├── steam-account.service.ts  # setup text TODO(implement-steam)
 │       └── steam.module.ts           # exports services (no routes yet)
 ```
 
@@ -135,8 +135,8 @@ libs/api/steam/
 
 - Read `STEAM_ENCRYPTION_KEY`, `STEAM_GUARD_COOLDOWN_MINUTES`
 - `getSetupResponse(action)` → `{ status: 'setup', integration: 'steam', message: '...' }`
-- `getEnvStatus()` — e.g. encryption key present / valid length (no crypto ops)
-- `getHealthResponse()` — `"Steam — configured, not implemented yet"` when key present
+- `getEnvStatus()` e.g. encryption key present / valid length (no crypto ops)
+- `getHealthResponse()` `"Steam configured, not implemented yet"` when key present
 
 **`steam-guard.service.ts`:**
 
@@ -180,15 +180,15 @@ pnpm nx test api-steam
 
 ---
 
-### Slice 5.2 — Environment variables
+### Slice 5.2 Environment variables
 
 **Goal:** Document Steam env vars in `.env.example` with format notes.
 
 **Vars (optional until implementation):**
 
 ```env
-# Steam (setup only — Phase 5; optional until Guard is implemented)
-# STEAM_ENCRYPTION_KEY        = 32-byte hex or base64 secret (server only — NestJS)
+# Steam (setup only Phase 5; optional until Guard is implemented)
+# STEAM_ENCRYPTION_KEY        = 32-byte hex or base64 secret (server only NestJS)
 # STEAM_GUARD_COOLDOWN_MINUTES = minutes between guard code requests per account (default 15)
 STEAM_ENCRYPTION_KEY=
 STEAM_GUARD_COOLDOWN_MINUTES=15
@@ -210,14 +210,14 @@ pnpm nx test api-steam   # env read/status tests via vi.stubEnv
 
 ---
 
-### Slice 5.3 — API routes (setup text only)
+### Slice 5.3 API routes (setup text only)
 
 **Goal:** Expose Steam setup endpoints from Nest.
 
 | Method | Route | Response |
 |---|---|---|
-| POST | `/api/steam/guard-code` | `{ status: "setup", integration: "steam", message: "Steam Guard — not implemented yet" }` |
-| GET | `/api/steam/health` | `{ status: "setup", integration: "steam", message: "Steam — configured, not implemented yet" }` |
+| POST | `/api/steam/guard-code` | `{ status: "setup", integration: "steam", message: "Steam Guard not implemented yet" }` |
+| GET | `/api/steam/health` | `{ status: "setup", integration: "steam", message: "Steam configured, not implemented yet" }` |
 
 **Implementation:**
 
@@ -233,7 +233,7 @@ imports: [PrismaModule, StripeModule, SteamModule],
 controllers: [..., SteamController],
 ```
 
-**Note:** `POST /api/steam/guard-code` may accept `{ licenseKey }` in body (for Phase 6) but **ignores it** in Phase 5 — always returns setup JSON.
+**Note:** `POST /api/steam/guard-code` may accept `{ licenseKey }` in body (for Phase 6) but **ignores it** in Phase 5 always returns setup JSON.
 
 **Verify:**
 
@@ -251,7 +251,7 @@ curl -X POST http://localhost:3333/api/steam/guard-code -H "Content-Type: applic
 
 ---
 
-### Slice 5.4 — Frontend wiring (display setup text)
+### Slice 5.4 Frontend wiring (display setup text)
 
 **Goal:** `SteamGuardPanel` button calls the API and shows the returned message.
 
@@ -278,7 +278,7 @@ Refactor `steam-guard-panel.tsx` to `'use client'`:
 - Render `response.message` in `.setupMessage` panel
 - **No** 6-digit TOTP display
 
-Optional: pass license key from `LicenseKeyForm` state later — Phase 5 may send empty `{}` or a placeholder string.
+Optional: pass license key from `LicenseKeyForm` state later Phase 5 may send empty `{}` or a placeholder string.
 
 **Verify:**
 
@@ -296,9 +296,9 @@ pnpm nx dev web    # :3000
 
 ---
 
-### Slice 5.5 — Tests
+### Slice 5.5 Tests
 
-**Goal:** Prove routes and UI wiring — mocks only in unit specs.
+**Goal:** Prove routes and UI wiring mocks only in unit specs.
 
 | Test | Type | Location | Asserts |
 |---|---|---|---|
@@ -352,12 +352,12 @@ libs/api/steam/
 apps/api/src/app/
 ├── steam/
 │   └── steam.controller.ts      # GET /steam/health, POST /steam/guard-code
-├── payments/                    # Phase 4 — unchanged
+├── payments/                    # Phase 4 unchanged
 └── app.module.ts                # imports SteamModule
 libs/web/data-access/src/lib/
 └── steam.api.ts                 # requestSteamGuardCode()
 libs/web/feature-my-games/src/lib/components/
-└── steam-guard-panel.tsx        # 'use client' — button + API message
+└── steam-guard-panel.tsx        # 'use client' button + API message
 .env.example                     # STEAM_* documented
 ```
 
@@ -421,7 +421,7 @@ pnpm exec playwright test --config=apps/web-e2e/playwright.config.mts
 | [implementation_plan.md](./implementation_plan.md) | Full monorepo blueprint (Phases 0–6) |
 | [PHASE_2_PLAN.md](./PHASE_2_PLAN.md) | Frontend scaffold (✅ done) |
 | [PHASE_3_PLAN.md](./PHASE_3_PLAN.md) | Prisma + Neon (✅ done) |
-| **PHASE_5_PLAN.md** | **This file** — Steam setup slice-by-slice |
+| **PHASE_5_PLAN.md** | **This file** Steam setup slice-by-slice |
 | [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md) | Product MVP priorities |
 
 ---

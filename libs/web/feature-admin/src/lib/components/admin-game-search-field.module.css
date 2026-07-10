@@ -1,0 +1,55 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+.input {
+  width: 100%;
+}
+
+.listbox {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  max-height: 14rem;
+  overflow: auto;
+  margin: 0;
+  padding: 0.35rem 0;
+  list-style: none;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.option {
+  padding: 0.55rem 0.875rem;
+  cursor: pointer;
+  font-size: 0.9375rem;
+  color: var(--text-main);
+}
+
+.option:hover,
+.optionActive {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.optionSelected {
+  color: var(--accent, #63b3ed);
+}
+
+.optionMeta {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.emptyState,
+.loadingState {
+  padding: 0.55rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}

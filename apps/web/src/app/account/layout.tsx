@@ -1,15 +1,13 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
 
-export default async function AccountLayout({
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
+
+export default function AccountLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { userId } = await auth();
-  if (!userId) {
-    redirect('/sign-in?redirect_url=/account');
-  }
-
   return children;
 }

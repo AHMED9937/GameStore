@@ -4,7 +4,7 @@ import { shadows } from './tokens/shadows';
 import { spacing, layout } from './tokens/spacing';
 import { typography } from './tokens/typography';
 
-/** Tailwind preset — wire when Tailwind is added to apps/web */
+/** Tailwind preset wire when Tailwind is added to apps/web */
 export const gamestoreTailwindPreset = {
   theme: {
     extend: {

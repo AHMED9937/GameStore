@@ -1,16 +1,21 @@
 .gameFilter {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem 1rem;
+  margin: 0;
+}
+
+.pageIntro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .filterField {
-  flex: 1 1 12rem;
-  max-width: 20rem;
+  width: 12.5rem;
+  max-width: 100%;
 }
 
-.filterSelect {
+.Filterselect {
   flex: 1 1 12rem;
   max-width: 20rem;
   background: var(--bg-input);
@@ -69,4 +74,19 @@
   margin-top: 2rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-light);
+}
+
+.tableEmpty {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-body);
+  border: 1px dashed var(--border-light);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+
+.tableEmptyMessage {
+  margin: 0;
 }

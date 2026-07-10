@@ -1,8 +1,10 @@
 import { ApiError, getGameBySlug } from '@gamestore/web/data-access';
-import { Container, EmptyState, Heading } from '@gamestore/shared/ui';
+import { truncateDescription } from '@gamestore/shared/seo';
+import { Container, EmptyState, Heading, Text } from '@gamestore/shared/ui';
 import { GameDetailBuyCta } from './components/game-detail-buy-cta';
 import { GameDetailBuyPanel } from './components/game-detail-buy-panel';
 import { GameDetailHeroMeta } from './components/game-detail-hero-meta';
+import { GameDetailJsonLd } from './components/game-detail-json-ld';
 import { GameDetailTabs } from './components/game-detail-tabs';
 import { GameDetailVideoGallery } from './components/game-detail-video-gallery';
 import { splitMedia } from './game-detail.utils';
@@ -36,14 +38,21 @@ export async function GameDetailPage({ slug }: GameDetailPageProps) {
   }
 
   const { videos, screenshots } = splitMedia(game.media);
+  const seoExcerpt = truncateDescription(game.description?.trim() || '');
 
   return (
     <section className={styles.section}>
+      <GameDetailJsonLd game={game} />
       <Container>
         <header>
           <Heading level="h1" className={styles.heroTitle}>
             {game.title}
           </Heading>
+          {seoExcerpt ? (
+            <Text tone="muted" className={styles.seoExcerpt}>
+              {seoExcerpt}
+            </Text>
+          ) : null}
           <GameDetailHeroMeta
             platform={game.platform}
             releaseDate={game.releaseDate}
@@ -57,7 +66,12 @@ export async function GameDetailPage({ slug }: GameDetailPageProps) {
             {videos.length > 0 ? (
               <GameDetailVideoGallery videos={videos} title={game.title} />
             ) : game.coverImage ? (
-              <img src={game.coverImage} alt="" className={styles.coverHero} loading="eager" />
+              <img
+                src={game.coverImage}
+                alt={`${game.title} cover`}
+                className={styles.coverHero}
+                loading="eager"
+              />
             ) : null}
 
             {screenshots.length > 0 ? (
@@ -66,7 +80,7 @@ export async function GameDetailPage({ slug }: GameDetailPageProps) {
                   <img
                     key={shot.id}
                     src={shot.url}
-                    alt=""
+                    alt={shot.title?.trim() || `${game.title} screenshot`}
                     className={styles.screenshot}
                     loading="lazy"
                   />

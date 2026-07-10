@@ -3,6 +3,7 @@
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { SkeletonButton } from '@gamestore/shared/ui';
 import { isAdminPublicMetadata, resolvePostAuthPathForRole, resolveSignInPath } from '../../../lib/auth-role';
 import styles from '../../../components/auth/auth.module.css';
 
@@ -75,7 +76,12 @@ export function AuthRedirectHandler() {
           </div>
           <h1 className={styles.authTitle}>One moment</h1>
           <p className={styles.authSubtitle}>Finishing sign-in…</p>
-          <div className={styles.authSpinner} aria-hidden />
+          <SkeletonButton
+            width={48}
+            height={48}
+            rounded="lg"
+            style={{ margin: '1.25rem auto 0' }}
+          />
         </div>
       </div>
     </section>

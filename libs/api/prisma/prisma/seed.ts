@@ -14,7 +14,7 @@ Features 40+ tracks, split-screen support, and a synthwave soundtrack that react
 
 const VOID_DESCRIPTION = `Void Protocol is a tactical stealth action game. Infiltrate corporate vaults, hack security grids, and extract data without triggering lockdown.
 
-Each mission supports multiple approaches — ghost runs, loud breaches, or social engineering — with persistent consequences across the campaign.`;
+Each mission supports multiple approaches ghost runs, loud breaches, or social engineering with persistent consequences across the campaign.`;
 
 const REQUIREMENTS_STELLAR_MIN = `Requires a 64-bit processor and operating system
 OS: Windows 10/11 64-bit

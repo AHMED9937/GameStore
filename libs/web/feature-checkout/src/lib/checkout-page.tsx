@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Container, Heading } from '@gamestore/shared/ui';
-import type { GameDetail } from '@gamestore/web/data-access';
+import { cancelOrderBySession, type GameDetail } from '@gamestore/web/data-access';
 import { CheckoutAsyncView } from './components/checkout-async-view';
 import { CheckoutCancelledBanner } from './components/checkout-cancelled-banner';
 import {
@@ -17,16 +17,28 @@ import type { CheckoutAsyncState } from './types/checkout-async-state';
 export type CheckoutPageProps = {
   gameSlug?: string | null;
   cancelled?: boolean;
+  sessionId?: string | null;
   gameState?: CheckoutAsyncState<GameDetail>;
 };
 
 export function CheckoutPage({
   gameSlug = null,
   cancelled = false,
+  sessionId = null,
   gameState: gameStateOverride,
 }: CheckoutPageProps) {
   const fetchedState = useCheckoutGame(gameStateOverride ? null : gameSlug);
   const gameState = gameStateOverride ?? fetchedState;
+  const cancelRequested = useRef(false);
+
+  useEffect(() => {
+    if (!cancelled || !sessionId?.trim() || cancelRequested.current) {
+      return;
+    }
+
+    cancelRequested.current = true;
+    void cancelOrderBySession(sessionId.trim()).catch(() => undefined);
+  }, [cancelled, sessionId]);
 
   const handleRetry = useCallback(() => {
     if (gameSlug) {

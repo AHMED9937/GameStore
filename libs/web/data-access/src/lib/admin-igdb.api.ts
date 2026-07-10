@@ -1,6 +1,11 @@
 import { apiGet, apiPost } from './api-client';
 import type { SetupResponse } from './admin.types';
 
+export type AdminIgdbHealth = {
+  integration: string;
+  configured: boolean;
+};
+
 export type AdminIgdbSearchResult = {
   igdbId: number;
   title: string;
@@ -20,7 +25,12 @@ export type AdminIgdbImportedGame = {
 
 export type AdminIgdbImportResponse = {
   game: AdminIgdbImportedGame;
+  updated?: boolean;
 };
+
+export function getAdminIgdbHealth() {
+  return apiGet<AdminIgdbHealth>('/admin/igdb/health');
+}
 
 export function searchAdminIgdb(query: string) {
   const params = new URLSearchParams({ q: query });
@@ -41,4 +51,10 @@ export function importAdminIgdbGame(input: {
     platform: input.platform ?? 'steam',
     slug: input.slug,
   });
+}
+
+export function syncAdminGameFromIgdb(gameId: string) {
+  return apiPost<SetupResponse | AdminIgdbImportResponse>(
+    `/admin/games/${encodeURIComponent(gameId)}/sync-igdb`,
+  );
 }

@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Param,
+  Post,
   Res,
 } from '@nestjs/common';
 import {
@@ -19,6 +20,15 @@ type MutableResponse = {
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
+
+  @Public()
+  @Post('by-session/:sessionId/cancel')
+  cancelBySession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser() user: AuthUser | undefined,
+  ) {
+    return this.orders.cancelCheckoutBySession(sessionId, user);
+  }
 
   @Public()
   @Get('by-session/:sessionId')
