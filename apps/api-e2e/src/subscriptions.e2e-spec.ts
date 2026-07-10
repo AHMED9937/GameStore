@@ -10,6 +10,7 @@ import { AppModule } from '../../api/src/app/app.module';
 import {
   authAs,
   closeE2eApp,
+  ensurePublishedDemoGame,
   seedE2eUsers,
 } from './support/e2e-app';
 import { E2eClerkAuthGuard } from './support/e2e-auth.guard';
@@ -130,6 +131,7 @@ describe.skipIf(!hasDatabase)('Stripe subscription routes', () => {
         .delete({ where: { id: planId } })
         .catch(() => undefined);
     }
+    await ensurePublishedDemoGame(prisma);
     await closeE2eApp(app);
     vi.unstubAllEnvs();
   });
@@ -291,6 +293,31 @@ describe.skipIf(!hasDatabase)('Stripe subscription routes', () => {
       .expect(200);
 
     expect(response.body).toEqual([]);
+  });
+
+  it('PUT unpublish game revokes subscription-sourced licenses', async () => {
+    if (!userSubscriptionId) {
+      return;
+    }
+
+    const game = await prisma.game.findFirst({
+      where: { slug: 'demo-game-1' },
+    });
+    if (!game) {
+      return;
+    }
+
+    await request(app.getHttpServer())
+      .put(`/api/admin/games/${game.id}`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ published: false })
+      .expect(200);
+
+    const license = await prisma.license.findFirst({
+      where: { subscriptionId: userSubscriptionId, gameId: game.id },
+    });
+
+    expect(license?.status).toBe('revoked');
   });
 });
 

@@ -1,6 +1,8 @@
 import Link from 'next/link';
-import { Badge, Button } from '@gamestore/shared/ui';
+import { Badge } from '@gamestore/shared/ui';
 import { AdminTable } from '../components/admin-table';
+import { IconEdit } from '../components/admin-action-icons';
+import { AdminRowActionButton } from '../components/admin-row-action-button';
 import {
   AdminSelectableRow,
   AdminSelectableTable,
@@ -38,10 +40,15 @@ function renderRowCells(plan: AdminSubscriptionPlanListItem) {
       </td>
       <td>
         <div className={styles.tableActions}>
-          <Link href={`/admin/subscriptions/${plan.id}`}>
-            <Button type="button" variant="secondary">
-              Edit
-            </Button>
+          <Link
+            href={`/admin/subscriptions/${plan.id}`}
+            aria-label={`Edit plan ${plan.name}`}
+            title={`Edit plan ${plan.name}`}
+          >
+            <AdminRowActionButton
+              label={`Edit plan ${plan.name}`}
+              icon={<IconEdit />}
+            />
           </Link>
         </div>
       </td>

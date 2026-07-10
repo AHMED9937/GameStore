@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button, Input, Text } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
@@ -10,6 +10,8 @@ import {
   isSetupResponse,
   type AdminGameMediaRecord,
 } from '@gamestore/web/data-access';
+import { AdminAsyncView } from '../components/admin-async-view';
+import { useAdminResourceState } from '../hooks/use-admin-resource';
 import styles from './games.module.css';
 
 const MEDIA_TYPES = ['video', 'screenshot', 'activation'] as const;
@@ -19,47 +21,34 @@ export type AdminGameMediaSectionProps = {
   disabled?: boolean;
 };
 
+function parseMediaList(data: unknown): AdminGameMediaRecord[] {
+  return Array.isArray(data) ? (data as AdminGameMediaRecord[]) : [];
+}
+
 export function AdminGameMediaSection({
   gameId,
   disabled = false,
 }: AdminGameMediaSectionProps) {
-  const [items, setItems] = useState<AdminGameMediaRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { state, refetch, isRefetching } = useAdminResourceState(
+    () => getAdminGameMedia(gameId),
+    parseMediaList,
+    { deps: [gameId] },
+  );
   const [type, setType] = useState<(typeof MEDIA_TYPES)[number]>('video');
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [saving, setSaving] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getAdminGameMedia(gameId);
-      if (isSetupResponse(result)) {
-        setError(result.message);
-        setItems([]);
-        return;
-      }
-      setItems(result);
-    } catch (err) {
-      setError(apiErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [gameId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const items = state.status === 'success' ? state.data : [];
 
   async function handleAdd() {
     if (!url.trim()) {
-      setError('URL is required');
+      setMutationError('URL is required');
       return;
     }
     setSaving(true);
-    setError(null);
+    setMutationError(null);
     try {
       const result = await createAdminGameMedia(gameId, {
         type,
@@ -67,14 +56,14 @@ export function AdminGameMediaSection({
         title: title.trim() || undefined,
       });
       if (isSetupResponse(result)) {
-        setError(result.message);
+        setMutationError(result.message);
         return;
       }
       setUrl('');
       setTitle('');
-      await load();
+      refetch();
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setMutationError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -84,11 +73,12 @@ export function AdminGameMediaSection({
     if (!window.confirm('Remove this media item?')) {
       return;
     }
+    setMutationError(null);
     try {
       await deleteAdminGameMedia(gameId, mediaId);
-      await load();
+      refetch();
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setMutationError(apiErrorMessage(err));
     }
   }
 
@@ -102,74 +92,93 @@ export function AdminGameMediaSection({
         Videos: {videoCount} · Activation: {activationCount} · Screenshots:{' '}
         {screenshotCount}
       </Text>
-      {loading ? <Text tone="dim">Loading media…</Text> : null}
-      {error ? (
-        <Text tone="muted" role="alert">
-          {error}
+      {activationCount === 0 ? (
+        <Text tone="muted">
+          No per-game activation video. The store default from the dashboard is
+          used on the storefront when configured.
         </Text>
       ) : null}
-      <ul className={styles.mediaList}>
-        {items.map((item) => (
-          <li key={item.id} className={styles.mediaRow}>
-            <div>
-              <strong>{item.type}</strong> — {item.title || item.url}
-              <div className={styles.mediaUrl}>{item.url}</div>
+      {state.status !== 'success' ? (
+        <AdminAsyncView
+          state={state}
+          emptyMessage="No media yet."
+          onRetry={refetch}
+          isRetrying={isRefetching}
+        >
+          {() => null}
+        </AdminAsyncView>
+      ) : null}
+      {mutationError ? (
+        <Text tone="muted" role="alert">
+          {mutationError}
+        </Text>
+      ) : null}
+      {state.status === 'success' ? (
+        <>
+          <ul className={styles.mediaList}>
+            {items.map((item) => (
+              <li key={item.id} className={styles.mediaRow}>
+                <div>
+                  <strong>{item.type}</strong> {item.title || item.url}
+                  <div className={styles.mediaUrl}>{item.url}</div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={disabled}
+                  onClick={() => void handleDelete(item.id)}
+                >
+                  Remove
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <div className={styles.mediaForm}>
+            <div className={styles.formField}>
+              <Text tone="muted">Type</Text>
+              <select
+                className={styles.select}
+                value={type}
+                disabled={disabled || saving}
+                onChange={(event) =>
+                  setType(event.target.value as (typeof MEDIA_TYPES)[number])
+                }
+              >
+                {MEDIA_TYPES.map((value) => (
+                  <option key={value} value={value}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.formField}>
+              <Text tone="muted">URL</Text>
+              <Input
+                value={url}
+                disabled={disabled || saving}
+                onChange={(event) => setUrl(event.target.value)}
+                placeholder="https://www.youtube.com/embed/..."
+              />
+            </div>
+            <div className={styles.formField}>
+              <Text tone="muted">Title (optional)</Text>
+              <Input
+                value={title}
+                disabled={disabled || saving}
+                onChange={(event) => setTitle(event.target.value)}
+              />
             </div>
             <Button
               type="button"
-              variant="ghost"
-              disabled={disabled}
-              onClick={() => void handleDelete(item.id)}
+              variant="secondary"
+              disabled={disabled || saving}
+              onClick={() => void handleAdd()}
             >
-              Remove
+              {saving ? 'Adding…' : 'Add media'}
             </Button>
-          </li>
-        ))}
-      </ul>
-      <div className={styles.mediaForm}>
-        <div className={styles.formField}>
-          <Text tone="muted">Type</Text>
-          <select
-            className={styles.select}
-            value={type}
-            disabled={disabled || saving}
-            onChange={(event) =>
-              setType(event.target.value as (typeof MEDIA_TYPES)[number])
-            }
-          >
-            {MEDIA_TYPES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className={styles.formField}>
-          <Text tone="muted">URL</Text>
-          <Input
-            value={url}
-            disabled={disabled || saving}
-            onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://www.youtube.com/embed/..."
-          />
-        </div>
-        <div className={styles.formField}>
-          <Text tone="muted">Title (optional)</Text>
-          <Input
-            value={title}
-            disabled={disabled || saving}
-            onChange={(event) => setTitle(event.target.value)}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={disabled || saving}
-          onClick={() => void handleAdd()}
-        >
-          {saving ? 'Adding…' : 'Add media'}
-        </Button>
-      </div>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

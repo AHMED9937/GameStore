@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { HomeHeroShowcaseClient } from './home-hero-showcase-client';
 
 const games = [
@@ -36,24 +36,54 @@ const games = [
 ];
 
 describe('HomeHeroShowcaseClient', () => {
-  it('renders the active game with a link to its detail page', () => {
+  const OriginalImage = globalThis.Image;
+
+  beforeAll(() => {
+    class MockImage {
+      onload: null | (() => void) = null;
+      onerror: null | (() => void) = null;
+
+      set src(_: string) {
+        queueMicrotask(() => {
+          this.onload?.();
+        });
+      }
+    }
+
+    // @ts-expect-error test image preload mock
+    globalThis.Image = MockImage;
+  });
+
+  afterAll(() => {
+    globalThis.Image = OriginalImage;
+  });
+
+  it('renders the active game with a link to its detail page', async () => {
     render(<HomeHeroShowcaseClient games={games} />);
 
-    expect(screen.getByLabelText('Featured game showcase')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'View Neon Drift Rally' }).getAttribute('href')).toBe(
-      '/games/neon-drift',
-    );
+    expect(screen.getByTestId('home-hero-showcase-skeleton')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByLabelText('Featured game showcase')).toBeTruthy();
+    });
+    expect(screen.getByRole('link', { name: 'View Neon Drift Rally' }).getAttribute('href')).toBe('/games/neon-drift');
     expect(screen.getByAltText('Neon Drift Rally').getAttribute('src')).toBe('/covers/neon.png');
   });
 
-  it('navigates between games with next and thumbnail controls', () => {
+  it('navigates between games with next and thumbnail controls', async () => {
     render(<HomeHeroShowcaseClient games={games} />);
 
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Next featured game' })).toBeTruthy();
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Next featured game' }));
-    expect(screen.getByRole('link', { name: 'View Stellar Odyssey' })).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'View Stellar Odyssey' })).toBeTruthy();
+    });
 
     fireEvent.click(screen.getByRole('tab', { name: 'Shadow Realm' }));
-    expect(screen.getByRole('link', { name: 'View Shadow Realm' })).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'View Shadow Realm' })).toBeTruthy();
+    });
   });
 
   it('renders nothing when no games are available', () => {

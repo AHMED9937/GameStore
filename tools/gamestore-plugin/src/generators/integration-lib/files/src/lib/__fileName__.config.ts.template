@@ -5,7 +5,7 @@ export class <%= className %>Config {
     return {
       status: 'setup',
       integration: '<%= integration %>',
-      message: `<%= className %> ${action} — not implemented yet`,
+      message: `<%= className %> ${action} not implemented yet`,
     };
   }
 }

@@ -5,13 +5,13 @@ import styles from './ui.module.css';
 export type LoadingStateProps = HTMLAttributes<HTMLDivElement> & {
   label?: string;
   size?: 'sm' | 'md' | 'lg';
-  centered?: boolean;
+  variant?: 'overlay' | 'section' | 'inline';
 };
 
 export function LoadingState({
   label = 'Loading…',
   size = 'md',
-  centered = true,
+  variant = 'section',
   className,
   ...props
 }: LoadingStateProps) {
@@ -19,7 +19,9 @@ export function LoadingState({
     <div
       className={[
         styles.loadingState,
-        centered ? styles.loadingStateCentered : '',
+        variant === 'overlay' ? styles.loadingOverlay : '',
+        variant === 'section' ? styles.loadingSection : '',
+        variant === 'inline' ? styles.loadingInline : '',
         className,
       ]
         .filter(Boolean)

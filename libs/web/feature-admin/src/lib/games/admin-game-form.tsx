@@ -11,6 +11,7 @@ const TABS: { id: AdminGameTab; label: string }[] = [
   { id: 'requirements', label: 'Requirements' },
   { id: 'media', label: 'Media' },
   { id: 'accounts', label: 'Steam account' },
+  { id: 'marketing', label: 'Marketing' },
   { id: 'publish', label: 'Publish' },
 ];
 
@@ -24,6 +25,7 @@ export type AdminGameFormProps = {
   onValuesChange?: (values: AdminGameFormValues) => void;
   mediaSection?: React.ReactNode;
   accountsSection?: React.ReactNode;
+  marketingSection?: React.ReactNode;
   publishSection?: React.ReactNode;
 };
 
@@ -37,6 +39,7 @@ export function AdminGameForm({
   onValuesChange,
   mediaSection,
   accountsSection,
+  marketingSection,
   publishSection,
 }: AdminGameFormProps) {
   const controlled = Boolean(onValuesChange);
@@ -143,6 +146,43 @@ export function AdminGameForm({
             <Text tone="dim">Use blank lines between paragraphs.</Text>
           </div>
           <div className={styles.formField}>
+            <Text tone="muted">Meta title</Text>
+            <Input
+              name="metaTitle"
+              value={formValues.metaTitle}
+              disabled={disabled}
+              onChange={(event) => updateField('metaTitle', event.target.value)}
+              placeholder="Auto-generated from game title when blank"
+            />
+            <Text tone="dim">
+              {formValues.metaTitle.length}/60 — Leave blank to use auto-generated defaults.
+              IGDB import pre-fills these on first import.
+            </Text>
+          </div>
+          <div className={styles.formField}>
+            <Text tone="muted">Meta description</Text>
+            <textarea
+              className={styles.textarea}
+              name="metaDescription"
+              rows={3}
+              value={formValues.metaDescription}
+              disabled={disabled}
+              onChange={(event) => updateField('metaDescription', event.target.value)}
+              placeholder="Short summary for search results"
+            />
+            <Text tone="dim">{formValues.metaDescription.length}/160</Text>
+          </div>
+          <div className={styles.formField}>
+            <Text tone="muted">OG image URL</Text>
+            <Input
+              name="ogImage"
+              value={formValues.ogImage}
+              disabled={disabled}
+              onChange={(event) => updateField('ogImage', event.target.value)}
+              placeholder={formValues.coverImage || 'Uses cover image when blank'}
+            />
+          </div>
+          <div className={styles.formField}>
             <Text tone="muted">Cover image URL</Text>
             <Input
               name="coverImage"
@@ -201,6 +241,7 @@ export function AdminGameForm({
 
       {activeTab === 'media' ? mediaSection : null}
       {activeTab === 'accounts' ? accountsSection : null}
+      {activeTab === 'marketing' ? marketingSection : null}
       {activeTab === 'publish' ? publishSection : null}
     </div>
   );

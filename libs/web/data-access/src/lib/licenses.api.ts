@@ -29,7 +29,8 @@ export type UserLicenseSummary = {
   licenseKey: string;
   status: string;
   source: string;
-  expiresAt: string | null;
+  validFrom: string;
+  expiresAt: string;
   game: { id: string; title: string; slug: string };
 };
 

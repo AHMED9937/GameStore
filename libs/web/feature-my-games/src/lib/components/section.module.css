@@ -88,6 +88,10 @@
   text-decoration: underline;
 }
 
+.hiddenDuringInitialLoad {
+  display: none;
+}
+
 .signInLink {
   display: inline-block;
   margin-top: 1rem;

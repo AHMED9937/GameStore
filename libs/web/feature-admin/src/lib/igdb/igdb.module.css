@@ -33,3 +33,54 @@
   width: 100%;
   object-fit: cover;
 }
+
+.resultsMeta {
+  margin-top: 0.25rem;
+}
+
+.importOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.importPanel {
+  width: min(100%, 28rem);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: var(--surface, #111);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.importField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.importSelect {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: inherit;
+}
+
+.importActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.searchValidation {
+  color: #f56565;
+}

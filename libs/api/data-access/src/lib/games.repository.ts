@@ -1,6 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gamestore/api/prisma';
 import type { Prisma } from '@prisma/client';
+import {
+  buildContainsFilter,
+  buildExactFilter,
+  normalizeEnumFilter,
+  normalizeSearchTerm,
+} from './admin-list-filters';
+
+export type AdminGameListFilters = {
+  q?: string;
+  platform?: string;
+  status?: 'published' | 'draft' | 'sold_out';
+};
 
 const gameMediaSelect = {
   id: true,
@@ -131,8 +143,38 @@ export class GamesRepository {
     });
   }
 
-  findAllAdmin() {
+  findAllAdmin(filters?: AdminGameListFilters) {
+    const where: Prisma.GameWhereInput = {};
+
+    const q = normalizeSearchTerm(filters?.q);
+    if (q) {
+      where.OR = [
+        { title: buildContainsFilter(q)! },
+        { slug: buildContainsFilter(q)! },
+      ];
+    }
+
+    const platform = buildExactFilter(filters?.platform);
+    if (platform) {
+      where.platform = platform;
+    }
+
+    const status = normalizeEnumFilter(filters?.status, [
+      'published',
+      'draft',
+      'sold_out',
+    ] as const);
+    if (status === 'published') {
+      where.publishedAt = { not: null };
+      where.soldOut = false;
+    } else if (status === 'draft') {
+      where.publishedAt = null;
+    } else if (status === 'sold_out') {
+      where.soldOut = true;
+    }
+
     return this.prisma.game.findMany({
+      where,
       orderBy: { title: 'asc' },
       select: adminGameSelect,
     });
@@ -171,5 +213,42 @@ export class GamesRepository {
 
   delete(id: string) {
     return this.prisma.game.delete({ where: { id } });
+  }
+
+  async getDiscordAnnouncementState(gameId: string) {
+    const rows = await this.prisma.$queryRaw<
+      Array<{
+        discordPublishMessageId: string | null;
+        discordAnnounceDescription: string | null;
+      }>
+    >`
+      SELECT "discordPublishMessageId", "discordAnnounceDescription"
+      FROM games
+      WHERE id = ${gameId}
+      LIMIT 1
+    `;
+
+    return (
+      rows[0] ?? {
+        discordPublishMessageId: null,
+        discordAnnounceDescription: null,
+      }
+    );
+  }
+
+  setDiscordPublishMessageId(gameId: string, messageId: string | null) {
+    return this.prisma.$executeRaw`
+      UPDATE games
+      SET "discordPublishMessageId" = ${messageId}
+      WHERE id = ${gameId}
+    `;
+  }
+
+  setDiscordAnnounceDescription(gameId: string, description: string | null) {
+    return this.prisma.$executeRaw`
+      UPDATE games
+      SET "discordAnnounceDescription" = ${description}
+      WHERE id = ${gameId}
+    `;
   }
 }

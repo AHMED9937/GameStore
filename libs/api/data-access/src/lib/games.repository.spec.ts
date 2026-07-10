@@ -18,7 +18,7 @@ function createPrismaMock() {
 }
 
 describe('GamesRepository', () => {
-  it('findPublished filters by publishedAt and orders by title', async () => {
+  it('findPublished Filters by publishedAt and orders by title', async () => {
     const prisma = createPrismaMock();
     const repo = new GamesRepository(prisma as unknown as PrismaService);
 
@@ -80,6 +80,7 @@ describe('GamesRepository', () => {
     await repo.findAllAdmin();
 
     expect(prisma.game.findMany).toHaveBeenCalledWith({
+      where: {},
       orderBy: { title: 'asc' },
       select: expect.objectContaining({
         id: true,
@@ -91,6 +92,31 @@ describe('GamesRepository', () => {
           orderBy: { sortOrder: 'asc' },
         }),
       }),
+    });
+  });
+
+  it('findAllAdmin applies search and status filters', async () => {
+    const prisma = createPrismaMock();
+    const repo = new GamesRepository(prisma as unknown as PrismaService);
+
+    await repo.findAllAdmin({
+      q: 'demo',
+      platform: 'steam',
+      status: 'published',
+    });
+
+    expect(prisma.game.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [
+          { title: { contains: 'demo', mode: 'insensitive' } },
+          { slug: { contains: 'demo', mode: 'insensitive' } },
+        ],
+        platform: { equals: 'steam', mode: 'insensitive' },
+        publishedAt: { not: null },
+        soldOut: false,
+      },
+      orderBy: { title: 'asc' },
+      select: expect.any(Object),
     });
   });
 

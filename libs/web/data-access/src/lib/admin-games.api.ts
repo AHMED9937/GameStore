@@ -19,6 +19,13 @@ export type AdminGameAccountSummary = {
   hasActivePool: boolean;
 };
 
+export type AdminGameDiscord = {
+  configured: boolean;
+  posted: boolean;
+  messageId: string | null;
+  announceDescription: string | null;
+};
+
 export type AdminGameRecord = {
   id: string;
   title: string;
@@ -40,8 +47,12 @@ export type AdminGameRecord = {
   genres: string[];
   requirementsMin: GameSystemRequirements | null;
   requirementsRecommended: GameSystemRequirements | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
   media: AdminGameMediaRecord[];
   accountSummary: AdminGameAccountSummary;
+  discord: AdminGameDiscord;
 };
 
 export type AdminGameInput = {
@@ -58,6 +69,10 @@ export type AdminGameInput = {
   releaseDate?: string | null;
   requirementsMin?: GameSystemRequirements | null;
   requirementsRecommended?: GameSystemRequirements | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: string | null;
+  discordAnnounceDescription?: string | null;
 };
 
 export type AdminReadinessCheck = {
@@ -73,8 +88,25 @@ export type AdminGameReadiness = {
   checks: AdminReadinessCheck[];
 };
 
-export function getAdminGames() {
-  return apiGet<SetupResponse | AdminGameRecord[]>('/admin/games');
+export type AdminGameListFilters = {
+  q?: string;
+  platform?: string;
+  status?: 'published' | 'draft' | 'sold_out';
+};
+
+export function getAdminGames(filters: AdminGameListFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.platform) {
+    params.set('platform', filters.platform);
+  }
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  return apiGet<SetupResponse | AdminGameRecord[]>(`/admin/games${suffix}`);
 }
 
 export function getAdminGame(id: string) {
@@ -132,9 +164,10 @@ export type AdminFeaturedGamesResponse = {
   available: AdminFeaturedGameItem[];
 };
 
-export function getAdminFeaturedGames() {
+export function getAdminFeaturedGames(q?: string) {
+  const suffix = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
   return apiGet<SetupResponse | AdminFeaturedGamesResponse>(
-    '/admin/games/featured',
+    `/admin/games/featured${suffix}`,
   );
 }
 

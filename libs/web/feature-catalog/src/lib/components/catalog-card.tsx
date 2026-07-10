@@ -34,7 +34,7 @@ export function CatalogCard({ game, priority = false }: CatalogCardProps) {
         <div className={styles.cardCoverWrap}>
           <img
             src={coverSrc}
-            alt=""
+            alt={`${game.title} cover`}
             className={styles.cardCover}
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"

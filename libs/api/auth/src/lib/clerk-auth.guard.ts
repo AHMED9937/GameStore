@@ -72,7 +72,7 @@ export class ClerkAuthGuard implements CanActivate {
     try {
       await this.attachUserFromBearer(request, secretKey);
     } catch {
-      // Invalid token on a public route — proceed without request.user
+      // Invalid token on a public route proceed without request.user
     }
   }
 

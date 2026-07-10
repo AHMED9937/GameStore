@@ -1,6 +1,6 @@
 export type AdminAccountListItem = {
   id: string;
-  gameTitle: string;
+  gameTitle: string | null;
   username: string;
   platform: string;
   region: string;
@@ -11,7 +11,7 @@ export type AdminAccountListItem = {
 
 export type AdminAccountFormValues = {
   gameId: string;
-  gameTitle: string;
+  gameTitle: string | null;
   username: string;
   platform: string;
   region: string;

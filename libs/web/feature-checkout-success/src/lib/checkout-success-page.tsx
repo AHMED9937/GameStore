@@ -1,22 +1,18 @@
+'use client';
+
 import { Container, Heading } from '@gamestore/shared/ui';
-import {
-  CheckoutLicenseDisplay,
-  CheckoutSuccessError,
-  CheckoutSuccessMessage,
-} from './components/checkout-success-sections';
+import { CheckoutSuccessView } from './checkout-success-view';
+import { CheckoutSuccessError } from './components/checkout-success-sections';
+import { useOrderFulfillment } from './hooks/use-order-fulfillment';
 import styles from './components/section.module.css';
 
 export type CheckoutSuccessPageProps = {
   sessionId?: string | null;
 };
 
-function demoLicenseKey(sessionId: string): string {
-  const suffix = sessionId.replace(/[^a-zA-Z0-9]/g, '').slice(-8).toUpperCase();
-  return `GS-DEMO-${suffix || 'PAID'}`;
-}
-
 export function CheckoutSuccessPage({ sessionId = null }: CheckoutSuccessPageProps) {
-  const id = sessionId?.trim();
+  const id = sessionId?.trim() ?? null;
+  const fulfillmentState = useOrderFulfillment(id);
 
   return (
     <section className={styles.section}>
@@ -26,23 +22,7 @@ export function CheckoutSuccessPage({ sessionId = null }: CheckoutSuccessPagePro
           {!id ? (
             <CheckoutSuccessError message="Invalid checkout session." />
           ) : (
-            <>
-              <CheckoutSuccessMessage gameTitle="your game" />
-              <CheckoutLicenseDisplay
-                license={{
-                  licenseKey: demoLicenseKey(id),
-                  status: 'active',
-                  game: {
-                    id: 'demo',
-                    title: 'Your purchase',
-                    slug: 'your-game',
-                  },
-                }}
-              />
-              <p className={styles.demoNote} data-testid="checkout-success-demo-note">
-                Payment received. Your full license will be wired in a later phase.
-              </p>
-            </>
+            <CheckoutSuccessView state={fulfillmentState} />
           )}
         </div>
       </Container>

@@ -1,21 +1,30 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Container } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
   bulkDeleteAdminSubscriptionPlans,
   getAdminSubscriptionPlans,
+  type AdminSubscriptionPlanListFilters,
 } from '@gamestore/web/data-access';
+import { AdminActionFeedback } from '../components/admin-action-feedback';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminBulkToolbar } from '../components/admin-bulk-toolbar';
 import { AdminPageShell } from '../components/admin-page-shell';
 import { useAdminRowSelection } from '../components/use-admin-row-selection';
 import type { AdminAsyncState } from '../types/admin-async-state';
+import { useAdminActionFeedback } from '../hooks/use-admin-action-feedback';
 import { useAdminListState } from '../hooks/use-admin-resource';
+import { useAdminListFilters } from '../hooks/use-admin-list-filters';
 import { formatBulkActionSummary } from '../utils/bulk-action-summary';
+import { resolveAdminTableRows } from '../utils/resolve-admin-table-rows';
 import { AdminSubscriptionPlansHeader } from './admin-subscription-plans-header';
 import { AdminSubscriptionPlansTable } from './admin-subscription-plans-table';
+import {
+  AdminSubscriptionPlansFilters,
+  type AdminSubscriptionPlanFilterDraft,
+} from './admin-subscription-plans-filters';
 import type { AdminSubscriptionPlanListItem } from './admin-subscription-plans.types';
 
 export type AdminSubscriptionPlansPageProps = {
@@ -26,19 +35,41 @@ function parsePlansList(data: unknown): AdminSubscriptionPlanListItem[] {
   return Array.isArray(data) ? (data as AdminSubscriptionPlanListItem[]) : [];
 }
 
+const emptyPlanFilters: AdminSubscriptionPlanFilterDraft = {
+  q: '',
+  status: '',
+};
+
 export function AdminSubscriptionPlansPage({
   listState,
 }: AdminSubscriptionPlansPageProps) {
   const isControlled = listState !== undefined;
-  const fetchedState = useAdminListState(
-    () => getAdminSubscriptionPlans(),
+  const { draft, setDraft, activeFilters, hasActiveFilters } =
+    useAdminListFilters<AdminSubscriptionPlanFilterDraft>({
+      initial: emptyPlanFilters,
+      textKeys: ['q'],
+    });
+  const queryFilters = useMemo<AdminSubscriptionPlanListFilters>(
+    () => ({
+      ...(activeFilters.q ? { q: activeFilters.q } : {}),
+      ...(activeFilters.status
+        ? {
+            status:
+              activeFilters.status as AdminSubscriptionPlanListFilters['status'],
+          }
+        : {}),
+    }),
+    [activeFilters],
+  );
+  const { state: fetchedState } = useAdminListState(
+    () => getAdminSubscriptionPlans(queryFilters),
     parsePlansList,
+    [queryFilters],
   );
   const state = listState ?? fetchedState;
   const [plans, setPlans] = useState<AdminSubscriptionPlanListItem[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const actionFeedback = useAdminActionFeedback();
 
   useEffect(() => {
     if (!isControlled && state.status === 'success') {
@@ -46,8 +77,7 @@ export function AdminSubscriptionPlansPage({
     }
   }, [isControlled, state]);
 
-  const tablePlans =
-    isControlled && state.status === 'success' ? state.data : plans;
+  const tablePlans = resolveAdminTableRows(isControlled, state, plans);
 
   const selection = useAdminRowSelection({
     rowIds: tablePlans.map((plan) => plan.id),
@@ -74,33 +104,43 @@ export function AdminSubscriptionPlansPage({
       return;
     }
     setBulkLoading(true);
-    setActionError(null);
-    setActionMessage(null);
+    actionFeedback.clearForAction();
     try {
       const result = await bulkDeleteAdminSubscriptionPlans(selection.selectedIds);
-      setActionMessage(formatBulkActionSummary(result, 'deleted'));
+      actionFeedback.setMessage(formatBulkActionSummary(result, 'deleted'));
       selection.clearSelection();
       await refreshList();
     } catch (error: unknown) {
-      setActionError(apiErrorMessage(error));
+      actionFeedback.setError(apiErrorMessage(error));
     } finally {
       setBulkLoading(false);
     }
-  }, [isControlled, refreshList, selection]);
+  }, [actionFeedback, isControlled, refreshList, selection]);
 
   return (
     <Container>
       <AdminPageShell>
         <AdminSubscriptionPlansHeader />
-        {actionError ? (
-          <p role="alert" data-testid="admin-subscription-plans-action-error">
-            {actionError}
-          </p>
-        ) : null}
-        {actionMessage ? (
-          <p data-testid="admin-subscription-plans-action-message">{actionMessage}</p>
-        ) : null}
-        <AdminAsyncView state={state} emptyMessage="No subscription plans yet.">
+        <AdminSubscriptionPlansFilters
+          draft={draft}
+          disabled={isControlled}
+          onDraftChange={(patch) => setDraft(patch)}
+        />
+        <AdminActionFeedback
+          error={actionFeedback.error}
+          message={actionFeedback.message}
+          isPending={bulkLoading}
+          pendingMessage="Deleting selected plans…"
+          testIdPrefix="admin-subscription-plans-action"
+        />
+        <AdminAsyncView
+          state={state}
+          emptyMessage={
+            hasActiveFilters
+              ? 'No subscription plans match the current filters.'
+              : 'No subscription plans yet.'
+          }
+        >
           {(items) => (
             <>
               {!isControlled && items.length > 0 ? (
@@ -115,12 +155,12 @@ export function AdminSubscriptionPlansPage({
                     disabled={bulkLoading}
                     onClick={() => void handleBulkDelete()}
                   >
-                    Delete selected
+                    {bulkLoading ? 'Deleting…' : 'Delete selected'}
                   </Button>
                 </AdminBulkToolbar>
               ) : null}
               <AdminSubscriptionPlansTable
-                plans={tablePlans.length > 0 ? tablePlans : items}
+                plans={tablePlans}
                 selection={
                   isControlled
                     ? undefined

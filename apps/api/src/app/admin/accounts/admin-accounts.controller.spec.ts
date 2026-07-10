@@ -18,12 +18,16 @@ describe('AdminAccountsController', () => {
   const accounts = {
     findAll: vi.fn().mockResolvedValue([sampleAccount]),
     findOne: vi.fn().mockResolvedValue(sampleAccount),
+    findAvailable: vi.fn().mockResolvedValue([sampleAccount]),
     create: vi.fn().mockResolvedValue(sampleAccount),
+    assignToGame: vi.fn().mockResolvedValue(sampleAccount),
+    unassignFromGame: vi.fn().mockResolvedValue({ ...sampleAccount, gameId: null, gameTitle: null }),
     update: vi.fn().mockResolvedValue({ ...sampleAccount, username: 'pool_user_2' }),
     deactivate: vi.fn().mockResolvedValue({ ...sampleAccount, isActive: false }),
     reactivate: vi.fn().mockResolvedValue(sampleAccount),
     remove: vi.fn().mockResolvedValue({ id: 'account-1', deleted: true as const }),
     bulkDeactivate: vi.fn().mockResolvedValue({ succeeded: ['account-1'], failed: [] }),
+    bulkDelete: vi.fn().mockResolvedValue({ succeeded: ['account-1'], failed: [] }),
   } satisfies AdminAccountsService;
 
   const auditLogService = {
@@ -34,9 +38,41 @@ describe('AdminAccountsController', () => {
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
   const request = { headers: {}, ip: '127.0.0.1' };
 
-  it('findAll returns admin accounts', async () => {
-    await expect(controller.findAll('game-1')).resolves.toEqual([sampleAccount]);
-    expect(accounts.findAll).toHaveBeenCalledWith('game-1');
+  it('findAll returns admin accounts and forwards filters', async () => {
+    const filters = { gameId: 'game-1', q: 'pool', status: 'active' as const };
+    await expect(controller.findAll(filters)).resolves.toEqual([sampleAccount]);
+    expect(accounts.findAll).toHaveBeenCalledWith(filters);
+  });
+
+  it('findAvailable returns searchable inventory accounts', async () => {
+    await expect(controller.findAvailable('pool')).resolves.toEqual([sampleAccount]);
+    expect(accounts.findAvailable).toHaveBeenCalledWith('pool');
+  });
+
+  it('assign records audit log', async () => {
+    await expect(
+      controller.assign('account-1', { gameId: 'game-1' }, adminUser, request as never),
+    ).resolves.toEqual(sampleAccount);
+    expect(accounts.assignToGame).toHaveBeenCalledWith('account-1', { gameId: 'game-1' });
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.assign',
+        resourceId: 'account-1',
+      }),
+    );
+  });
+
+  it('unassign records audit log', async () => {
+    await expect(
+      controller.unassign('account-1', adminUser, request as never),
+    ).resolves.toEqual({ ...sampleAccount, gameId: null, gameTitle: null });
+    expect(accounts.unassignFromGame).toHaveBeenCalledWith('account-1');
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.unassign',
+        resourceId: 'account-1',
+      }),
+    );
   });
 
   it('findOne returns an account by id', async () => {
@@ -128,6 +164,20 @@ describe('AdminAccountsController', () => {
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.account.bulk_deactivate',
+      }),
+    );
+  });
+
+  it('bulkDelete records bulk audit log', async () => {
+    await controller.bulkDelete(
+      { ids: ['account-1'] },
+      adminUser,
+      request as never,
+    );
+    expect(accounts.bulkDelete).toHaveBeenCalledWith(['account-1']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.bulk_delete',
       }),
     );
   });

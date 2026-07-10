@@ -8,7 +8,7 @@ import { toNames } from '../../utils/names';
 import { webFeatureRoot } from '../../utils/paths';
 import type { WebPageTreeGeneratorSchema } from './schema';
 
-const DEFAULT_COMPONENTS = ['hero', 'filters', 'grid', 'card'];
+const DEFAULT_COMPONENTS = ['hero', 'Filters', 'grid', 'card'];
 
 export async function webPageTreeGenerator(
   tree: Tree,

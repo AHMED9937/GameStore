@@ -1,5 +1,5 @@
 export const ADMIN_ACCOUNTS_SETUP_MESSAGE =
-  'Admin accounts — not implemented yet';
+  'Admin accounts not implemented yet';
 
 export const ADMIN_ACCOUNT_COLUMNS = [
   { key: 'game', header: 'Game' },

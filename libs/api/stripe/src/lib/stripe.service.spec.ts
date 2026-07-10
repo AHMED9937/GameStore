@@ -62,7 +62,7 @@ describe('StripeService', () => {
     expect(service.createCheckout()).toEqual({
       status: 'setup',
       integration: 'stripe',
-      message: 'Stripe checkout — not implemented yet',
+      message: 'Stripe checkout not implemented yet',
     });
   });
 

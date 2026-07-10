@@ -11,9 +11,24 @@ describe('AdminStoreSettingsController', () => {
     updateDefaultActivationVideo: vi
       .fn()
       .mockResolvedValue({ url: 'https://www.youtube.com/embed/abc' }),
+    getFaqUbisoftSettings: vi.fn().mockResolvedValue({
+      method1VideoUrl: null,
+      method2VideoUrl: null,
+      lockerDownloadUrl: null,
+      lockerGithubUrl: null,
+    }),
+    updateFaqUbisoftSettings: vi.fn().mockResolvedValue({
+      method1VideoUrl: 'https://www.youtube.com/embed/m1',
+      method2VideoUrl: null,
+      lockerDownloadUrl: null,
+      lockerGithubUrl: null,
+    }),
   } satisfies Pick<
     AdminStoreSettingsService,
-    'getDefaultActivationVideo' | 'updateDefaultActivationVideo'
+    | 'getDefaultActivationVideo'
+    | 'updateDefaultActivationVideo'
+    | 'getFaqUbisoftSettings'
+    | 'updateFaqUbisoftSettings'
   >;
 
   const auditLogService = {
@@ -52,6 +67,23 @@ describe('AdminStoreSettingsController', () => {
       ),
     ).resolves.toEqual({ url: 'https://www.youtube.com/embed/abc' });
     expect(storeSettings.updateDefaultActivationVideo).toHaveBeenCalled();
+    expect(auditLogService.log).toHaveBeenCalled();
+  });
+
+  it('updateFaqUbisoftSettings delegates to service and audits', async () => {
+    await expect(
+      controller.updateFaqUbisoftSettings(
+        { method1VideoUrl: 'https://youtu.be/abc123XYZ12' },
+        user,
+        request,
+      ),
+    ).resolves.toEqual({
+      method1VideoUrl: 'https://www.youtube.com/embed/m1',
+      method2VideoUrl: null,
+      lockerDownloadUrl: null,
+      lockerGithubUrl: null,
+    });
+    expect(storeSettings.updateFaqUbisoftSettings).toHaveBeenCalled();
     expect(auditLogService.log).toHaveBeenCalled();
   });
 });

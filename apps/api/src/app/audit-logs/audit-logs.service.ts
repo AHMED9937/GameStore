@@ -5,7 +5,7 @@ import { AuditLogsRepository } from '@gamestore/api/data-access';
 export class AuditLogsService {
   constructor(private readonly auditLogs: AuditLogsRepository) {}
 
-  list(query: { page?: number; limit?: number; action?: string }) {
+  list(query: { page?: number; limit?: number; action?: string; q?: string }) {
     return this.auditLogs.findPaginated(query);
   }
 }

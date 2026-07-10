@@ -33,6 +33,9 @@ export type GameMedia = {
 export type GameDetail = Game & {
   genres: string[];
   releaseDate: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
   requirementsMin: GameSystemRequirements | null;
   requirementsRecommended: GameSystemRequirements | null;
   media: GameMedia[];

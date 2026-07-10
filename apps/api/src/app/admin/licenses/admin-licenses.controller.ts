@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
 } from '@nestjs/common';
 import {
@@ -25,6 +26,7 @@ import {
   type GenerateAdminLicenseDto,
   type UpdateAdminLicenseDto,
 } from './admin-licenses.service';
+import type { AdminLicenseListFiltersDto } from './admin-license-list-filters.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -37,8 +39,8 @@ export class AdminLicensesController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.licenses.findAll();
+  findAll(@Query() Filters: AdminLicenseListFiltersDto) {
+    return this.licenses.findAll(Filters);
   }
 
   @Post('bulk-revoke')

@@ -107,7 +107,17 @@ describe.skipIf(!hasDatabase)('Admin store settings API', () => {
 
   afterAll(async () => {
     await prisma.storeSetting.deleteMany({
-      where: { key: 'default_activation_video_url' },
+      where: {
+        key: {
+          in: [
+            'default_activation_video_url',
+            'faq_ubisoft_method1_video_url',
+            'faq_ubisoft_method2_video_url',
+            'faq_ubisoft_locker_download_url',
+            'faq_ubisoft_locker_github_url',
+          ],
+        },
+      },
     });
 
     for (const id of [gameWithoutActivationId, gameWithActivationId]) {
@@ -201,6 +211,59 @@ describe.skipIf(!hasDatabase)('Admin store settings API', () => {
     expect(
       response.body.media.some((item: { type: string }) => item.type === 'activation'),
     ).toBe(false);
+  });
+
+  it('GET /api/settings/faq-ubisoft returns nulls when unset', async () => {
+    await prisma.storeSetting.deleteMany({
+      where: {
+        key: {
+          in: [
+            'faq_ubisoft_method1_video_url',
+            'faq_ubisoft_method2_video_url',
+            'faq_ubisoft_locker_download_url',
+            'faq_ubisoft_locker_github_url',
+          ],
+        },
+      },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/api/settings/faq-ubisoft')
+      .expect(200);
+
+    expect(response.body).toEqual({
+      method1VideoUrl: null,
+      method2VideoUrl: null,
+      lockerDownloadUrl: null,
+      lockerGithubUrl: null,
+    });
+  });
+
+  it('PUT /api/admin/settings/faq-ubisoft saves normalized values', async () => {
+    const response = await request(app.getHttpServer())
+      .put('/api/admin/settings/faq-ubisoft')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        method1VideoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        lockerGithubUrl: 'https://github.com/example/ubisoft-offline-locker',
+      })
+      .expect(200);
+
+    expect(response.body).toEqual({
+      method1VideoUrl: DEFAULT_EMBED,
+      method2VideoUrl: null,
+      lockerDownloadUrl: null,
+      lockerGithubUrl: 'https://github.com/example/ubisoft-offline-locker',
+    });
+
+    const publicResponse = await request(app.getHttpServer())
+      .get('/api/settings/faq-ubisoft')
+      .expect(200);
+
+    expect(publicResponse.body.method1VideoUrl).toBe(DEFAULT_EMBED);
+    expect(publicResponse.body.lockerGithubUrl).toBe(
+      'https://github.com/example/ubisoft-offline-locker',
+    );
   });
 });
 

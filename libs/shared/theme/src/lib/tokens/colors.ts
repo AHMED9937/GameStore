@@ -1,4 +1,4 @@
-/** Nexus Pass / GameStore — Cybernetic Amethyst & Aqua Neon */
+/** Nexus Pass / GameStore Cybernetic Amethyst & Aqua Neon */
 export const colors = {
   bgDarker: '#06070d',
   bgDark: '#0a0c16',

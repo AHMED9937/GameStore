@@ -6,7 +6,7 @@ import type { Game } from '@gamestore/web/data-access';
 import { Container, EmptyState, Input } from '@gamestore/shared/ui';
 import {
   CATALOG_HERO_DESCRIPTION,
-  CATALOG_PLATFORM_FILTERS,
+  CATALOG_PLATFORM_Filters,
   type CatalogPlatformFilter,
 } from '../catalog.constants';
 import { filterCatalogGames } from '../catalog.utils';
@@ -60,10 +60,10 @@ export function CatalogShell({ games }: CatalogShellProps) {
         </Container>
       </section>
 
-      <section className={styles.sectionTight} aria-label="Platform filters">
+      <section className={styles.sectionTight} aria-label="Platform Filters">
         <Container>
           <div className={styles.filterBar} role="group" aria-label="Filter by platform">
-            {CATALOG_PLATFORM_FILTERS.map((filter) => {
+            {CATALOG_PLATFORM_Filters.map((filter) => {
               const isActive = platformFilter === filter.id;
               return (
                 <button
@@ -92,7 +92,7 @@ export function CatalogShell({ games }: CatalogShellProps) {
         <Container>
           <p className={styles.resultsSummary}>
             {filteredGames.length} {filteredGames.length === 1 ? 'game' : 'games'}
-            {hasActiveFilters ? ' matching your filters' : ' available'}
+            {hasActiveFilters ? ' matching your Filters' : ' available'}
           </p>
 
           {!filteredGames.length ? (
@@ -111,8 +111,8 @@ export function CatalogShell({ games }: CatalogShellProps) {
                   className={styles.clearFiltersBtn}
                   onClick={clearFilters}
                 >
-                  Clear filters
-                </button>
+                  Clear Filters
+                </button> 
               ) : null}
             </div>
           ) : (

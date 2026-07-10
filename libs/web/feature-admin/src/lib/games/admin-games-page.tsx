@@ -11,19 +11,26 @@ import {
   type AdminGameRecord,
   type BulkActionResult,
 } from '@gamestore/web/data-access';
+import { AdminActionFeedback } from '../components/admin-action-feedback';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminBulkToolbar } from '../components/admin-bulk-toolbar';
 import { AdminPageShell } from '../components/admin-page-shell';
 import { useAdminRowSelection } from '../components/use-admin-row-selection';
 import type { AdminAsyncState } from '../types/admin-async-state';
 import { useAdminMutation } from '../hooks/use-admin-mutation';
+import { useAdminActionFeedback } from '../hooks/use-admin-action-feedback';
 import { useAdminListState } from '../hooks/use-admin-resource';
+import { useAdminListFilters } from '../hooks/use-admin-list-filters';
 import { formatBulkActionSummary } from '../utils/bulk-action-summary';
 import { AdminGamesEmpty } from './admin-games-empty';
 import { AdminGamesHeader } from './admin-games-header';
 import { AdminGamesTable } from './admin-games-table';
-import { AdminGamesToolbar } from './admin-games-toolbar';
+import {
+  AdminGamesFilters,
+  type AdminGameFilterDraft,
+} from './admin-games-filters';
 import type { AdminGameListItem } from './admin-games.types';
+import type { AdminGameListFilters } from '@gamestore/web/data-access';
 
 export type AdminGamesPageProps = {
   listState?: AdminAsyncState<AdminGameListItem[]>;
@@ -62,15 +69,37 @@ function parseGamesList(data: unknown): AdminGameListItem[] {
     : [];
 }
 
+const emptyGameFilters: AdminGameFilterDraft = {
+  q: '',
+  platform: '',
+  status: '',
+};
+
 export function AdminGamesPage({ listState }: AdminGamesPageProps) {
   const isControlled = listState !== undefined;
+  const { draft, setDraft, activeFilters, hasActiveFilters } =
+    useAdminListFilters<AdminGameFilterDraft>({
+      initial: emptyGameFilters,
+      textKeys: ['q'],
+    });
+  const queryFilters = useMemo<AdminGameListFilters>(
+    () => ({
+      ...(activeFilters.q ? { q: activeFilters.q } : {}),
+      ...(activeFilters.platform ? { platform: activeFilters.platform } : {}),
+      ...(activeFilters.status
+        ? { status: activeFilters.status as AdminGameListFilters['status'] }
+        : {}),
+    }),
+    [activeFilters],
+  );
   const { state: fetchedState, refetch, isRefetching } = useAdminListState(
-    () => getAdminGames(),
+    () => getAdminGames(queryFilters),
     parseGamesList,
+    [queryFilters],
   );
   const state = listState ?? fetchedState;
   const [publishingId, setPublishingId] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const actionFeedback = useAdminActionFeedback();
   const bulkMutation = useAdminMutation<BulkActionResult>();
   const publishMutation = useAdminMutation<AdminGameRecord>();
 
@@ -90,14 +119,14 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
 
   const handleBulkResult = useCallback(
     async (result: BulkActionResult, verb: string) => {
-      setActionMessage(formatBulkActionSummary(result, verb));
+      actionFeedback.setMessage(formatBulkActionSummary(result, verb));
       selection.clearSelection();
       bulkMutation.reset();
       if (!isControlled) {
         refetch();
       }
     },
-    [bulkMutation, isControlled, refetch, selection],
+    [actionFeedback, bulkMutation, isControlled, refetch, selection],
   );
 
   const handleBulkUnpublish = useCallback(async () => {
@@ -111,7 +140,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
     ) {
       return;
     }
-    setActionMessage(null);
+    actionFeedback.clearForAction();
     const result = await bulkMutation.mutate(() =>
       bulkUnpublishAdminGames(selection.selectedIds).then((response) => {
         if (isSetupResponse(response)) {
@@ -123,7 +152,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
     if (result) {
       await handleBulkResult(result, 'unpublished');
     }
-  }, [bulkMutation, handleBulkResult, isControlled, selection.selectedIds]);
+  }, [actionFeedback, bulkMutation, handleBulkResult, isControlled, selection.selectedIds]);
 
   const handleBulkDelete = useCallback(async () => {
     if (isControlled || selection.selectedIds.length === 0) {
@@ -136,7 +165,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
     ) {
       return;
     }
-    setActionMessage(null);
+    actionFeedback.clearForAction();
     const result = await bulkMutation.mutate(() =>
       bulkDeleteAdminGames(selection.selectedIds).then((response) => {
         if (isSetupResponse(response)) {
@@ -148,7 +177,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
     if (result) {
       await handleBulkResult(result, 'deleted');
     }
-  }, [bulkMutation, handleBulkResult, isControlled, selection.selectedIds]);
+  }, [actionFeedback, bulkMutation, handleBulkResult, isControlled, selection.selectedIds]);
 
   const handlePublishToggle = useCallback(
     async (game: AdminGameListItem) => {
@@ -157,6 +186,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
       }
 
       setPublishingId(game.id);
+      actionFeedback.clearForAction();
       publishMutation.reset();
 
       const result = await publishMutation.mutate(() =>
@@ -173,7 +203,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
       }
       setPublishingId(null);
     },
-    [isControlled, publishMutation, refetch],
+    [actionFeedback, isControlled, publishMutation, refetch],
   );
 
   const handleSoldOutToggle = useCallback(
@@ -183,6 +213,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
       }
 
       setPublishingId(game.id);
+      actionFeedback.clearForAction();
       publishMutation.reset();
 
       const result = await publishMutation.mutate(() =>
@@ -201,28 +232,36 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
       }
       setPublishingId(null);
     },
-    [isControlled, publishMutation, refetch],
+    [actionFeedback, isControlled, publishMutation, refetch],
   );
 
-  const actionError = bulkMutation.error ?? publishMutation.error;
+  const actionError = actionFeedback.error ?? bulkMutation.error ?? publishMutation.error;
   const bulkLoading = bulkMutation.status === 'pending';
+  const actionPending = bulkLoading || publishMutation.status === 'pending';
 
   return (
     <Container>
       <AdminPageShell>
         <AdminGamesHeader />
-        <AdminGamesToolbar />
-        {actionError ? (
-          <p role="alert" data-testid="admin-games-action-error">
-            {actionError}
-          </p>
-        ) : null}
-        {actionMessage ? (
-          <p data-testid="admin-games-action-message">{actionMessage}</p>
-        ) : null}
+        <AdminGamesFilters
+          draft={draft}
+          disabled={isControlled}
+          onDraftChange={(patch) => setDraft(patch)}
+        />
+        <AdminActionFeedback
+          error={actionError}
+          message={actionFeedback.message}
+          isPending={actionPending}
+          pendingMessage={bulkLoading ? 'Applying bulk action…' : 'Saving game status…'}
+          testIdPrefix="admin-games-action"
+        />
         <AdminAsyncView
           state={state}
-          emptyMessage="No games in catalog yet."
+          emptyMessage={
+            hasActiveFilters
+              ? 'No games match the current filters.'
+              : 'No games in catalog yet.'
+          }
           onRetry={isControlled ? undefined : refetch}
           isRetrying={isRefetching}
         >
@@ -243,7 +282,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
                       disabled={bulkLoading}
                       onClick={() => void handleBulkUnpublish()}
                     >
-                      Unpublish selected
+                      {bulkLoading ? 'Unpublishing…' : 'Unpublish selected'}
                     </Button>
                     <Button
                       type="button"
@@ -251,7 +290,7 @@ export function AdminGamesPage({ listState }: AdminGamesPageProps) {
                       disabled={bulkLoading}
                       onClick={() => void handleBulkDelete()}
                     >
-                      Delete selected
+                      {bulkLoading ? 'Deleting…' : 'Delete selected'}
                     </Button>
                   </AdminBulkToolbar>
                 ) : null}

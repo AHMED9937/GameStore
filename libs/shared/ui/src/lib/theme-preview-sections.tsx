@@ -34,7 +34,7 @@ export function ThemePreviewShowcase() {
             Theme Preview
           </Heading>
           <Text tone="muted">
-            GameStore design system — Amethyst &amp; Aqua Neon (from mockup)
+            GameStore design system Amethyst &amp; Aqua Neon (from mockup)
           </Text>
         </header>
 
@@ -64,13 +64,13 @@ export function ThemePreviewShowcase() {
           </Heading>
           <Stack gap="md">
             <Heading level="h1" gradient>
-              Hero Display — 56px
+              Hero Display 56px
             </Heading>
-            <Heading level="h2">Section Title — Space Grotesk</Heading>
-            <Heading level="h3">Card Title — 24px</Heading>
-            <Text>Body text — Plus Jakarta Sans, comfortable reading line.</Text>
+            <Heading level="h2">Section Title Space Grotesk</Heading>
+            <Heading level="h3">Card Title 24px</Heading>
+            <Text>Body text Plus Jakarta Sans, comfortable reading line.</Text>
             <Text tone="muted">Muted supporting copy for descriptions.</Text>
-            <Text tone="accent">Accent label — OFFLINE READY</Text>
+            <Text tone="accent">Accent label OFFLINE READY</Text>
           </Stack>
         </section>
 

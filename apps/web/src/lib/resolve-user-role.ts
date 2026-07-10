@@ -25,7 +25,7 @@ export async function resolveUserRole(
       return 'admin';
     }
   } catch {
-    // Clerk unavailable — rely on JWT claims only.
+    // Clerk unavailable rely on JWT claims only.
   }
 
   return getRoleFromSessionClaims(sessionClaims);

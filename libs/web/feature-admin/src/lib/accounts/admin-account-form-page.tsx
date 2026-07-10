@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Text } from '@gamestore/shared/ui';
 import {
@@ -22,14 +22,19 @@ import styles from './accounts.module.css';
 
 export type AdminAccountFormPageProps = {
   formState?: AdminAsyncState<AdminAccountFormValues>;
+  initialGameId?: string;
 };
 
-export function AdminAccountFormPage({ formState }: AdminAccountFormPageProps) {
+export function AdminAccountFormPage({
+  formState,
+  initialGameId,
+}: AdminAccountFormPageProps) {
   const router = useRouter();
   const isControlled = formState !== undefined;
-  const [values, setValues] = useState<AdminAccountFormValues>(
-    EMPTY_ADMIN_ACCOUNT_FORM_VALUES,
-  );
+  const [values, setValues] = useState<AdminAccountFormValues>(() => ({
+    ...EMPTY_ADMIN_ACCOUNT_FORM_VALUES,
+    ...(initialGameId ? { gameId: initialGameId } : {}),
+  }));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const controlledValues =
@@ -37,14 +42,18 @@ export function AdminAccountFormPage({ formState }: AdminAccountFormPageProps) {
       ? formState.data
       : EMPTY_ADMIN_ACCOUNT_FORM_VALUES;
 
+  useEffect(() => {
+    if (!isControlled && initialGameId) {
+      setValues((current) =>
+        current.gameId ? current : { ...current, gameId: initialGameId },
+      );
+    }
+  }, [initialGameId, isControlled]);
+
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (isControlled) {
-        return;
-      }
-      if (!values.gameId) {
-        setError('Select a Steam game first.');
         return;
       }
       if (!values.username.trim() || !values.password.trim() || !values.sharedSecret.trim()) {
@@ -58,7 +67,7 @@ export function AdminAccountFormPage({ formState }: AdminAccountFormPageProps) {
       try {
         const maxActiveUsers = Number.parseInt(values.maxActiveUsers, 10);
         const result = await createAdminAccount({
-          gameId: values.gameId,
+          ...(values.gameId ? { gameId: values.gameId } : {}),
           username: values.username.trim(),
           password: values.password.trim(),
           sharedSecret: values.sharedSecret.trim(),

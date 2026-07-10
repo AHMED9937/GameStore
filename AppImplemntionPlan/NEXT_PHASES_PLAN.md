@@ -1,9 +1,9 @@
-# Next Phases Plan — MVP Launch & Post-MVP
+# Next Phases Plan MVP Launch & Post-MVP
 
 This document is the **execution plan for Phases 7+** of GameStore. It continues after [PHASE_6_PLAN.md](./PHASE_6_PLAN.md) and **[SECURITY_PLAN.md](./SECURITY_PLAN.md)** (run security **before** Phase 7), and aligns with [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md) and [implementation_plan.md](./implementation_plan.md).
 
 **Status:** Phases 0–6 ✅ complete · Security phase ⏳ planned  
-**Goal of Phases 7–10:** Reach **MVP launch** — customer can browse, pay, receive a license, activate, and get Steam credentials + Guard codes.
+**Goal of Phases 7–10:** Reach **MVP launch** customer can browse, pay, receive a license, activate, and get Steam credentials + Guard codes.
 
 ---
 
@@ -69,7 +69,7 @@ Phases 7 and 8 are the **critical path**. Phase 9 can overlap with 10 if SEO is 
 | Next.js dev | `:3000` |
 | Next.js e2e | `:4200` via `start-stack.mjs` when `DATABASE_URL` set |
 | `API_URL` | `http://localhost:3333` (never Next’s own port) |
-| `/shop` | `force-dynamic` — catalog must not static-prerender empty |
+| `/shop` | `force-dynamic` catalog must not static-prerender empty |
 
 ### Slice workflow
 
@@ -77,7 +77,7 @@ Work **one slice at a time**. After each slice: verify → user reviews → say 
 
 ---
 
-# Phase 7 — Stripe Checkout + Orders + License creation
+# Phase 7 Stripe Checkout + Orders + License creation
 
 **Goal:** Replace Stripe setup text with real Checkout Sessions. On successful payment, persist an `Order` and create a `License` linked to the game.
 
@@ -120,13 +120,13 @@ Extend `Game` and `License` with `orders Order[]` relation as needed.
 
 ## Execution slices
 
-### Slice 7.1 — Order model + repository
+### Slice 7.1 Order model + repository
 
 - Migration + `OrdersRepository` in `libs/api/data-access`
 - Replace `OrdersController` setup stub with read-only `GET /orders`, `GET /orders/:id` (admin/e2e)
 - Unit tests mock Prisma
 
-### Slice 7.2 — Real Stripe client
+### Slice 7.2 Real Stripe client
 
 - `libs/api/stripe`: `new Stripe(STRIPE_SECRET_KEY)` in `StripeService`
 - `createCheckoutSession({ gameId, slug, priceBase, successUrl, cancelUrl })`
@@ -134,7 +134,7 @@ Extend `Game` and `License` with `orders Order[]` relation as needed.
 - Webhook: verify `STRIPE_WEBHOOK_SECRET`, handle `checkout.session.completed`
 - Keep `GET /api/payments/health` as config/health JSON (not setup text)
 
-### Slice 7.3 — Webhook → Order + License
+### Slice 7.3 Webhook → Order + License
 
 On `checkout.session.completed`:
 
@@ -143,22 +143,22 @@ On `checkout.session.completed`:
 3. Create `License` (`status: available`, `gameId`, `buyerEmail` from session)
 4. Link `order.licenseId`
 
-Idempotent on `stripeSessionId` — safe to retry webhooks.
+Idempotent on `stripeSessionId` safe to retry webhooks.
 
-### Slice 7.4 — Frontend checkout wiring
+### Slice 7.4 Frontend checkout wiring
 
 - `feature-checkout`: pass `gameId` / `slug` from query or cart context
 - `feature-game-detail` **Buy panel**: link/button → `/checkout?game={slug}`
 - `createCheckout()` in `payments.api.ts` → real session URL; redirect with `window.location`
 - Remove setup-message-only behavior from checkout payment component
 
-### Slice 7.5 — Checkout success page
+### Slice 7.5 Checkout success page
 
 - `feature-checkout-success`: read `session_id` query param
 - `GET /api/orders/by-session/:sessionId` (new route) or poll license status
 - Display **license key** to buyer (MVP: on-page only; email in post-MVP)
 
-### Slice 7.6 — Tests
+### Slice 7.6 Tests
 
 | Spec | Asserts |
 |------|---------|
@@ -177,7 +177,7 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
 
 ---
 
-# Phase 8 — Steam activation portal (real Guard + credentials)
+# Phase 8 Steam activation portal (real Guard + credentials)
 
 **Goal:** After license validation, assign a pool account, show credentials, generate real Steam Guard codes with cooldown enforcement.
 
@@ -189,20 +189,20 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
 
 ## Execution slices
 
-### Slice 8.1 — Encryption service
+### Slice 8.1 Encryption service
 
-- `libs/api/steam`: `SteamCryptoService` — AES-256-GCM encrypt/decrypt using `STEAM_ENCRYPTION_KEY`
+- `libs/api/steam`: `SteamCryptoService` AES-256-GCM encrypt/decrypt using `STEAM_ENCRYPTION_KEY`
 - Encrypt on `GameAccount` create/update; never return `passwordEncrypted` / `sharedSecret` from list APIs
 - Unit tests with fixed test key
 
-### Slice 8.2 — Account pool assignment
+### Slice 8.2 Account pool assignment
 
 - `POST /api/licenses/activate` (or extend `validate` when `?activate=true`)
 - Logic: find least-loaded `GameAccount` for `gameId` where `isActive`, `activeUsersCount < 50`, not `lockedUntil`
 - Set `license.accountId`, `license.status: activated`, `license.activatedAt`, increment `activeUsersCount`
-- Return `{ license, account: { username, password } }` — password decrypted server-side only
+- Return `{ license, account: { username, password } }` password decrypted server-side only
 
-### Slice 8.3 — Real Steam Guard (TOTP)
+### Slice 8.3 Real Steam Guard (TOTP)
 
 - `SteamGuardService.requestGuardCode(licenseKey)`:
   - Resolve license → account → decrypt `sharedSecret`
@@ -211,14 +211,14 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
   - Return `{ code, expiresInSeconds }` (not setup text)
 - Enforce cooldown: if `lockedUntil > now` for **other** requests on same account, return `429` with retry-after message
 
-### Slice 8.4 — Frontend activation UI
+### Slice 8.4 Frontend activation UI
 
 - `CredentialsPanel`: show username + password after activation (copy buttons)
 - `SteamGuardPanel`: display 6-digit code + countdown; use validated `licenseKey` from context
 - `ActivationSteps`: update copy to match real flow
 - `POST /api/licenses/validate` remains lookup-only; activation is separate step
 
-### Slice 8.5 — Tests
+### Slice 8.5 Tests
 
 | Spec | Asserts |
 |------|---------|
@@ -236,7 +236,7 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
 
 ---
 
-# Phase 9 — SEO (real metadata + sitemap)
+# Phase 9 SEO (real metadata + sitemap)
 
 **Goal:** Implement `libs/shared/seo` builders and wire `generateMetadata` on public routes.
 
@@ -248,12 +248,12 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
 
 ## Execution slices
 
-### Slice 9.1 — Metadata builders
+### Slice 9.1 Metadata builders
 
 - Implement `build-page-metadata.ts`, `build-game-metadata.ts` using `Game.metaTitle`, `metaDescription`, `ogImage`
 - Fallback to `title` / `description` / `coverImage` / site defaults from `site-config.ts`
 
-### Slice 9.2 — Wire Next.js metadata
+### Slice 9.2 Wire Next.js metadata
 
 | Route | Metadata |
 |-------|----------|
@@ -262,13 +262,13 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
 | `/games/[slug]` | Per-game OG + Twitter cards |
 | `/faq`, `/contact`, `/my-games` | Static page metadata |
 
-### Slice 9.3 — JSON-LD + sitemap
+### Slice 9.3 JSON-LD + sitemap
 
 - `Product` or `SoftwareApplication` JSON-LD on game detail
 - `build-sitemap.ts` → include published games from `GET /api/games` (or direct Prisma in Next server)
-- `robots.ts` — allow crawl, point to sitemap URL
+- `robots.ts` allow crawl, point to sitemap URL
 
-### Slice 9.4 — Tests
+### Slice 9.4 Tests
 
 - Unit tests for metadata output shape
 - `web-e2e/seo.spec.ts`: game page `<title>`, `og:title` meta tags
@@ -282,40 +282,42 @@ Idempotent on `stripeSessionId` — safe to retry webhooks.
 
 ---
 
-# Phase 10 — MVP polish + deploy
+# Phase 10 MVP polish + deploy
 
 **Goal:** End-to-end purchase → activation happy path works in production-like environment; CI deploys.
 
 **Depends on:** Phases 7–8 minimum; Phase 9 recommended before public launch.
 
+**Expanded runbook:** [DEPLOYMENT_PLAN.md](./DEPLOYMENT_PLAN.md) — Vercel + Railway + Neon, domain/email cutover, Search Console.
+
 ---
 
 ## Execution slices
 
-### Slice 10.1 — Catalog UX (MVP backlog items)
+### Slice 10.1 Catalog UX (MVP backlog items)
 
 - `CatalogSearch`: client-side filter by title (wire existing input)
 - `CatalogFilters`: filter grid by `platform` (client-side on loaded games)
 - `CatalogCard`: cover image, platform badge polish
 - Optional: sort by price / title
 
-### Slice 10.2 — Game detail buy flow
+### Slice 10.2 Game detail buy flow
 
 - `GameDetailBuyPanel`: **Buy now** → checkout with correct `gameId`
 - Show regional price placeholder (base price only until PPP phase)
 
-### Slice 10.3 — Environment & secrets
+### Slice 10.3 Environment & secrets
 
 - Document production env: Neon prod branch, Stripe live/test keys, `STEAM_ENCRYPTION_KEY`, `NEXT_PUBLIC_SITE_URL`
 - `.env.example` updates for all required production vars
 
-### Slice 10.4 — CI/CD pipeline
+### Slice 10.4 CI/CD pipeline
 
 - GitHub Actions: lint, test, `api-e2e`, `web-e2e` (Neon CI branch secret)
-- Deploy: Vercel (`web`) + API host (Railway/Fly/Render) — document chosen target
+- Deploy: Vercel (`web`) + API host (Railway/Fly/Render) document chosen target
 - Run `prisma migrate deploy` on API boot or CI migrate step
 
-### Slice 10.5 — Full-stack smoke test checklist
+### Slice 10.5 Full-stack smoke test checklist
 
 Manual script (or Playwright `@smoke` tag):
 
@@ -334,19 +336,19 @@ Manual script (or Playwright `@smoke` tag):
 
 # Post-MVP backlog (Phases 11+)
 
-Prioritized from [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md). **Not slice-planned here** — create `PHASE_11_PLAN.md` etc. when ready.
+Prioritized from [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md). **Not slice-planned here** create `PHASE_11_PLAN.md` etc. when ready.
 
 | Priority | Feature | Phase suggestion |
 |----------|---------|------------------|
-| 🔴 P1.1 | Smart 2FA queue / login cooldown UI | 11 — extend Phase 8 cooldown UX |
-| 🔴 P1.2 | Account health monitor | 11 — cron + `lastHealthCheck` |
-| 🔴 P1.3 | Discord admin webhooks | 11 — alerts on ban/failures |
+| 🔴 P1.1 | Smart 2FA queue / login cooldown UI | 11 extend Phase 8 cooldown UX |
+| 🔴 P1.2 | Account health monitor | 11 cron + `lastHealthCheck` |
+| 🔴 P1.3 | Discord admin webhooks | 11 alerts on ban/failures |
 | 🔴 P1.4 | Password rotation | 12 |
 | 🟠 P2.1 | Auto refund / key swap | 12 |
 | 🟠 P2.3 | Geo-IP PPP (`GamePricingRegion`) | 13 |
 | 🟠 P2.x | Multi-language (`/en`, `/ar`) | 13 |
-| 🟡 P3.x | IGDB metadata seeder | 14 — feeds catalog + SEO |
-| 🟡 P3.x | Admin UI (protected CRUD) | 14 — games/accounts/licenses |
+| 🟡 P3.x | IGDB metadata seeder | 14 feeds catalog + SEO |
+| 🟡 P3.x | Admin UI (protected CRUD) | 14 games/accounts/licenses |
 | 🟡 P4.3 | SEO blog / guides | 15 |
 
 ---
@@ -382,7 +384,7 @@ stripe listen --forward-to localhost:3333/api/payments/webhook
 | [implementation_plan.md](./implementation_plan.md) | Phases 0–6 blueprint |
 | [PHASE_6_PLAN.md](./PHASE_6_PLAN.md) | CRUD + storefront (✅ done) |
 | [SECURITY_PLAN.md](./SECURITY_PLAN.md) | Clerk auth + 7-layer security (**before Phase 7**) |
-| **NEXT_PHASES_PLAN.md** | **This file** — Phases 7–10 + post-MVP |
+| **NEXT_PHASES_PLAN.md** | **This file** Phases 7–10 + post-MVP |
 | [mvp_structure_and_roadmap.md](./mvp_structure_and_roadmap.md) | Product priorities |
 | [README.md](./README.md) | Architecture reference |
 

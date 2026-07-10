@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
 } from '@nestjs/common';
 import {
@@ -23,6 +24,7 @@ import {
   type CreateAdminSubscriptionPlanDto,
   type UpdateAdminSubscriptionPlanDto,
 } from './admin-subscription-plans.service';
+import type { AdminSubscriptionPlanListFiltersDto } from './admin-subscription-plan-list-filters.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -35,8 +37,8 @@ export class AdminSubscriptionPlansController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.plans.findAll();
+  findAll(@Query() filters: AdminSubscriptionPlanListFiltersDto) {
+    return this.plans.findAll(filters);
   }
 
   @Post('bulk-delete')

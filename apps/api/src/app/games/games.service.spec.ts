@@ -25,6 +25,9 @@ const baseGame = {
   requirementsMin: null,
   requirementsRecommended: null,
   soldOut: false,
+  metaTitle: 'Custom Meta Title',
+  metaDescription: 'Custom meta description.',
+  ogImage: 'https://cdn.example.com/og.jpg',
   media: [] as Array<{
     id: string;
     type: string;
@@ -111,6 +114,17 @@ describe('GamesService findBySlug activation fallback', () => {
         sortOrder: 0,
       },
     ]);
+  });
+
+  it('findBySlug includes seo fields', async () => {
+    vi.mocked(games.findBySlug).mockResolvedValue(baseGame as never);
+    vi.mocked(storeSettings.get).mockResolvedValue(null);
+
+    const result = await service.findBySlug('demo-game');
+
+    expect(result.metaTitle).toBe('Custom Meta Title');
+    expect(result.metaDescription).toBe('Custom meta description.');
+    expect(result.ogImage).toBe('https://cdn.example.com/og.jpg');
   });
 
   it('throws when slug is missing', async () => {

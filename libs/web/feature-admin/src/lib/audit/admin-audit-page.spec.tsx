@@ -15,13 +15,12 @@ describe('AdminAuditPage', () => {
       ADMIN_AUDIT_SETUP_MESSAGE,
     );
     expect(screen.getByTestId('admin-audit-filters')).toBeTruthy();
-    expect(screen.getByTestId('admin-audit-pagination')).toBeTruthy();
-    expect(screen.getByText('Page 1 of —')).toBeTruthy();
+    expect(screen.queryByTestId('admin-audit-pagination')).toBeNull();
   });
 
   it('renders loading spinner', () => {
     render(<AdminAuditPage listState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {

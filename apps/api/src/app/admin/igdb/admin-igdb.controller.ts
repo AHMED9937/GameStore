@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   AuditLogService,
   CurrentUser,
@@ -7,17 +18,12 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
-import { IgdbService } from '@gamestore/api/igdb';
+import { IgdbConfig, IgdbService } from '@gamestore/api/igdb';
+import { buildDefaultRouteThrottle, throttleLimitIgdb } from '../../../security/throttle.config';
 import { AdminIgdbImportService } from './admin-igdb-import.service';
+import { parseImportIgdbBody } from './import-igdb.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
-
-type ImportIgdbBody = {
-  igdbId?: number;
-  priceBase?: number | string;
-  platform?: string;
-  slug?: string;
-};
 
 function isImportedGameResponse(
   result: unknown,
@@ -39,23 +45,42 @@ export class AdminIgdbController {
     private readonly auditLogService: AuditLogService,
   ) {}
 
+  @Get('health')
+  health() {
+    return {
+      integration: IgdbConfig.integration,
+      configured: IgdbConfig.isConfigured(),
+    };
+  }
+
+  @Throttle(buildDefaultRouteThrottle(throttleLimitIgdb()))
   @Get('search')
   search(@Query('q') query?: string) {
     return this.igdb.search(query?.trim() ?? '');
   }
 
+  @Throttle(buildDefaultRouteThrottle(throttleLimitIgdb()))
+  @Get('preview/:igdbId')
+  async preview(@Param('igdbId', ParseIntPipe) igdbId: number) {
+    const result = await this.igdb.preview(igdbId);
+    if (result && 'status' in result && result.status === 'setup') {
+      return result;
+    }
+    if (!result) {
+      throw new NotFoundException(`IGDB game ${igdbId} not found`);
+    }
+    return result;
+  }
+
+  @Throttle(buildDefaultRouteThrottle(throttleLimitIgdb()))
   @Post('import')
   async importGame(
-    @Body() body: ImportIgdbBody,
+    @Body() body: Record<string, unknown>,
     @CurrentUser() user: AuthUser,
     @Req() request: AuditRequest,
   ) {
-    const result = await this.igdbImport.importGame({
-      igdbId: body.igdbId ?? 0,
-      priceBase: body.priceBase ?? 9.99,
-      platform: body.platform ?? 'steam',
-      slug: body.slug,
-    });
+    const parsed = parseImportIgdbBody(body as Parameters<typeof parseImportIgdbBody>[0]);
+    const result = await this.igdbImport.importGame(parsed);
 
     if (isImportedGameResponse(result)) {
       const audit = auditContextFromRequest(request);
@@ -69,6 +94,7 @@ export class AdminIgdbController {
         metadata: {
           igdbId: result.game.igdbId,
           slug: result.game.slug,
+          updated: 'updated' in result ? result.updated : false,
         },
       });
     }

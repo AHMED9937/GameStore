@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import type { AuthUser } from './auth.types';
 import {
   assertOwnedResourceAccess,
+  assertSessionOrderAccess,
+  canAccessOrderBySession,
   canAccessOwnedResource,
 } from './ownership.policy';
 
@@ -57,6 +59,24 @@ describe('ownership.policy', () => {
 
   it('assertOwnedResourceAccess throws ForbiddenException', () => {
     expect(() => assertOwnedResourceAccess(userB, 'user-a')).toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('canAccessOrderBySession allows unauthenticated session polling', () => {
+    expect(canAccessOrderBySession(undefined, 'user-a')).toBe(true);
+  });
+
+  it('canAccessOrderBySession allows the owner', () => {
+    expect(canAccessOrderBySession(userA, 'user-a')).toBe(true);
+  });
+
+  it('canAccessOrderBySession denies a different signed-in user', () => {
+    expect(canAccessOrderBySession(userB, 'user-a')).toBe(false);
+  });
+
+  it('assertSessionOrderAccess throws for wrong signed-in user', () => {
+    expect(() => assertSessionOrderAccess(userB, 'user-a')).toThrow(
       ForbiddenException,
     );
   });

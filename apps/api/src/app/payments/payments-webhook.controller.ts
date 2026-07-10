@@ -95,7 +95,8 @@ export class PaymentsWebhookController {
 
   private async routeEvent(event: Stripe.Event): Promise<WebhookHandlerResult> {
     switch (event.type) {
-      case 'checkout.session.completed': {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded': {
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.mode === 'subscription') {
           return this.subscriptionFulfillment.handleCheckoutSessionCompleted(session);

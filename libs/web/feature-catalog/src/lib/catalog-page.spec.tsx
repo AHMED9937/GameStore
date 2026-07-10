@@ -52,17 +52,17 @@ describe('CatalogShell', () => {
     expect(screen.getByRole('heading', { name: 'Void Protocol' })).toBeTruthy();
   });
 
-  it('filters games by platform', () => {
+  it('Filters games by platform', () => {
     render(<CatalogShell games={games} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Steam/i }));
 
-    expect(screen.getByText('1 game matching your filters')).toBeTruthy();
+    expect(screen.getByText('1 game matching your Filters')).toBeTruthy();
     expect(screen.getByRole('heading', { name: 'Stellar Odyssey' })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Neon Drift Rally' })).toBeNull();
   });
 
-  it('filters games by search query after pressing Enter', () => {
+  it('Filters games by search query after pressing Enter', () => {
     render(<CatalogShell games={games} />);
     const searchbox = screen.getByRole('searchbox', { name: 'Search games' });
 
@@ -75,13 +75,13 @@ describe('CatalogShell', () => {
     expect(screen.queryByRole('heading', { name: 'Stellar Odyssey' })).toBeNull();
   });
 
-  it('shows empty state and clears filters', () => {
+  it('shows empty state and clears Filters', () => {
     render(<CatalogShell games={games} />);
 
     fireEvent.click(screen.getByRole('button', { name: /Ubisoft/i }));
     expect(screen.getByText('No matches found')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Filters' }));
     expect(screen.getByText('3 games available')).toBeTruthy();
   });
 });

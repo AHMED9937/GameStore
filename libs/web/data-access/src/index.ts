@@ -10,6 +10,8 @@ export * from './lib/admin-orders.api';
 export * from './lib/admin-subscription-plans.api';
 export * from './lib/admin-audit.api';
 export * from './lib/admin-igdb.api';
+export * from './lib/admin-store-settings.api';
+export * from './lib/store-settings.api';
 export * from './lib/games.api';
 export * from './lib/licenses.api';
 export * from './lib/payments.api';

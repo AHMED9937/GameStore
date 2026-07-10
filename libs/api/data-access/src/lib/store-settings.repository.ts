@@ -3,6 +3,11 @@ import { PrismaService } from '@gamestore/api/prisma';
 
 export const DEFAULT_ACTIVATION_VIDEO_URL_KEY = 'default_activation_video_url';
 
+export const FAQ_UBISOFT_METHOD1_VIDEO_URL_KEY = 'faq_ubisoft_method1_video_url';
+export const FAQ_UBISOFT_METHOD2_VIDEO_URL_KEY = 'faq_ubisoft_method2_video_url';
+export const FAQ_UBISOFT_LOCKER_DOWNLOAD_URL_KEY = 'faq_ubisoft_locker_download_url';
+export const FAQ_UBISOFT_LOCKER_GITHUB_URL_KEY = 'faq_ubisoft_locker_github_url';
+
 @Injectable()
 export class StoreSettingsRepository {
   constructor(private readonly prisma: PrismaService) {}

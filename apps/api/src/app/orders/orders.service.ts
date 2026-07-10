@@ -155,7 +155,7 @@ export class OrdersService {
       return 'Confirming payment with Stripe…';
     }
 
-    return 'Payment received — issuing your license…';
+    return 'Payment received issuing your license…';
   }
 
   private toSessionLookupResponse(
@@ -165,7 +165,7 @@ export class OrdersService {
     if (order.status === 'pending') {
       return {
         status: 'pending',
-        message: pendingMessage ?? 'Payment received — issuing your license…',
+        message: pendingMessage ?? 'Payment received issuing your license…',
       };
     }
 
@@ -197,7 +197,7 @@ export class OrdersService {
 
     return {
       status: 'pending',
-      message: pendingMessage ?? 'Payment received — issuing your license…',
+      message: pendingMessage ?? 'Payment received issuing your license…',
     };
   }
 

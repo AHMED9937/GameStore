@@ -33,7 +33,10 @@ import { SubscriptionsController } from './subscriptions/subscriptions.controlle
 import { SubscriptionsService } from './subscriptions/subscriptions.service';
 import { SteamController } from './steam/steam.controller';
 import { SteamGuardAppService } from './steam/steam-guard-app.service';
+import { StoreSettingsController } from './store-settings/store-settings.controller';
+import { StoreSettingsService } from './store-settings/store-settings.service';
 import { AdminModule } from './admin/admin.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
 
 @Module({
   imports: [
@@ -44,6 +47,7 @@ import { AdminModule } from './admin/admin.module';
     StripeModule,
     SteamModule,
     AdminModule,
+    EntitlementsModule,
   ],
   controllers: [
     AppController,
@@ -58,6 +62,7 @@ import { AdminModule } from './admin/admin.module';
     SubscriptionPlansController,
     SubscriptionsController,
     SteamController,
+    StoreSettingsController,
   ],
   providers: [
     AppService,
@@ -72,6 +77,7 @@ import { AdminModule } from './admin/admin.module';
     SubscriptionPlansService,
     SubscriptionsService,
     SteamGuardAppService,
+    StoreSettingsService,
     {
       provide: APP_GUARD,
       useClass: AppThrottlerGuard,

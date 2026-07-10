@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -8,8 +9,10 @@ import {
 import type { AuthUser } from '@gamestore/api/auth';
 import {
   GamesRepository,
+  GameAccountsRepository,
   OrdersRepository,
   SubscriptionPlansRepository,
+  resolveSoldOut,
 } from '@gamestore/api/data-access';
 import {
   StripeConfig,
@@ -31,8 +34,11 @@ type PurchasableGame = NonNullable<Awaited<ReturnType<GamesRepository['findById'
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private readonly games: GamesRepository,
+    private readonly gameAccounts: GameAccountsRepository,
     private readonly orders: OrdersRepository,
     private readonly plans: SubscriptionPlansRepository,
     private readonly stripe: StripeService,
@@ -73,12 +79,22 @@ export class PaymentsService {
       throw error;
     }
 
-    await this.orders.createPending({
-      gameId: game.id,
-      stripeSessionId: session.sessionId,
-      amount: priceBase,
-      ownerId: user?.id,
-    });
+    try {
+      await this.orders.createPending({
+        gameId: game.id,
+        gameTitleSnapshot: game.title,
+        gameSlugSnapshot: game.slug,
+        stripeSessionId: session.sessionId,
+        amount: priceBase,
+        ownerId: user?.id,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Stripe session ${session.sessionId} created but pending order insert failed for game ${game.id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
 
     return session;
   }
@@ -150,6 +166,7 @@ export class PaymentsService {
           'This game is not available for purchase',
         );
       }
+      await this.assertGameNotSoldOut(game);
       return game;
     }
 
@@ -158,6 +175,18 @@ export class PaymentsService {
       throw new NotFoundException(`No game found for slug "${slug}"`);
     }
 
+    await this.assertGameNotSoldOut(game);
     return game;
+  }
+
+  private async assertGameNotSoldOut(
+    game: { id: string; soldOut: boolean },
+  ): Promise<void> {
+    const poolFlags = await this.gameAccounts.getActivePoolFlagsByGameIds([
+      game.id,
+    ]);
+    if (resolveSoldOut(game.soldOut, poolFlags.get(game.id) ?? false)) {
+      throw new BadRequestException('This game is currently sold out');
+    }
   }
 }

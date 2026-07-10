@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
 } from '@nestjs/common';
 import {
@@ -25,6 +26,7 @@ import {
   type AdminUpdateGameDto,
 } from './admin-games.service';
 import { FeaturedGameIdsDto } from './featured-game-ids.dto';
+import type { AdminGameListFiltersDto } from './admin-game-list-filters.dto';
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
@@ -38,8 +40,8 @@ export class AdminGamesController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.adminGames.findAll();
+  findAll(@Query() filters: AdminGameListFiltersDto) {
+    return this.adminGames.findAll(filters);
   }
 
   @Post('bulk-unpublish')
@@ -93,8 +95,8 @@ export class AdminGamesController {
   }
 
   @Get('featured')
-  getFeatured() {
-    return this.adminGames.getFeaturedGames();
+  getFeatured(@Query('q') q?: string) {
+    return this.adminGames.getFeaturedGames(q);
   }
 
   @Put('featured')

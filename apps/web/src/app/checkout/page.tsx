@@ -14,6 +14,12 @@ async function resolveGameState(
 
   try {
     const game = await getGameBySlug(gameSlug.trim());
+    if (game.soldOut) {
+      return {
+        status: 'error',
+        message: 'This game is currently sold out.',
+      };
+    }
     return { status: 'success', data: game };
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {

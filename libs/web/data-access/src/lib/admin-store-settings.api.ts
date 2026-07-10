@@ -1,4 +1,5 @@
 import { apiGet, apiPut } from './api-client';
+import type { FaqUbisoftSettings } from './store-settings.api';
 
 export type DefaultActivationVideoSetting = {
   url: string | null;
@@ -15,4 +16,14 @@ export function updateDefaultActivationVideo(url: string | null) {
     '/admin/settings/activation-video',
     { url },
   );
+}
+
+export function getAdminFaqUbisoftSettings() {
+  return apiGet<FaqUbisoftSettings>('/admin/settings/faq-ubisoft');
+}
+
+export function updateAdminFaqUbisoftSettings(
+  settings: Partial<FaqUbisoftSettings>,
+) {
+  return apiPut<FaqUbisoftSettings>('/admin/settings/faq-ubisoft', settings);
 }

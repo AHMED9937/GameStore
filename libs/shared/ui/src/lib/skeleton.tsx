@@ -37,3 +37,58 @@ export function Skeleton({
     />
   );
 }
+
+export function SkeletonText({
+  className,
+  ...props
+}: Omit<SkeletonProps, 'height' | 'rounded'>) {
+  return (
+    <Skeleton
+      height={14}
+      rounded="sm"
+      className={[styles.skeletonText, className].filter(Boolean).join(' ')}
+      {...props}
+    />
+  );
+}
+
+export function SkeletonButton({
+  className,
+  ...props
+}: Omit<SkeletonProps, 'height'>) {
+  return (
+    <Skeleton
+      height={42}
+      rounded="md"
+      className={[styles.skeletonButton, className].filter(Boolean).join(' ')}
+      {...props}
+    />
+  );
+}
+
+export function SkeletonBanner({
+  className,
+  ...props
+}: Omit<SkeletonProps, 'height'>) {
+  return (
+    <Skeleton
+      height={56}
+      rounded="md"
+      className={[styles.skeletonBanner, className].filter(Boolean).join(' ')}
+      {...props}
+    />
+  );
+}
+
+export function SkeletonPanel({
+  className,
+  ...props
+}: Omit<SkeletonProps, 'rounded'>) {
+  return (
+    <Skeleton
+      rounded="lg"
+      className={[styles.skeletonPanel, className].filter(Boolean).join(' ')}
+      {...props}
+    />
+  );
+}

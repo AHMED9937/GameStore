@@ -48,7 +48,7 @@ export function AdminIgdbResultsGrid({
               disabled={disabled || isImporting}
               onClick={() => onImport(result.igdbId)}
             >
-              {isImporting ? 'Importing…' : 'Import'}
+              {isImporting ? 'Importing…' : 'Configure & import'}
             </Button>
           </article>
         );

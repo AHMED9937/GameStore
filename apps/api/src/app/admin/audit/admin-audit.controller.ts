@@ -1,21 +1,15 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { Roles } from '@gamestore/api/auth';
-import { adminSetupResponse } from '../admin-setup';
-
-const AUDIT_SETUP = adminSetupResponse(
-  'admin-audit',
-  'Admin audit log — not implemented yet',
-);
+import { AdminAuditService } from './admin-audit.service';
+import type { AdminAuditListFiltersDto } from './admin-audit-list-filters.dto';
 
 @Roles('admin')
 @Controller('admin/audit-logs')
 export class AdminAuditController {
+  constructor(private readonly audit: AdminAuditService) {}
+
   @Get()
-  list(
-    @Query('page') _page?: string,
-    @Query('limit') _limit?: string,
-    @Query('action') _action?: string,
-  ) {
-    return AUDIT_SETUP;
+  list(@Query() filters: AdminAuditListFiltersDto) {
+    return this.audit.list(filters);
   }
 }

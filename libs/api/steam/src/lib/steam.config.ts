@@ -11,8 +11,8 @@ export class SteamConfig {
   static getSetupResponse(action: string) {
     const message =
       action === 'guard-code'
-        ? 'Steam Guard — not implemented yet'
-        : `Steam ${action} — not implemented yet`;
+        ? 'Steam Guard not implemented yet'
+        : `Steam ${action} not implemented yet`;
 
     return {
       status: 'setup' as const,
@@ -54,8 +54,8 @@ export class SteamConfig {
       status: 'setup' as const,
       integration: 'steam',
       message: configured
-        ? 'Steam — configured, not implemented yet'
-        : 'Steam — not configured, not implemented yet',
+        ? 'Steam configured, not implemented yet'
+        : 'Steam not configured, not implemented yet',
     };
   }
 

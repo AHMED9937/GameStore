@@ -24,7 +24,7 @@ export class StripeService {
     return StripeConfig.getHealthResponse();
   }
 
-  /** Legacy setup stub — replaced by createCheckoutSession in SP.3 payments flow */
+  /** Legacy setup stub replaced by createCheckoutSession in SP.3 payments flow */
   createCheckout() {
     return StripeConfig.getSetupResponse('checkout');
   }
@@ -115,6 +115,12 @@ export class StripeService {
 
   async retrieveSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
     return this.getClient().subscriptions.retrieve(subscriptionId);
+  }
+
+  async retrieveCheckoutSession(sessionId: string): Promise<Stripe.Checkout.Session> {
+    return this.getClient().checkout.sessions.retrieve(sessionId, {
+      expand: ['payment_intent'],
+    });
   }
 
   constructWebhookEvent(rawBody: Buffer, signature: string): Stripe.Event {

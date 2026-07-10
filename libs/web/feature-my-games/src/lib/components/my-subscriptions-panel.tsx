@@ -7,6 +7,8 @@ import {
   Card,
   Container,
   Heading,
+  SkeletonPanel,
+  SkeletonText,
   Text,
 } from '@gamestore/shared/ui';
 import {
@@ -19,7 +21,15 @@ import {
 } from '@gamestore/web/feature-subscriptions';
 import styles from './section.module.css';
 
-export function MySubscriptionsPanel() {
+export type MySubscriptionsPanelProps = {
+  showInlineLoading?: boolean;
+  onInitialLoadingChange?: (loading: boolean) => void;
+};
+
+export function MySubscriptionsPanel({
+  showInlineLoading = true,
+  onInitialLoadingChange,
+}: MySubscriptionsPanelProps = {}) {
   const [subscriptions, setSubscriptions] = useState<UserSubscriptionRecord[]>(
     [],
   );
@@ -62,7 +72,22 @@ export function MySubscriptionsPanel() {
     };
   }, []);
 
-  if (loading || subscriptions.length === 0) {
+  useEffect(() => {
+    onInitialLoadingChange?.(loading);
+  }, [loading, onInitialLoadingChange]);
+
+  if (loading && showInlineLoading) {
+    return (
+      <section className={styles.sectionTight}>
+        <Container>
+          <SkeletonText width="46%" />
+          <SkeletonPanel height={120} style={{ marginTop: '0.75rem' }} />
+        </Container>
+      </section>
+    );
+  }
+
+  if (subscriptions.length === 0) {
     return null;
   }
 
@@ -84,7 +109,7 @@ export function MySubscriptionsPanel() {
                       subscription.plan.interval,
                       subscription.plan.intervalCount,
                     )}{' '}
-                    — {subscription.status}
+                    {subscription.status}
                   </Text>
                 </div>
                 <Badge variant="accent">
@@ -96,7 +121,7 @@ export function MySubscriptionsPanel() {
                 {subscription.licenses.length} game
                 {subscription.licenses.length === 1 ? '' : 's'} included
                 {subscription.cancelAtPeriodEnd
-                  ? ' — cancels at period end'
+                  ? ' cancels at period end'
                   : ''}
               </Text>
             </Card>

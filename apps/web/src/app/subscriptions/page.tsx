@@ -1,8 +1,11 @@
 import { ApiError, getSubscriptionPlans } from '@gamestore/web/data-access';
+import { buildPageMetadata } from '@gamestore/shared/seo';
 import {
   SubscriptionsPage,
   type SubscriptionsPageProps,
 } from '@gamestore/web/feature-subscriptions';
+
+export const metadata = buildPageMetadata('subscriptions');
 
 type SubscriptionsRouteProps = {
   searchParams: Promise<{ plan?: string; cancelled?: string }>;

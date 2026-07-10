@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { NavigationProgress } from './navigation-progress';
 
@@ -9,6 +9,20 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('NavigationProgress', () => {
+  it('hides itself after completion', () => {
+    vi.useFakeTimers();
+    pathname.current = '/';
+    const { rerender, container } = render(<NavigationProgress />);
+    pathname.current = '/shop';
+    rerender(<NavigationProgress />);
+    expect(container.querySelector('[data-testid="navigation-progress"]')).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(container.querySelector('[data-testid="navigation-progress"]')).toBeNull();
+    vi.useRealTimers();
+  });
+
   it('is hidden on initial render', () => {
     pathname.current = '/';
     const { container } = render(<NavigationProgress />);

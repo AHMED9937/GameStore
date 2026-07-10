@@ -16,8 +16,25 @@ export type AdminOrderRecord = {
   createdAt: string;
 };
 
-export function getAdminOrders() {
-  return apiGet<AdminOrderRecord[]>('/admin/orders');
+export type AdminOrderListFilters = {
+  q?: string;
+  status?: string;
+  orderType?: string;
+};
+
+export function getAdminOrders(filters: AdminOrderListFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  if (filters.orderType) {
+    params.set('orderType', filters.orderType);
+  }
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  return apiGet<AdminOrderRecord[]>(`/admin/orders${suffix}`);
 }
 
 export function bulkDeleteAdminOrders(ids: string[]) {

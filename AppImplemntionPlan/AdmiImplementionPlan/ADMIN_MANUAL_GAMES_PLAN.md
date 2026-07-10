@@ -1,7 +1,7 @@
-# Admin Manual Games & Steam Account Linking — Implementation Plan
+# Admin Manual Games & Steam Account Linking Implementation Plan
 
 **Status:** Planning (post UI readability + game detail work)  
-**Scope:** Manual game catalog management in `/admin/games`, linked **platform pool accounts** (Steam first), storefront-ready content matching the **live `Game` schema and 3 demo seeds**. **IGDB deferred** — same flows will absorb import later.  
+**Scope:** Manual game catalog management in `/admin/games`, linked **platform pool accounts** (Steam first), storefront-ready content matching the **live `Game` schema and 3 demo seeds**. **IGDB deferred** same flows will absorb import later.  
 **Parent:** [ADMIN_PLAN.md](./ADMIN_PLAN.md) (AD.6 games CRUD ✅ partial, AD.7 accounts ❌ setup stub)  
 **Prerequisite:** Security S.1–S.9, AD.6 backend list/create/update/delete/publish
 
@@ -19,11 +19,11 @@
 
 **Non-goals (this plan):**
 
-- IGDB import implementation (hook points only — fields `igdbId`, `igdbSyncedAt`, `igdbCoverUrl` stay import-managed)
-- Real AES encryption / live Steam Guard (AD.7 — stub acceptable in phase 1 with `ENCRYPTED_PLACEHOLDER` pattern from seed)
+- IGDB import implementation (hook points only fields `igdbId`, `igdbSyncedAt`, `igdbCoverUrl` stay import-managed)
+- Real AES encryption / live Steam Guard (AD.7 stub acceptable in phase 1 with `ENCRYPTED_PLACEHOLDER` pattern from seed)
 - Stripe checkout wiring
-- Regional pricing UI (`GamePricingRegion` — only `demo-game-1` has US/EG rows today)
-- SEO admin UI (`metaTitle`, `metaDescription`, `ogImage`) — schema fields exist; optional slice after MG.1
+- Regional pricing UI (`GamePricingRegion` only `demo-game-1` has US/EG rows today)
+- SEO admin UI (`metaTitle`, `metaDescription`, `ogImage`) schema fields exist; optional slice after MG.1
 
 ---
 
@@ -38,13 +38,13 @@
 | Storefront `GET /api/games/:slug` | ✅ Published-only, media, requirements, genres |
 | `POST /api/game-accounts` (Phase 6) | ✅ Real CRUD at **`/api/game-accounts`** (not `/api/admin/accounts`) |
 | Schema relations | ✅ `Game` → `GameAccount[]`, `GameMedia[]`, `License[]` |
-| Seed | ✅ 3 demo games — full shape documented in **§3** (`libs/api/prisma/prisma/seed.ts`) |
+| Seed | ✅ 3 demo games full shape documented in **§3** (`libs/api/prisma/prisma/seed.ts`) |
 
 ### 2.2 What is broken or incomplete
 
 | Issue | Impact |
 |-------|--------|
-| Admin form: title, slug, platform (free text), description (**single-line Input**), price, publish only | Cannot edit cover, genres, release date, requirements, media — all present on demos |
+| Admin form: title, slug, platform (free text), description (**single-line Input**), price, publish only | Cannot edit cover, genres, release date, requirements, media all present on demos |
 | `AdminGamesService.create/update` ignores `genres`, `releaseDate`, `requirements*`, `media` | DB fields only populated by seed / IGDB; demos have full data |
 | `AdminGameDto` missing `requirements*`, `media`, **account summary** | Edit page cannot mirror demo-game shape |
 | `/api/admin/accounts` returns **setup JSON** | Accounts UI disabled; real API is `/api/game-accounts` |
@@ -76,7 +76,7 @@
 
 > **Rule for this plan:** Every admin field, API DTO, and form section must map to a **real column or relation** below. Manual entry should be able to reproduce any column the 3 demos populate (except IGDB-only columns until import).
 
-### 3.1 `Game` model — full field map
+### 3.1 `Game` model full field map
 
 | Field | Type | Admin manual? | In demos? | Notes |
 |-------|------|---------------|-----------|-------|
@@ -87,7 +87,7 @@
 | `platform` | string | ✅ select | `steam` ×2, `microsoft` ×1 | See §3.3 |
 | `priceBase` | Decimal | ✅ | 9.99 / 14.99 / 19.99 | |
 | `coverImage` | string? | ✅ URL | `/og/default.png` all | Storefront hero + buy panel |
-| `metaTitle` | string? | optional later | ❌ null | SEO — not in seed |
+| `metaTitle` | string? | optional later | ❌ null | SEO not in seed |
 | `metaDescription` | string? | optional later | ❌ null | SEO |
 | `ogImage` | string? | optional later | ❌ null | SEO |
 | `publishedAt` | DateTime? | ✅ publish toggle | ✅ all published | `null` = draft |
@@ -104,18 +104,18 @@
 
 | Relation | Model | Demo data |
 |----------|-------|-----------|
-| `media` | `GameMedia[]` | 5 / 3 / 3 rows — see §3.2 |
-| `accounts` | `GameAccount[]` | 1 pool account per game — see §3.5 |
+| `media` | `GameMedia[]` | 5 / 3 / 3 rows see §3.2 |
+| `accounts` | `GameAccount[]` | 1 pool account per game see §3.5 |
 | `licenses` | `License[]` | game1 + game2 only (`DEMO-KEY-0001/2`) |
 | `pricingRegions` | `GamePricingRegion[]` | game1 only: US 9.99, EG 4.99 |
 
-### 3.2 `GameMedia` model — types used by demos
+### 3.2 `GameMedia` model types used by demos
 
 | Field | Type | Admin? | Notes |
 |-------|------|--------|-------|
 | `id` | cuid | auto | |
 | `gameId` | FK | implicit | |
-| `type` | string | ✅ select | **`video`**, **`screenshot`**, **`activation`** — all 3 used in seed (schema comment omits `activation`; keep all three) |
+| `type` | string | ✅ select | **`video`**, **`screenshot`**, **`activation`** all 3 used in seed (schema comment omits `activation`; keep all three) |
 | `url` | string | ✅ | YouTube embed URLs for video/activation; `/og/default.png` for screenshots |
 | `title` | string? | ✅ | e.g. `Launch Trailer`, `Steam activation walkthrough` |
 | `igdbId` | Int? | optional | Set in seed; manual can leave `null` |
@@ -127,23 +127,23 @@
 | Game | `video` | `activation` | `screenshot` |
 |------|---------|--------------|--------------|
 | **demo-game-1** Stellar Odyssey | 2 (Launch Trailer, Gameplay Overview) | 1 (Steam activation walkthrough) | 2 |
-| **demo-game-2** Neon Drift Rally | 2 (Announcement, Drift Gameplay) | 1 (Neon Drift activation guide) | **0** — screenshots optional |
+| **demo-game-2** Neon Drift Rally | 2 (Announcement, Drift Gameplay) | 1 (Neon Drift activation guide) | **0** screenshots optional |
 | **demo-game-3** Void Protocol | 2 (Reveal, Stealth gameplay) | 1 (Microsoft Store activation) | **0** |
 
-Storefront `GET /api/games/:slug` returns `media` filtered to `screenshot | video | activation` — same shapes admin must manage.
+Storefront `GET /api/games/:slug` returns `media` filtered to `screenshot | video | activation` same shapes admin must manage.
 
 ### 3.3 Platform rules (`steam` vs `microsoft`)
 
 | Context | Allowed `platform` |
 |---------|-------------------|
-| **Existing demos** | `steam` (game 1–2), `microsoft` (game 3) — **do not break** |
+| **Existing demos** | `steam` (game 1–2), `microsoft` (game 3) **do not break** |
 | **New manual games (phase 1)** | **`steam` only** in create form + API validation |
 | **Edit existing** | Platform **immutable** after create (matches demo `game.platform` on accounts) |
 | **Game detail tabs** | Copy already branches on `platform` (`steam` / `epic` / `microsoft`) |
 
 `GameAccount.platform` must always equal parent `Game.platform` (seed sets `platform: game.platform`).
 
-### 3.4 Demo games — field-by-field
+### 3.4 Demo games field-by-field
 
 | Field | demo-game-1 | demo-game-2 | demo-game-3 |
 |-------|-------------|-------------|-------------|
@@ -158,8 +158,8 @@ Storefront `GET /api/games/:slug` returns `media` filtered to `screenshot | vide
 | **genres** | Adventure, Sci-Fi | Racing, Arcade | Stealth, Action |
 | **description** | 2 paragraphs (space adventure) | 2 paragraphs (racing) | 2 paragraphs (stealth) |
 | **requirements** | Win min/rec GPU specs | Win min/rec | Win min/rec + “SSD required” note |
-| **pricingRegions** | US, EG | — | — |
-| **licenses** | DEMO-KEY-0001 | DEMO-KEY-0002 | — |
+| **pricingRegions** | US, EG | | |
+| **licenses** | DEMO-KEY-0001 | DEMO-KEY-0002 | |
 
 ### 3.5 `GameAccount` pool (per demo)
 
@@ -236,9 +236,9 @@ erDiagram
 | `GameAccount.platform` must equal `Game.platform` | API validation on create |
 | A **published** Steam game should have **≥ 1 active** `GameAccount` | Soft block on publish (warning override optional) |
 | `License.gameId` required; `accountId` set on activation | Existing license flow |
-| `GameMedia.gameId` required; types: **`video`**, **`screenshot`**, **`activation`** | Admin media API — same as seed + storefront filter |
+| `GameMedia.gameId` required; types: **`video`**, **`screenshot`**, **`activation`** | Admin media API same as seed + storefront filter |
 | `GameMedia.sortOrder` unique per game within display order | Match seed `sortOrder` 0,1,2… |
-| At least one **`activation`** media row | All 3 demos have one — **recommended** in readiness (game detail Activation tab) |
+| At least one **`activation`** media row | All 3 demos have one **recommended** in readiness (game detail Activation tab) |
 
 ### 4.2 Steam-first manual entry (phase 1)
 
@@ -277,7 +277,7 @@ flowchart TD
 | **Media** | `GameMedia` rows | video + activation required; screenshots optional (game 2) |
 | **Pool account** | `GameAccount` via `gameId` | `pool-{slug}` pattern §3.5 |
 | **Publish** | `publishedAt` | Checklist §5.2 |
-| **SEO** (later) | `metaTitle`, `metaDescription`, `ogImage` | Not in demos — defer |
+| **SEO** (later) | `metaTitle`, `metaDescription`, `ogImage` | Not in demos defer |
 | **IGDB** (later) | `igdbId`, `igdbSyncedAt`, `igdbCoverUrl` | game1 only today |
 
 ### 5.2 Readiness checklist (before publish)
@@ -315,27 +315,27 @@ flowchart LR
 
 | Phase | Scope | Backend | Frontend | When |
 |-------|--------|---------|----------|------|
-| **S1 — Steam** | Full manual Steam game lifecycle | §6.1 | §6.2 | **Do this first** |
-| **S2 — IGDB** | Import → same edit screen | MG.6 | Merge `/admin/igdb` into edit | After S1 |
-| **S3 — Platforms** | Microsoft / Epic admin | Platform validation expand | Platform select on create | After S1 |
-| **S4 — Extras** | SEO, pricing regions, route aliases | meta fields, pricing API | SEO tab, pricing UI | Later |
+| **S1 Steam** | Full manual Steam game lifecycle | §6.1 | §6.2 | **Do this first** |
+| **S2 IGDB** | Import → same edit screen | MG.6 | Merge `/admin/igdb` into edit | After S1 |
+| **S3 Platforms** | Microsoft / Epic admin | Platform validation expand | Platform select on create | After S1 |
+| **S4 Extras** | SEO, pricing regions, route aliases | meta fields, pricing API | SEO tab, pricing UI | Later |
 
 **Rule:** Do not start S2–S4 until **Phase S1 exit criteria** (§13) are met and committed.
 
 ---
 
-## 6.1 Phase S1 — Steam backend (all in one phase)
+## 6.1 Phase S1 Steam backend (all in one phase)
 
 Complete **all** Steam-related API work before moving on. Internal order:
 
-### S1-B1 — Extended admin game DTO & mutations
+### S1-B1 Extended admin game DTO & mutations
 
 **Files:** `admin-games.service.ts`, `games.repository.ts`, `CreateGameDto` / `AdminUpdateGameDto`
 
 | Task | Detail |
 |------|--------|
 | S1-B1.1 | Extend `AdminGameDto` with §3.1 demo fields: `requirementsMin`, `requirementsRecommended`, `media[]`, `accountSummary` |
-| S1-B1.2 | `media[]`: `{ id, type, url, title, sortOrder, igdbId }` — same as `adminGameSelect.media` |
+| S1-B1.2 | `media[]`: `{ id, type, url, title, sortOrder, igdbId }` same as `adminGameSelect.media` |
 | S1-B1.3 | `accountSummary`: `{ total, active, hasActivePool }` |
 | S1-B1.4 | `buildUpdateInput`: `genres`, `releaseDate`, `requirements*`, `coverImage` |
 | S1-B1.5 | **Create:** `platform = 'steam'` only; **update:** platform immutable |
@@ -346,14 +346,14 @@ Complete **all** Steam-related API work before moving on. Internal order:
 
 ---
 
-### S1-B2 — Admin game media API
+### S1-B2 Admin game media API
 
 **Route:** `/api/admin/games/:gameId/media`
 
 | Method | Behavior |
 |--------|----------|
 | `GET` | List media (ordered) |
-| `POST` | `{ type, url, title?, sortOrder? }` — `video` \| `screenshot` \| `activation` |
+| `POST` | `{ type, url, title?, sortOrder? }` `video` \| `screenshot` \| `activation` |
 | `PUT /:mediaId` | Update row |
 | `DELETE /:mediaId` | Remove row |
 
@@ -361,13 +361,13 @@ Audit: `admin.game.media.*`. **Test:** activation row → storefront Activation 
 
 ---
 
-### S1-B3 — Real admin Steam accounts API
+### S1-B3 Real admin Steam accounts API
 
 **Replace** `AdminAccountsController` setup. Wire `/api/admin/accounts` (alias `/api/game-accounts`).
 
 | Method | Route | Behavior |
 |--------|-------|----------|
-| GET | `/api/admin/accounts?gameId=` | List pool — no secrets |
+| GET | `/api/admin/accounts?gameId=` | List pool no secrets |
 | GET | `/api/admin/accounts/:id` | Single account |
 | POST | `/api/admin/accounts` | Create for **Steam** game only in S1 |
 | POST | `/api/admin/accounts/:id/deactivate` | `isActive: false` |
@@ -388,7 +388,7 @@ Audit: `admin.account.create`, `admin.account.deactivate`.
 
 ---
 
-### S1-B4 — Publish guardrails (Steam)
+### S1-B4 Publish guardrails (Steam)
 
 On `published: true`:
 
@@ -400,7 +400,7 @@ On `published: true`:
 
 ---
 
-### S1-B5 — Route wiring (minimal, still S1)
+### S1-B5 Route wiring (minimal, still S1)
 
 | Action | Detail |
 |--------|--------|
@@ -409,11 +409,11 @@ On `published: true`:
 
 ---
 
-## 6.2 Phase S1 — Steam frontend (all in one phase)
+## 6.2 Phase S1 Steam frontend (all in one phase)
 
 Complete **all** Steam admin UI in the same phase as §6.1. Pair each backend slice with its UI before moving to the next slice.
 
-### S1-F1 — Game form (Steam manual entry)
+### S1-F1 Game form (Steam manual entry)
 
 **Files:** `admin-games.types.ts`, `admin-game-form.tsx`, `admin-game-edit-page.tsx`, `admin-games.api.ts`
 
@@ -430,7 +430,7 @@ Complete **all** Steam admin UI in the same phase as §6.1. Pair each backend sl
 
 ---
 
-### S1-F2 — Media manager
+### S1-F2 Media manager
 
 **New:** `admin-game-media-section.tsx` + `admin-games-media.api.ts`
 
@@ -441,10 +441,10 @@ Complete **all** Steam admin UI in the same phase as §6.1. Pair each backend sl
 
 ---
 
-### S1-F3 — Steam account section + accounts pages
+### S1-F3 Steam account section + accounts pages
 
 **New:** `admin-game-accounts-section.tsx` on game edit  
-**Wire:** `feature-admin/accounts/*` — real API, game dropdown, `?gameId=` filter, enabled submit
+**Wire:** `feature-admin/accounts/*` real API, game dropdown, `?gameId=` filter, enabled submit
 
 | Surface | Behavior |
 |---------|----------|
@@ -455,7 +455,7 @@ Complete **all** Steam admin UI in the same phase as §6.1. Pair each backend sl
 
 ---
 
-### S1-F4 — Readiness & publish UX
+### S1-F4 Readiness & publish UX
 
 **New:** `admin-game-readiness-panel.tsx`
 
@@ -467,7 +467,7 @@ Complete **all** Steam admin UI in the same phase as §6.1. Pair each backend sl
 
 ---
 
-### S1-F5 — Games list polish
+### S1-F5 Games list polish
 
 - Account status column
 - Content completeness from readiness
@@ -477,7 +477,7 @@ Complete **all** Steam admin UI in the same phase as §6.1. Pair each backend sl
 
 ---
 
-## 6.3 Phase S1 — Recommended slice order (backend + frontend together)
+## 6.3 Phase S1 Recommended slice order (backend + frontend together)
 
 Work **one slice at a time**; each slice ships **both** API and UI before the next.
 
@@ -488,7 +488,7 @@ Work **one slice at a time**; each slice ships **both** API and UI before the ne
 | **S1.3** | S1-B3 + S1-B5 | S1-F3 | Attach `pool-{slug}` account; `/admin/accounts` live |
 | **S1.4** | S1-B4 | S1-F4 + S1-F5 | Readiness gate; publish → storefront `/games/:slug` |
 
-**Phase S1 commits (one per slice or one at end — your choice):**
+**Phase S1 commits (one per slice or one at end your choice):**
 
 1. `feat(admin): S1.1 steam game form and extended admin game API`
 2. `feat(admin): S1.2 steam game media CRUD admin and storefront`
@@ -499,21 +499,21 @@ Work **one slice at a time**; each slice ships **both** API and UI before the ne
 
 ## 6.4 Later phases (after S1 complete)
 
-### Phase S2 — IGDB merge
+### Phase S2 IGDB merge
 
 - `POST /api/admin/igdb/import` → upsert game + media → redirect to edit
 - Read-only `igdbId`, `igdbSyncedAt`, `igdbCoverUrl` on form
 - Staff still adds Steam account manually after import
 - Remove standalone IGDB page or make it a tab on edit
 
-### Phase S3 — Microsoft & other platforms
+### Phase S3 Microsoft & other platforms
 
 - Allow `microsoft` / `epic` on create (not just Steam)
 - Platform-specific activation copy (demo-game-3 pattern)
 - Account validation per platform
 - Edit demo-game-3 without breaking S1 Steam flow
 
-### Phase S4 — SEO, pricing, cleanup
+### Phase S4 SEO, pricing, cleanup
 
 - Admin fields: `metaTitle`, `metaDescription`, `ogImage`
 - `GamePricingRegion` CRUD (demo-game-1 US/EG)
@@ -524,7 +524,7 @@ Work **one slice at a time**; each slice ships **both** API and UI before the ne
 
 ## 7. API contract summary (Phase S1 target)
 
-Must mirror `adminGameSelect` + account counts — **no invented fields**.
+Must mirror `adminGameSelect` + account counts **no invented fields**.
 
 ### `AdminGameMediaDto`
 
@@ -546,7 +546,7 @@ type AdminGameDto = {
   id: string;
   title: string;
   slug: string;
-  platform: string;              // 'steam' | 'microsoft' | … — per schema
+  platform: string;              // 'steam' | 'microsoft' | … per schema
   priceBase: string;
   description: string | null;
   coverImage: string | null;
@@ -609,8 +609,8 @@ type AdminGameReadinessDto = {
 - **Never** return `passwordEncrypted` or `sharedSecret` in list/detail APIs.
 - Admin-only routes stay `@Roles('admin')`.
 - Audit all create/update/delete/publish/account mutations.
-- Deactivate account does not delete — preserves license history.
-- Delete game cascades accounts — UI must warn strongly (already has confirm).
+- Deactivate account does not delete preserves license history.
+- Delete game cascades accounts UI must warn strongly (already has confirm).
 
 ---
 
@@ -624,20 +624,20 @@ type AdminGameReadinessDto = {
 | IGDB on create page? | Remove CTA from new game; keep `/admin/igdb` until merged into edit |
 | New game platform | **`steam` only**; `microsoft` remains for demo-game-3 + future expansion |
 | Multi-account per game? | Yes (pool); UI shows all, license picks least-loaded later |
-| Match demo schema exactly? | **Yes** — §3 is checklist; no parallel “simplified” game model |
+| Match demo schema exactly? | **Yes** §3 is checklist; no parallel “simplified” game model |
 
 ---
 
 ## 11. Definition of done
 
-### Phase S1 — Steam (must complete first)
+### Phase S1 Steam (must complete first)
 
 - [ ] **S1.1** Steam game create/edit with full manual fields (demo-game-2 minimum)
-- [ ] **S1.2** Media CRUD — videos + activation (+ screenshots optional)
+- [ ] **S1.2** Media CRUD videos + activation (+ screenshots optional)
 - [ ] **S1.3** Steam pool account on game edit + `/admin/accounts` wired (no setup JSON)
 - [ ] **S1.4** Readiness blocks publish without account; published game on `/shop` + `/games/:slug`
 - [ ] Regression: demo-game-1 and demo-game-2 unchanged; demo-game-3 still loads (not edited via S1 create flow)
-- [ ] All S1 tests green; 4 commits pushed (or 1 squashed — team choice)
+- [ ] All S1 tests green; 4 commits pushed (or 1 squashed team choice)
 
 ### Phase S2+ (after S1)
 
@@ -648,4 +648,4 @@ type AdminGameReadinessDto = {
 
 ---
 
-*Next step: **Slice S1.1** — Steam extended game API (S1-B1) + tabbed admin form (S1-F1).*
+*Next step: **Slice S1.1** Steam extended game API (S1-B1) + tabbed admin form (S1-F1).*

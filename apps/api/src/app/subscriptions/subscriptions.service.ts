@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { UserSubscriptionsRepository } from '@gamestore/api/data-access';
+import { UserSubscriptionsRepository, resolveLicenseExpiresAt } from '@gamestore/api/data-access';
 
 export type UserSubscriptionLicenseDto = {
   id: string;
   licenseKey: string;
   status: string;
-  expiresAt: string | null;
+  validFrom: string;
+  expiresAt: string;
   game: {
     id: string;
     title: string;
@@ -56,7 +57,11 @@ export class SubscriptionsService {
         id: license.id,
         licenseKey: license.licenseKey,
         status: license.status,
-        expiresAt: license.expiresAt?.toISOString() ?? null,
+        validFrom: license.validFrom.toISOString(),
+        expiresAt: resolveLicenseExpiresAt(
+          license.expiresAt,
+          license.validFrom,
+        ).toISOString(),
         game: license.game,
       })),
     }));

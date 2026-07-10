@@ -1,4 +1,4 @@
-# Steam Phase — End-to-End Plan
+# Steam Phase End-to-End Plan
 
 **Goal:** From **Steam env configuration** through **buyer receiving a license** (via Stripe purchase or admin issuance) to **activating and playing** on a shared Steam pool account (credentials + Steam Guard code).
 
@@ -8,9 +8,9 @@
 
 | Document | Relationship |
 |----------|----------------|
-| [STRIPE_PHASE_PLAN.md](./STRIPE_PHASE_PLAN.md) | **Complete** — prerequisite for paid buyers; see [Stripe §13 handoff](./STRIPE_PHASE_PLAN.md#13-handoff-to-steam-phase) |
-| [ADMIN_MANUAL_GAMES_PLAN.md](./AdmiImplementionPlan/ADMIN_MANUAL_GAMES_PLAN.md) | **S1** — Steam catalog + pool accounts on game edit (staff prerequisite) |
-| [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) Phase 8 | Technical slices (encryption, activate, TOTP) — merged here |
+| [STRIPE_PHASE_PLAN.md](./STRIPE_PHASE_PLAN.md) | **Complete** prerequisite for paid buyers; see [Stripe §13 handoff](./STRIPE_PHASE_PLAN.md#13-handoff-to-steam-phase) |
+| [ADMIN_MANUAL_GAMES_PLAN.md](./AdmiImplementionPlan/ADMIN_MANUAL_GAMES_PLAN.md) | **S1** Steam catalog + pool accounts on game edit (staff prerequisite) |
+| [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) Phase 8 | Technical slices (encryption, activate, TOTP) merged here |
 | [ADMIN_PLAN.md](./AdmiImplementionPlan/ADMIN_PLAN.md) AD.7 | Admin accounts UI + My Games integration |
 
 ---
@@ -56,9 +56,9 @@ flowchart TB
 **Dev shortcuts:**
 
 - **Paid path:** `stripe listen` + test card `4242…` → real `GS-…` key in My Games (when webhook configured).
-- **No Stripe CLI:** seed keys `DEMO-KEY-0001` / `DEMO-KEY-0002` or admin generate — pool secrets remain placeholders until ST.2/ST.1 complete.
+- **No Stripe CLI:** seed keys `DEMO-KEY-0001` / `DEMO-KEY-0002` or admin generate pool secrets remain placeholders until ST.2/ST.1 complete.
 
-**Success page note:** `/checkout/success` currently shows a **demo** key (`GS-DEMO-…`) for payment confirmation only. The webhook still mints the **real** license in the DB — use **My Games** or admin orders for the activation key until success-page polling is restored (optional Stripe polish, not blocking ST.4).
+**Success page note:** `/checkout/success` currently shows a **demo** key (`GS-DEMO-…`) for payment confirmation only. The webhook still mints the **real** license in the DB use **My Games** or admin orders for the activation key until success-page polling is restored (optional Stripe polish, not blocking ST.4).
 
 ---
 
@@ -103,9 +103,9 @@ flowchart TB
 
 **Buyer license sources (post-Stripe):**
 
-1. **Paid purchase** — webhook creates `License` (`GS-…` format) with optional `ownerId`
-2. **Admin generate** (ST.3) — staff, comp keys, dev without Stripe CLI
-3. **Seed** — `DEMO-KEY-*` for local testing without payment
+1. **Paid purchase** webhook creates `License` (`GS-…` format) with optional `ownerId`
+2. **Admin generate** (ST.3) staff, comp keys, dev without Stripe CLI
+3. **Seed** `DEMO-KEY-*` for local testing without payment
 
 ### 2.4 Stripe handoff contract
 
@@ -160,7 +160,7 @@ User (Clerk) ──ownerId──► License ──accountId──► GameAccount
 
 ---
 
-## 5. Environment setup (Slice ST.0 — start here)
+## 5. Environment setup (Slice ST.0 start here)
 
 ### 5.1 Variables (`.env`)
 
@@ -179,7 +179,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
 CLERK_SECRET_KEY=...
 
-# Stripe (already set from completed phase — needed for paid-path testing)
+# Stripe (already set from completed phase needed for paid-path testing)
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -210,15 +210,15 @@ curl http://localhost:3333/api/payments/health
 
 ### 5.4 Dev pool account secrets
 
-For local TOTP testing you need a **real** Steam shared secret (from your own test Steam account’s 2FA setup — never commit). Store via admin create after ST.2 encrypts at rest.
+For local TOTP testing you need a **real** Steam shared secret (from your own test Steam account’s 2FA setup never commit). Store via admin create after ST.2 encrypts at rest.
 
 ---
 
 ## 6. Implementation slices (in order)
 
-Work **one slice at a time** — backend + frontend together where noted.
+Work **one slice at a time** backend + frontend together where noted.
 
-### ST.1 — Encryption service
+### ST.1 Encryption service
 
 **Backend:** `libs/api/steam`
 
@@ -232,7 +232,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### ST.2 — Admin Steam catalog + pool accounts
+### ST.2 Admin Steam catalog + pool accounts
 
 **Depends on:** [ADMIN_MANUAL_GAMES_PLAN](./AdmiImplementionPlan/ADMIN_MANUAL_GAMES_PLAN.md) **S1** (or minimum subset below).
 
@@ -249,27 +249,27 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### ST.3 — Admin license issuance (supplemental keys)
+### ST.3 Admin license issuance (supplemental keys)
 
-**Goal:** Staff can mint license keys for comp gifts, support, or dev **without** running a Stripe payment. **Not** the primary production path — paid buyers already receive licenses from webhook fulfillment.
+**Goal:** Staff can mint license keys for comp gifts, support, or dev **without** running a Stripe payment. **Not** the primary production path paid buyers already receive licenses from webhook fulfillment.
 
 | Task | Detail |
 |------|--------|
 | ST.3.1 | Replace `AdminLicensesController` setup with real service (delegate to `LicensesService`) |
 | ST.3.2 | `POST /api/admin/licenses/generate-key` → `{ licenseKey, gameId, status: 'available' }` (crypto-random key, `GS-…` format aligned with Stripe) |
-| ST.3.3 | `POST /api/admin/licenses` — manual key + `gameId` + optional `buyerEmail` |
+| ST.3.3 | `POST /api/admin/licenses` manual key + `gameId` + optional `buyerEmail` |
 | ST.3.4 | Optional: set `ownerId` when buyer already has Clerk account (email lookup later) |
 | ST.3.5 | Wire `admin-licenses.api.ts` + enable admin license form |
 | ST.3.6 | Audit: `admin.license.create`, `admin.license.generate` |
 | ST.3.7 | Admin list shows **both** webhook-minted (purchase) and staff-generated licenses |
 
-**Frontend:** `/admin/licenses` — list, generate key, copy to clipboard, revoke.
+**Frontend:** `/admin/licenses` list, generate key, copy to clipboard, revoke.
 
 **Staff verify:** Generate key for `demo-game-1` → hand key to test buyer (alternate to Stripe test purchase).
 
 ---
 
-### ST.4 — License activation + pool assignment
+### ST.4 License activation + pool assignment
 
 **Backend:** `POST /api/licenses/activate`
 
@@ -300,7 +300,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### ST.5 — Real Steam Guard (TOTP)
+### ST.5 Real Steam Guard (TOTP)
 
 **Backend:** Replace stub in `SteamGuardService` + `POST /api/steam/guard-code`
 
@@ -325,7 +325,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ---
 
-### ST.6 — My Games buyer UI
+### ST.6 My Games buyer UI
 
 | Component | Change |
 |-----------|--------|
@@ -338,14 +338,14 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 **Two entry paths:**
 
-1. **Signed-in at purchase** — open My Games → pick license from list → activate (no re-typing key).
-2. **Guest or manual** — paste key from admin handoff; do **not** use success-page `GS-DEMO-…` placeholder — use real key from My Games or admin orders.
+1. **Signed-in at purchase** open My Games → pick license from list → activate (no re-typing key).
+2. **Guest or manual** paste key from admin handoff; do **not** use success-page `GS-DEMO-…` placeholder use real key from My Games or admin orders.
 
 **New data-access:** `activateLicense()`, update `requestSteamGuardCode()` response types.
 
 ---
 
-### ST.7 — Seed, tests, documentation
+### ST.7 Seed, tests, documentation
 
 | Task | Detail |
 |------|--------|
@@ -401,7 +401,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| POST | `/api/payments/checkout` | Optional | Stripe session (Stripe phase — complete) |
+| POST | `/api/payments/checkout` | Optional | Stripe session (Stripe phase complete) |
 | GET | `/api/orders/by-session/:id` | Public* | Order + license after payment |
 | POST | `/api/licenses/validate` | Optional | Lookup key + game |
 | POST | `/api/licenses/activate` | Required | Assign account + credentials |
@@ -412,7 +412,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 
 ## 9. Manual test script (after ST.6)
 
-### Path A — Paid buyer (Stripe; preferred for production-like test)
+### Path A Paid buyer (Stripe; preferred for production-like test)
 
 1. Set `STRIPE_WEBHOOK_SECRET`; run `stripe listen --forward-to localhost:3333/api/payments/webhook`; restart API.
 2. Sign in as buyer → published Steam game → **Buy now** → pay with test card `4242 4242 4242 4242`.
@@ -421,7 +421,7 @@ Work **one slice at a time** — backend + frontend together where noted.
 5. **Request Steam Guard code** → enter 6-digit code in Steam client.
 6. Download/play game from shared library (manual verification).
 
-### Path B — Staff-generated key (no Stripe CLI)
+### Path B Staff-generated key (no Stripe CLI)
 
 1. Set `STEAM_ENCRYPTION_KEY` in `.env`; restart API.
 2. Admin: publish Steam game with pool account (real test Steam `sharedSecret`).

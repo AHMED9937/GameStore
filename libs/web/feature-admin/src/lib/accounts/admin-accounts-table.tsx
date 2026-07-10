@@ -1,6 +1,12 @@
 import Link from 'next/link';
-import { Badge, Button } from '@gamestore/shared/ui';
+import { Badge } from '@gamestore/shared/ui';
 import { AdminTable } from '../components/admin-table';
+import {
+  IconDeactivate,
+  IconEdit,
+  IconReactivate,
+} from '../components/admin-action-icons';
+import { AdminRowActionButton } from '../components/admin-row-action-button';
 import {
   AdminSelectableRow,
   AdminSelectableTable,
@@ -28,7 +34,7 @@ function renderRowCells(
 ) {
   return (
     <>
-      <td>{account.gameTitle}</td>
+      <td>{account.gameTitle ?? 'Unassigned'}</td>
       <td>{account.username}</td>
       <td>{account.platform}</td>
       <td>{account.region}</td>
@@ -42,29 +48,30 @@ function renderRowCells(
       </td>
       <td>
         <div className={styles.tableActions}>
-          <Link href={`/admin/accounts/${account.id}`}>
-            <Button type="button" variant="secondary">
-              Edit
-            </Button>
+          <Link
+            href={`/admin/accounts/${account.id}`}
+            aria-label={`Edit account ${account.username}`}
+            title={`Edit account ${account.username}`}
+          >
+            <AdminRowActionButton
+              label={`Edit account ${account.username}`}
+              icon={<IconEdit />}
+            />
           </Link>
           {account.isActive ? (
-            <Button
-              type="button"
-              variant="secondary"
+            <AdminRowActionButton
+              label={`Deactivate account ${account.username}`}
+              icon={<IconDeactivate />}
               disabled={!onDeactivate || deactivatingId === account.id}
               onClick={() => onDeactivate?.(account.id)}
-            >
-              {deactivatingId === account.id ? 'Saving…' : 'Deactivate'}
-            </Button>
+            />
           ) : (
-            <Button
-              type="button"
-              variant="secondary"
+            <AdminRowActionButton
+              label={`Reactivate account ${account.username}`}
+              icon={<IconReactivate />}
               disabled={!onReactivate || reactivatingId === account.id}
               onClick={() => onReactivate?.(account.id)}
-            >
-              {reactivatingId === account.id ? 'Saving…' : 'Reactivate'}
-            </Button>
+            />
           )}
         </div>
       </td>
