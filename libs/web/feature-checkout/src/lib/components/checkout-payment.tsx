@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Heading, Text } from '@gamestore/shared/ui';
+import { Button, Card, Heading, SkeletonButton, Text } from '@gamestore/shared/ui';
 import {
   ApiError,
   apiErrorMessage,
   createCheckout,
+  getPaymentsHealth,
   type GameDetail,
 } from '@gamestore/web/data-access';
 import styles from './section.module.css';
@@ -28,7 +29,7 @@ function checkoutErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const body = error.body.toLowerCase();
     if (body.includes('url') || body.includes('images')) {
-      return 'Could not start checkout. Product image URL is invalid for Stripe — use an HTTPS cover URL or leave cover empty.';
+      return 'Could not start checkout. Product image URL is invalid for Stripe use an HTTPS cover URL or leave cover empty.';
     }
   }
 
@@ -39,6 +40,23 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signInRequired, setSignInRequired] = useState(false);
+  const [webhookNote, setWebhookNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'production') {
+      return;
+    }
+
+    void getPaymentsHealth()
+      .then((health) => {
+        if (health.env.webhookSecret === 'missing') {
+          setWebhookNote(
+            'Local dev: licenses issue on the success page even without webhook forwarding. For production-like flow, run stripe listen and set STRIPE_WEBHOOK_SECRET.',
+          );
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   async function handlePay() {
     setPaying(true);
@@ -70,6 +88,11 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
       <Text tone="muted" style={{ marginTop: '0.75rem' }}>
         You will be redirected to Stripe secure checkout.
       </Text>
+      {webhookNote ? (
+        <Text tone="muted" style={{ marginTop: '0.75rem' }}>
+          {webhookNote}
+        </Text>
+      ) : null}
       <Button
         variant="primary"
         onClick={handlePay}
@@ -77,7 +100,11 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
         style={{ marginTop: '1rem' }}
         data-testid={paying ? 'checkout-pay-loading' : 'checkout-pay-button'}
       >
-        {paying ? 'Redirecting to secure checkout…' : 'Pay with card'}
+        {paying ? (
+          <SkeletonButton width="100%" height={20} rounded="sm" />
+        ) : (
+          'Pay with card'
+        )}
       </Button>
       {error ? (
         <div

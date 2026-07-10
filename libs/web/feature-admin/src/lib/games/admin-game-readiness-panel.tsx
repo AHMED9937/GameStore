@@ -1,75 +1,70 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
 import { Badge, Text } from '@gamestore/shared/ui';
 import {
-  apiErrorMessage,
   getAdminGameReadiness,
-  isSetupResponse,
   type AdminGameReadiness,
 } from '@gamestore/web/data-access';
+import { AdminAsyncView } from '../components/admin-async-view';
+import { useAdminResourceState } from '../hooks/use-admin-resource';
 import styles from './games.module.css';
 
 export type AdminGameReadinessPanelProps = {
   gameId: string;
   published: boolean;
+  soldOutManual: boolean;
+  hasActivePool: boolean;
   onPublishedChange: (published: boolean) => void;
+  onSoldOutManualChange: (soldOutManual: boolean) => void;
   disabled?: boolean;
+  refreshKey?: number;
 };
+
+function parseReadiness(data: unknown): AdminGameReadiness {
+  return data as AdminGameReadiness;
+}
 
 export function AdminGameReadinessPanel({
   gameId,
   published,
+  soldOutManual,
+  hasActivePool,
   onPublishedChange,
+  onSoldOutManualChange,
   disabled = false,
+  refreshKey = 0,
 }: AdminGameReadinessPanelProps) {
-  const [readiness, setReadiness] = useState<AdminGameReadiness | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { state, refetch, isRefetching } = useAdminResourceState(
+    () => getAdminGameReadiness(gameId),
+    parseReadiness,
+    { deps: [gameId, refreshKey] },
+  );
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getAdminGameReadiness(gameId);
-      if (isSetupResponse(result)) {
-        setError(result.message);
-        setReadiness(null);
-        return;
-      }
-      setReadiness(result);
-    } catch (err) {
-      setError(apiErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [gameId]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
+  const readiness = state.status === 'success' ? state.data : null;
   const canPublish = readiness?.canPublish ?? false;
+  const autoSoldOut = published && !hasActivePool;
+  const effectiveSoldOut = soldOutManual || autoSoldOut;
 
   return (
     <div data-testid="admin-game-readiness-panel">
-      {loading ? <Text tone="dim">Checking readiness…</Text> : null}
-      {error ? (
-        <Text tone="muted" role="alert">
-          {error}
-        </Text>
+      {state.status !== 'success' ? (
+        <AdminAsyncView state={state} onRetry={refetch} isRetrying={isRefetching}>
+          {() => null}
+        </AdminAsyncView>
       ) : null}
       {readiness ? (
         <>
           <div className={styles.readinessSummary}>
             <Badge variant={readiness.ready ? 'success' : canPublish ? 'default' : 'default'}>
-              {published
-                ? 'Published'
-                : readiness.ready
-                  ? 'Ready'
-                  : canPublish
-                    ? 'Almost ready'
-                    : 'Draft'}
+              {published && effectiveSoldOut
+                ? 'Sold out'
+                : published
+                  ? 'Published'
+                  : readiness.ready
+                    ? 'Ready'
+                    : canPublish
+                      ? 'Almost ready'
+                      : 'Draft'}
             </Badge>
             <Text tone="muted">
               {canPublish
@@ -111,13 +106,28 @@ export function AdminGameReadinessPanel({
           first, then refresh readiness.
         </Text>
       ) : null}
+      <label className={styles.publishToggle}>
+        <input
+          type="checkbox"
+          checked={soldOutManual || autoSoldOut}
+          disabled={disabled || !published || autoSoldOut}
+          onChange={(event) => onSoldOutManualChange(event.target.checked)}
+        />
+        <Text>Sold out (visible in shop, not purchasable)</Text>
+      </label>
+      {autoSoldOut ? (
+        <Text tone="dim">
+          No active pool account is linked. Add an active pool account to sell
+          again.
+        </Text>
+      ) : null}
       <button
         type="button"
         className={styles.readinessRefresh}
-        disabled={disabled || loading}
-        onClick={() => void load()}
+        disabled={disabled || isRefetching}
+        onClick={() => refetch()}
       >
-        Refresh readiness
+        {isRefetching ? 'Refreshing…' : 'Refresh readiness'}
       </button>
     </div>
   );

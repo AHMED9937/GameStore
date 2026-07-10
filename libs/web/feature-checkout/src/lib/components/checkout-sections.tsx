@@ -1,7 +1,7 @@
 'use client';
 
 import type { GameDetail } from '@gamestore/web/data-access';
-import { formatGamePrice } from '@gamestore/web/data-access';
+import { formatGamePrice, getGameCardCover } from '@gamestore/web/data-access';
 import { Badge, Card, Heading, Text } from '@gamestore/shared/ui';
 import styles from './section.module.css';
 
@@ -26,17 +26,19 @@ export type CheckoutSummaryProps = {
 };
 
 export function CheckoutSummary({ game }: CheckoutSummaryProps) {
+  const coverSrc = getGameCardCover(game);
+
   return (
     <Card className={styles.panel}>
       <Heading level="h3">Order summary</Heading>
-      {game.coverImage ? (
+      <div className={styles.summaryCoverWrap}>
         <img
-          src={game.coverImage}
+          src={coverSrc}
           alt=""
           className={styles.summaryCover}
           loading="lazy"
         />
-      ) : null}
+      </div>
       <Text style={{ marginTop: '1rem', fontSize: '1.125rem', fontWeight: 600 }}>
         {game.title}
       </Text>

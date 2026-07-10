@@ -1,84 +1,139 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Button, Input, Text } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
-  createAdminAccount,
+  assignAdminAccountToGame,
   deactivateAdminAccount,
   getAdminAccounts,
+  getAvailableAdminAccounts,
   isSetupResponse,
+  unassignAdminAccount,
   type AdminAccountRecord,
 } from '@gamestore/web/data-access';
+import { AdminAsyncView } from '../components/admin-async-view';
+import { useAdminResourceState } from '../hooks/use-admin-resource';
 import styles from './games.module.css';
 
 export type AdminGameAccountsSectionProps = {
   gameId: string;
   disabled?: boolean;
+  onAccountsChange?: () => void;
 };
+
+function parseAccountsList(data: unknown): AdminAccountRecord[] {
+  return Array.isArray(data) ? (data as AdminAccountRecord[]) : [];
+}
+
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [value, delayMs]);
+
+  return debounced;
+}
 
 export function AdminGameAccountsSection({
   gameId,
   disabled = false,
+  onAccountsChange,
 }: AdminGameAccountsSectionProps) {
-  const [accounts, setAccounts] = useState<AdminAccountRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [sharedSecret, setSharedSecret] = useState('');
-  const [region, setRegion] = useState('global');
-  const [saving, setSaving] = useState(false);
+  const {
+    state: linkedState,
+    refetch: refetchLinked,
+    isRefetching,
+  } = useAdminResourceState(
+    () => getAdminAccounts({ gameId }),
+    parseAccountsList,
+    {
+      deps: [gameId],
+    },
+  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [availableAccounts, setAvailableAccounts] = useState<AdminAccountRecord[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [linking, setLinking] = useState(false);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const accounts = linkedState.status === 'success' ? linkedState.data : [];
+
+  const notifyChange = useCallback(() => {
+    onAccountsChange?.();
+  }, [onAccountsChange]);
+
+  const loadAvailable = useCallback(async (query: string) => {
+    setSearchLoading(true);
+    setSearchError(null);
     try {
-      const result = await getAdminAccounts(gameId);
+      const result = await getAvailableAdminAccounts(query);
       if (isSetupResponse(result)) {
-        setError(result.message);
-        setAccounts([]);
+        setSearchError(result.message);
+        setAvailableAccounts([]);
         return;
       }
-      setAccounts(result);
+      setAvailableAccounts(result);
+      setSelectedAccountId((current) =>
+        current && result.some((account) => account.id === current)
+          ? current
+          : (result[0]?.id ?? ''),
+      );
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setSearchError(apiErrorMessage(err));
+      setAvailableAccounts([]);
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
-  }, [gameId]);
+  }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    void loadAvailable(debouncedSearch);
+  }, [debouncedSearch, loadAvailable]);
 
-  async function handleCreate() {
-    if (!username.trim() || !password.trim() || !sharedSecret.trim()) {
-      setError('Username, password, and shared secret are required');
+  async function handleLink() {
+    if (!selectedAccountId) {
+      setMutationError('Select an account to link');
       return;
     }
-    setSaving(true);
-    setError(null);
+    setLinking(true);
+    setMutationError(null);
     try {
-      const result = await createAdminAccount({
-        gameId,
-        username: username.trim(),
-        password: password.trim(),
-        sharedSecret: sharedSecret.trim(),
-        region: region.trim() || 'global',
-      });
+      const result = await assignAdminAccountToGame(selectedAccountId, gameId);
       if (isSetupResponse(result)) {
-        setError(result.message);
+        setMutationError(result.message);
         return;
       }
-      setUsername('');
-      setPassword('');
-      setSharedSecret('');
-      await load();
+      setSearchQuery('');
+      setSelectedAccountId('');
+      refetchLinked();
+      await loadAvailable('');
+      notifyChange();
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setMutationError(apiErrorMessage(err));
     } finally {
-      setSaving(false);
+      setLinking(false);
+    }
+  }
+
+  async function handleUnlink(account: AdminAccountRecord) {
+    if (!window.confirm(`Unlink ${account.username} from this game?`)) {
+      return;
+    }
+    setMutationError(null);
+    try {
+      await unassignAdminAccount(account.id);
+      refetchLinked();
+      await loadAvailable(debouncedSearch);
+      notifyChange();
+    } catch (err) {
+      setMutationError(apiErrorMessage(err));
     }
   }
 
@@ -86,95 +141,131 @@ export function AdminGameAccountsSection({
     if (!window.confirm('Deactivate this pool account?')) {
       return;
     }
+    setMutationError(null);
     try {
       await deactivateAdminAccount(accountId);
-      await load();
+      refetchLinked();
+      notifyChange();
     } catch (err) {
-      setError(apiErrorMessage(err));
+      setMutationError(apiErrorMessage(err));
     }
   }
 
   const activeCount = accounts.filter((account) => account.isActive).length;
+  const canUnlink = (account: AdminAccountRecord) =>
+    !account.isActive && account.activeUsersCount === 0;
 
   return (
     <div data-testid="admin-game-accounts-section">
       <Text tone="muted">
-        Pool accounts: {accounts.length} total · {activeCount} active
+        Linked pool accounts: {accounts.length} total · {activeCount} active
       </Text>
-      {loading ? <Text tone="dim">Loading accounts…</Text> : null}
-      {error ? (
+      {linkedState.status !== 'success' ? (
+        <AdminAsyncView
+          state={linkedState}
+          emptyMessage="No linked accounts yet."
+          onRetry={refetchLinked}
+          isRetrying={isRefetching}
+        >
+          {() => null}
+        </AdminAsyncView>
+      ) : null}
+      {mutationError ? (
         <Text tone="muted" role="alert">
-          {error}
+          {mutationError}
         </Text>
       ) : null}
-      <ul className={styles.mediaList}>
-        {accounts.map((account) => (
-          <li key={account.id} className={styles.mediaRow}>
-            <div>
-              <strong>{account.username}</strong> — {account.region}
-              <div className={styles.mediaUrl}>
-                {account.isActive ? 'Active' : 'Inactive'} ·{' '}
-                {account.activeUsersCount} active users
+      {searchError ? (
+        <Text tone="muted" role="alert">
+          {searchError}
+        </Text>
+      ) : null}
+      {linkedState.status === 'success' ? (
+        <ul className={styles.mediaList}>
+          {accounts.map((account) => (
+            <li key={account.id} className={styles.mediaRow}>
+              <div>
+                <strong>{account.username}</strong> {account.region}
+                <div className={styles.mediaUrl}>
+                  {account.isActive ? 'Active' : 'Inactive'} ·{' '}
+                  {account.activeUsersCount} active users
+                </div>
               </div>
-            </div>
-            {account.isActive ? (
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={disabled}
-                onClick={() => void handleDeactivate(account.id)}
-              >
-                Deactivate
-              </Button>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+              <div className={styles.mediaRowActions}>
+                {canUnlink(account) ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={disabled}
+                    onClick={() => void handleUnlink(account)}
+                  >
+                    Unlink
+                  </Button>
+                ) : null}
+                {account.isActive ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={disabled}
+                    onClick={() => void handleDeactivate(account.id)}
+                  >
+                    Deactivate
+                  </Button>
+                ) : null}
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className={styles.mediaForm}>
+        <Text tone="muted">
+          Link an existing unassigned account from inventory. Create new accounts
+          at{' '}
+          <Link href={`/admin/accounts/new?gameId=${encodeURIComponent(gameId)}`}>
+            /admin/accounts/new
+          </Link>
+          .
+        </Text>
         <div className={styles.formField}>
-          <Text tone="muted">Username</Text>
+          <Text tone="muted">Search available accounts</Text>
           <Input
-            value={username}
-            disabled={disabled || saving}
-            onChange={(event) => setUsername(event.target.value)}
-            placeholder="pool-my-game"
+            value={searchQuery}
+            disabled={disabled || linking}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Filter by username…"
+            data-testid="admin-game-account-search"
           />
         </div>
-        <div className={styles.formField}>
-          <Text tone="muted">Password</Text>
-          <Input
-            type="password"
-            value={password}
-            disabled={disabled || saving}
-            onChange={(event) => setPassword(event.target.value)}
-            autoComplete="new-password"
-          />
-        </div>
-        <div className={styles.formField}>
-          <Text tone="muted">Shared secret (Steam Guard)</Text>
-          <Input
-            type="password"
-            value={sharedSecret}
-            disabled={disabled || saving}
-            onChange={(event) => setSharedSecret(event.target.value)}
-            autoComplete="new-password"
-          />
-        </div>
-        <div className={styles.formField}>
-          <Text tone="muted">Region</Text>
-          <Input
-            value={region}
-            disabled={disabled || saving}
-            onChange={(event) => setRegion(event.target.value)}
-          />
-        </div>
+        {searchLoading ? <Text tone="dim">Searching…</Text> : null}
+        <ul className={styles.mediaList} data-testid="admin-game-account-picker">
+          {availableAccounts.map((account) => (
+            <li key={account.id} className={styles.mediaRow}>
+              <label className={styles.pickerOption}>
+                <input
+                  type="radio"
+                  name="availableAccount"
+                  value={account.id}
+                  checked={selectedAccountId === account.id}
+                  disabled={disabled || linking}
+                  onChange={() => setSelectedAccountId(account.id)}
+                />
+                <span>
+                  <strong>{account.username}</strong> {account.region}
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+        {!searchLoading && availableAccounts.length === 0 ? (
+          <Text tone="dim">No unassigned accounts match your search.</Text>
+        ) : null}
         <Button
           type="button"
           variant="secondary"
-          disabled={disabled || saving}
-          onClick={() => void handleCreate()}
+          disabled={disabled || linking || !selectedAccountId}
+          onClick={() => void handleLink()}
         >
-          {saving ? 'Creating…' : 'Add pool account'}
+          {linking ? 'Linking…' : 'Link account'}
         </Button>
       </div>
     </div>

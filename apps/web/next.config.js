@@ -39,7 +39,7 @@ const { composePlugins, withNx } = require('@nx/next');
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 const nextConfig = {
-  // Prisma ships native binaries — do not bundle (avoids stale schema in Turbopack cache).
+  // Prisma ships native binaries do not bundle (avoids stale schema in Turbopack cache).
   serverExternalPackages: ['@prisma/client', 'prisma'],
   // Use this to set Nx-specific options
   // See: https://nx.dev/docs/technologies/react/next/Guides/next-config-setup

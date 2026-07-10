@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { Button, EmptyState } from '@gamestore/shared/ui';
+import { Button, EmptyState, SkeletonPanel, SkeletonText } from '@gamestore/shared/ui';
 import type { CheckoutAsyncState } from '../types/checkout-async-state';
 import styles from './section.module.css';
 
@@ -21,13 +21,9 @@ export function CheckoutAsyncView<T>({
 }: CheckoutAsyncViewProps<T>) {
   if (state.status === 'loading') {
     return (
-      <div
-        className={styles.loading}
-        role="status"
-        aria-live="polite"
-        data-testid="checkout-summary-loading"
-      >
-        Loading order summary…
+      <div data-testid="checkout-summary-loading">
+        <SkeletonText width="40%" />
+        <SkeletonPanel height={120} style={{ marginTop: '0.75rem' }} />
       </div>
     );
   }

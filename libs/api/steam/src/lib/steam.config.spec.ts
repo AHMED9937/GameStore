@@ -6,7 +6,7 @@ describe('SteamConfig', () => {
     expect(SteamConfig.getSetupResponse('guard-code')).toEqual({
       status: 'setup',
       integration: 'steam',
-      message: 'Steam Guard — not implemented yet',
+      message: 'Steam Guard not implemented yet',
     });
   });
 
@@ -46,13 +46,13 @@ describe('SteamConfig', () => {
   it('returns health response based on configuration', () => {
     vi.stubEnv('STEAM_ENCRYPTION_KEY', 'a'.repeat(64));
     expect(SteamConfig.getHealthResponse().message).toBe(
-      'Steam — configured, not implemented yet',
+      'Steam configured, not implemented yet',
     );
     vi.unstubAllEnvs();
     vi.stubEnv('STEAM_ENCRYPTION_KEY', '');
 
     expect(SteamConfig.getHealthResponse().message).toBe(
-      'Steam — not configured, not implemented yet',
+      'Steam not configured, not implemented yet',
     );
   });
 });

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Post, Put, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
   AuditLogService,
@@ -20,6 +20,9 @@ import {
 
 type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 
+const PUBLIC_GAMES_CACHE_CONTROL =
+  'public, max-age=60, stale-while-revalidate=300';
+
 @Controller('games')
 export class GamesController {
   constructor(
@@ -28,6 +31,7 @@ export class GamesController {
   ) {}
 
   @Public()
+  @Header('Cache-Control', PUBLIC_GAMES_CACHE_CONTROL)
   @Throttle(buildDefaultRouteThrottle(throttleLimitGamesList()))
   @Get()
   findAll() {
@@ -35,6 +39,15 @@ export class GamesController {
   }
 
   @Public()
+  @Header('Cache-Control', PUBLIC_GAMES_CACHE_CONTROL)
+  @Throttle(buildDefaultRouteThrottle(throttleLimitGamesList()))
+  @Get('featured')
+  findFeatured() {
+    return this.games.findFeatured(5);
+  }
+
+  @Public()
+  @Header('Cache-Control', PUBLIC_GAMES_CACHE_CONTROL)
   @Throttle(buildDefaultRouteThrottle(throttleLimitGamesList()))
   @Get(':slug')
   findOne(@Param('slug') slug: string) {

@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Input, Text } from '@gamestore/shared/ui';
-import { getAdminGames, isSetupResponse } from '@gamestore/web/data-access';
+import { AdminGameSearchField } from '../components/admin-game-search-field';
 import type { AdminAccountFormValues } from './admin-accounts.types';
 import styles from './accounts.module.css';
 
@@ -19,24 +18,6 @@ export function AdminAccountForm({
   disabled = false,
   onValuesChange,
 }: AdminAccountFormProps) {
-  const [games, setGames] = useState<{ id: string; title: string }[]>([]);
-
-  useEffect(() => {
-    if (disabled || mode !== 'create') {
-      return;
-    }
-    void getAdminGames().then((result) => {
-      if (isSetupResponse(result) || !Array.isArray(result)) {
-        return;
-      }
-      setGames(
-        result
-          .filter((game) => game.platform === 'steam')
-          .map((game) => ({ id: game.id, title: game.title })),
-      );
-    });
-  }, [disabled, mode]);
-
   const updateField = <K extends keyof AdminAccountFormValues>(
     field: K,
     nextValue: AdminAccountFormValues[K],
@@ -52,26 +33,29 @@ export function AdminAccountForm({
       {mode === 'create' ? (
         <div className={styles.formField}>
           <Text tone="muted">Game</Text>
-          <select
-            className={styles.filterSelect}
+          <AdminGameSearchField
             name="gameId"
-            aria-label="Steam game"
             value={values.gameId}
             disabled={disabled}
-            onChange={(event) => updateField('gameId', event.target.value)}
-          >
-            <option value="">Select Steam game…</option>
-            {games.map((game) => (
-              <option key={game.id} value={game.id}>
-                {game.title}
-              </option>
-            ))}
-          </select>
+            ariaLabel="Steam game"
+            gameFilter="steam"
+            placeholder="Search Steam games…"
+            clearOption={{ label: 'Unassigned (inventory)' }}
+            onChange={(gameId) => updateField('gameId', gameId)}
+          />
+          <Text tone="dim">
+            Unassigned accounts appear in the game edit account picker.
+          </Text>
         </div>
       ) : (
         <div className={styles.formField}>
           <Text tone="muted">Game</Text>
-          <Input name="gameTitle" value={values.gameTitle} disabled readOnly />
+          <Input
+            name="gameTitle"
+            value={values.gameTitle || 'Unassigned (inventory)'}
+            disabled
+            readOnly
+          />
         </div>
       )}
       <div className={styles.formField}>

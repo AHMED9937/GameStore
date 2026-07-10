@@ -1,15 +1,16 @@
-import { CatalogFilters } from './components/catalog-filters';
-import { CatalogGrid } from './components/catalog-grid';
-import { CatalogHero } from './components/catalog-hero';
-import { CatalogSearch } from './components/catalog-search';
+import { ApiError, getGames } from '@gamestore/web/data-access';
+import { CatalogShell } from './components/catalog-shell';
 
-export function CatalogPage() {
-  return (
-    <>
-      <CatalogHero />
-      <CatalogSearch />
-      <CatalogFilters />
-      <CatalogGrid />
-    </>
-  );
+export async function CatalogPage() {
+  let games: Awaited<ReturnType<typeof getGames>> = [];
+
+  try {
+    games = await getGames();
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) {
+      games = [];
+    }
+  }
+
+  return <CatalogShell games={games} />;
 }

@@ -14,12 +14,12 @@ describe('AdminAccountsPage', () => {
     expect(screen.getByTestId('admin-setup-banner').textContent).toBe(
       ADMIN_ACCOUNTS_SETUP_MESSAGE,
     );
-    expect(screen.getByTestId('admin-accounts-game-filter')).toBeTruthy();
+    expect(screen.getByTestId('admin-accounts-filters')).toBeTruthy();
   });
 
   it('renders loading spinner', () => {
     render(<AdminAccountsPage listState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {
@@ -56,10 +56,14 @@ describe('AdminAccountsPage', () => {
     );
     expect(screen.getByTestId('admin-accounts-table')).toBeTruthy();
     expect(screen.getByText('3 / 50')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Edit' })).toBeTruthy();
+    expect(
+      screen.getByRole('button', { name: 'Edit account pool_user_01' }),
+    ).toBeTruthy();
     expect(screen.queryByText(/password/i)).toBeNull();
     expect(
-      screen.getByRole('button', { name: 'Deactivate' }).hasAttribute('disabled'),
+      screen
+        .getByRole('button', { name: 'Deactivate account pool_user_01' })
+        .hasAttribute('disabled'),
     ).toBe(true);
   });
 });

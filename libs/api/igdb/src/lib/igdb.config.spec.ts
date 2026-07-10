@@ -6,7 +6,8 @@ describe('IgdbConfig', () => {
     expect(IgdbConfig.getSetupResponse('search')).toEqual({
       status: 'setup',
       integration: 'igdb',
-      message: 'IGDB search — not implemented yet',
+      message:
+        'IGDB search is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.',
     });
   });
 
@@ -14,7 +15,8 @@ describe('IgdbConfig', () => {
     expect(IgdbConfig.getSetupResponse('import')).toEqual({
       status: 'setup',
       integration: 'igdb',
-      message: 'IGDB import — not implemented yet',
+      message:
+        'IGDB import is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.',
     });
   });
 });

@@ -1,11 +1,20 @@
 import type { MetadataRoute } from 'next';
+import { getGames } from '@gamestore/web/data-access';
+import { buildSitemapEntries, siteConfig } from '@gamestore/shared/seo';
 
-/** SEO setup shell — game URLs added when SEO is implemented */
-export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: process.env['NEXT_PUBLIC_SITE_URL'] ?? 'http://localhost:4200',
-      lastModified: new Date(),
-    },
-  ];
+export const revalidate = 60;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  let games: Awaited<ReturnType<typeof getGames>> = [];
+
+  try {
+    games = await getGames();
+  } catch {
+    games = [];
+  }
+
+  return buildSitemapEntries({
+    games,
+    siteUrl: siteConfig.siteUrl,
+  });
 }

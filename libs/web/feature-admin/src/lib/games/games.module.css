@@ -112,6 +112,125 @@
   cursor: not-allowed;
 }
 
+.discordPanel {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.marketingSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.marketingHeading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.marketingPlatformBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.marketingPlatformPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.marketingPlatformComingSoon {
+  margin-top: 0.25rem;
+}
+
+.discordPanelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.discordHeading {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.discordField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.discordTextarea {
+  width: 100%;
+  min-height: 6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--surface-elevated, transparent);
+  color: var(--text-main);
+  font: inherit;
+  resize: vertical;
+}
+
+.discordPreview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.discordPreviewCard,
+.discordPreviewCardSoldOut {
+  border: 1px solid var(--border-light);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.discordPreviewCardSoldOut {
+  border-left-color: #fee75c;
+}
+
+.discordPreviewTitle {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.discordPreviewMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.discordPreviewImage {
+  width: 100%;
+  max-height: 10rem;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-top: 0.25rem;
+}
+
+.discordPreviewFooter {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -137,6 +256,45 @@
   gap: 0.35rem;
 }
 
+.requirementsGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .requirementsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.requirementsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.requirementsSectionTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.checkboxField {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  color: var(--text-main);
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+
+.checkboxField input {
+  margin-top: 0.2rem;
+}
+
 .formActions {
   display: flex;
   flex-wrap: wrap;
@@ -156,6 +314,110 @@
   gap: 0.5rem;
 }
 
+.mediaRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pickerOption {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
 .formMessage {
   margin-top: 0.75rem;
+}
+
+.tableActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.igdbPanel {
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.igdbCoverUrl {
+  word-break: break-all;
+  font-size: 0.85rem;
+}
+
+.igdbError {
+  color: #f56565;
+  margin-top: 0.25rem;
+}
+
+.featuredLayout {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 960px) {
+  .featuredLayout {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.featuredPanel {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: var(--bg-card);
+}
+
+.featuredList {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.featuredRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+}
+
+.featuredSlot {
+  width: 1.5rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.featuredThumb {
+  width: 48px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.featuredMeta {
+  flex: 1;
+  min-width: 0;
+}
+
+.featuredActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }

@@ -3,7 +3,7 @@
 import { useClerk, useUser } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Container } from '@gamestore/shared/ui';
+import { Container, SkeletonPanel, SkeletonText } from '@gamestore/shared/ui';
 import { deleteAccountAction } from './actions';
 import { ProfileForm } from './profile-form';
 import styles from './account.module.css';
@@ -49,7 +49,8 @@ export default function AccountPage() {
   if (!isLoaded) {
     return (
       <Container className={styles.page}>
-        <p className={styles.muted}>Loading account…</p>
+        <SkeletonText width="28%" />
+        <SkeletonPanel height={240} style={{ marginTop: '1rem' }} />
       </Container>
     );
   }

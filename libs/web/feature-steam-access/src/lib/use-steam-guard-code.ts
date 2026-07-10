@@ -56,7 +56,7 @@ export function useSteamGuardCode(
         const match = err.body.match(/(\d+)\s+seconds/i);
         const seconds = match ? Number.parseInt(match[1], 10) : 60;
         setCooldownSeconds(seconds);
-        setError(`Cooldown active — try again in ${seconds}s`);
+        setError(`Cooldown active try again in ${seconds}s`);
       } else {
         setError(
           err instanceof ApiError
@@ -121,7 +121,7 @@ export function useSteamGuardCode(
           void fetchInitialCode();
           return null;
         }
-        setError(`Cooldown active — try again in ${current - 1}s`);
+        setError(`Cooldown active try again in ${current - 1}s`);
         return current - 1;
       });
     }, 1000);

@@ -4,16 +4,49 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GamesRepository } from '@gamestore/api/data-access';
+import {
+  DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+  GamesRepository,
+  StoreSettingsRepository,
+  resolveSoldOut,
+} from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
 import { Prisma } from '@prisma/client';
+import {
+  hasGameSystemRequirementsContent,
+  parseStoredGameSystemRequirements,
+  serializeGameSystemRequirements,
+  type GameSystemRequirements,
+} from '@gamestore/shared/game-requirements';
 import type { CreateGameDto } from '../../games/games.service';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
+import { EntitlementCleanupService } from '../../entitlements/entitlement-cleanup.service';
+import { DiscordNotifyService } from '../../discord/discord-notify.service';
 import type {
   AdminGameAccountSummary,
   AdminGameMediaDto,
   AdminGameReadinessDto,
   AdminReadinessCheck,
 } from './admin-game.dto';
+import type {
+  AdminGameListFiltersDto,
+  AdminGameStatusFilter,
+} from './admin-game-list-filters.dto';
+import {
+  normalizeEnumFilter,
+  normalizeSearchTerm,
+} from '@gamestore/api/data-access';
+
+export type AdminGameDiscordDto = {
+  configured: boolean;
+  posted: boolean;
+  messageId: string | null;
+  announceDescription: string | null;
+};
 
 export type AdminGameDto = {
   id: string;
@@ -23,26 +56,57 @@ export type AdminGameDto = {
   priceBase: string;
   description: string | null;
   coverImage: string | null;
+  coverCardImage: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
   publishedAt: string | null;
   published: boolean;
+  soldOut: boolean;
+  soldOutManual: boolean;
+  featuredOrder: number | null;
   igdbId: number | null;
+  igdbSyncedAt: string | null;
+  igdbCoverUrl: string | null;
   releaseDate: string | null;
   genres: string[];
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: AdminGameMediaDto[];
   accountSummary: AdminGameAccountSummary;
+  discord: AdminGameDiscordDto;
 };
 
 export type AdminCreateGameDto = CreateGameDto & {
   published?: boolean;
+  soldOut?: boolean;
   genres?: string[];
   releaseDate?: string | null;
-  requirementsMin?: string | null;
-  requirementsRecommended?: string | null;
+  requirementsMin?: GameSystemRequirements | null;
+  requirementsRecommended?: GameSystemRequirements | null;
+  discordAnnounceDescription?: string | null;
 };
 
 export type AdminUpdateGameDto = Partial<AdminCreateGameDto>;
+
+export type AdminFeaturedGameItemDto = {
+  id: string;
+  title: string;
+  slug: string;
+  platform: string;
+  priceBase: string;
+  coverImage: string | null;
+  coverCardImage: string | null;
+  featuredOrder: number | null;
+  releaseDate: string | null;
+};
+
+export type AdminFeaturedGamesDto = {
+  featured: AdminFeaturedGameItemDto[];
+  available: AdminFeaturedGameItemDto[];
+};
+
+const MAX_FEATURED_GAMES = 5;
 
 type AdminGameRecord = NonNullable<
   Awaited<ReturnType<GamesRepository['findByIdAdmin']>>
@@ -54,6 +118,16 @@ function slugifyTitle(title: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function normalizeOptionalAdminString(
+  value: string | null | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value?.trim() ?? '';
+  return trimmed ? trimmed : null;
 }
 
 function toMediaDto(
@@ -74,11 +148,39 @@ export class AdminGamesService {
   constructor(
     private readonly games: GamesRepository,
     private readonly prisma: PrismaService,
+    private readonly entitlementCleanup: EntitlementCleanupService,
+    private readonly storeSettings: StoreSettingsRepository,
+    private readonly discordNotify: DiscordNotifyService,
   ) {}
 
-  async findAll(): Promise<AdminGameDto[]> {
-    const rows = await this.games.findAllAdmin();
-    return Promise.all(rows.map((row) => this.toAdminGameDto(row)));
+  async findAll(filters?: AdminGameListFiltersDto): Promise<AdminGameDto[]> {
+    const rows = await this.games.findAllAdmin(this.toGameFilters(filters));
+    const summaries = await this.getAccountSummariesBatch(rows.map((row) => row.id));
+    return rows.map((row) =>
+      this.toAdminGameDtoSync(
+        row,
+        summaries.get(row.id) ?? { total: 0, active: 0, hasActivePool: false },
+      ),
+    );
+  }
+
+  private toGameFilters(filters?: AdminGameListFiltersDto): {
+    q?: string;
+    platform?: string;
+    status?: AdminGameStatusFilter;
+  } {
+    const q = normalizeSearchTerm(filters?.q);
+    const platform = normalizeSearchTerm(filters?.platform);
+    const status = normalizeEnumFilter(filters?.status, [
+      'published',
+      'draft',
+      'sold_out',
+    ] as const);
+    return {
+      ...(q ? { q } : {}),
+      ...(platform ? { platform } : {}),
+      ...(status ? { status } : {}),
+    };
   }
 
   async findOne(id: string): Promise<AdminGameDto> {
@@ -94,11 +196,19 @@ export class AdminGamesService {
 
     try {
       const game = await this.games.create(this.buildCreateInput(dto));
-      const adminGame = await this.games.findByIdAdmin(game.id);
-      if (!adminGame) {
-        throw new NotFoundException(`No game found with id "${game.id}"`);
+      let adminGame = await this.findOne(game.id);
+      if (dto.discordAnnounceDescription !== undefined) {
+        await this.games.setDiscordAnnounceDescription(
+          game.id,
+          normalizeOptionalAdminString(dto.discordAnnounceDescription) ?? null,
+        );
+        adminGame = await this.findOne(game.id);
       }
-      return this.toAdminGameDto(adminGame);
+      if (dto.published === true) {
+        await this.syncDiscordForGame(adminGame, 'publish');
+        adminGame = await this.findOne(game.id);
+      }
+      return adminGame;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -131,9 +241,56 @@ export class AdminGamesService {
       }
     }
 
+    if (dto.published === false && existing.publishedAt) {
+      await this.entitlementCleanup.revokeAllLicensesForGame(id);
+    }
+
+    if (dto.soldOut === false) {
+      const accountSummary = await this.getAccountSummary(id);
+      const willBePublished =
+        dto.published === true ||
+        (dto.published !== false && existing.publishedAt !== null);
+      if (willBePublished && !accountSummary.hasActivePool) {
+        throw new BadRequestException(
+          'Cannot mark game as available without an active pool account',
+        );
+      }
+    }
+
+    const becomingPublished =
+      dto.published === true && existing.publishedAt === null;
+    const becomingUnpublished =
+      dto.published === false && existing.publishedAt !== null;
+    const stayingPublished =
+      existing.publishedAt !== null && dto.published !== false;
+    const discordState = await this.games.getDiscordAnnouncementState(id);
+
+    if (becomingUnpublished && discordState.discordPublishMessageId) {
+      await this.deleteDiscordAnnouncement(
+        id,
+        discordState.discordPublishMessageId,
+      );
+    }
+
     try {
       await this.games.update(id, this.buildUpdateInput(dto, existing));
-      return this.findOne(id);
+      if (dto.discordAnnounceDescription !== undefined) {
+        await this.games.setDiscordAnnounceDescription(
+          id,
+          normalizeOptionalAdminString(dto.discordAnnounceDescription) ?? null,
+        );
+      }
+      let updated = await this.findOne(id);
+      if (becomingPublished) {
+        await this.syncDiscordForGame(updated, 'publish');
+        updated = await this.findOne(id);
+      } else if (stayingPublished && this.shouldSyncDiscordUpdate(dto)) {
+        await this.syncDiscordForGame(
+          this.applyDiscordDtoOverrides(updated, dto),
+          'update',
+        );
+      }
+      return updated;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -152,6 +309,20 @@ export class AdminGamesService {
   }
 
   async remove(id: string): Promise<{ id: string; deleted: true }> {
+    const existing = await this.games.findByIdAdmin(id);
+    if (!existing) {
+      throw new NotFoundException(`No game found with id "${id}"`);
+    }
+
+    await this.entitlementCleanup.prepareGameForDeletion(id);
+
+    const discordState = await this.games.getDiscordAnnouncementState(id);
+    if (discordState.discordPublishMessageId) {
+      await this.discordNotify.deleteGameAnnouncement(
+        discordState.discordPublishMessageId,
+      );
+    }
+
     try {
       await this.games.delete(id);
       return { id, deleted: true };
@@ -162,8 +333,93 @@ export class AdminGamesService {
       ) {
         throw new NotFoundException(`No game found with id "${id}"`);
       }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Cannot delete game while related records still exist',
+        );
+      }
       throw error;
     }
+  }
+
+  async bulkUnpublish(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.update(id, { published: false });
+    });
+  }
+
+  async bulkDelete(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.remove(id);
+    });
+  }
+
+  async getFeaturedGames(q?: string): Promise<AdminFeaturedGamesDto> {
+    const games = await this.games.findPublishedEligibleForFeatured();
+    const featured = games
+      .filter((game) => game.featuredOrder !== null)
+      .sort((a, b) => (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0))
+      .map((game) => this.toFeaturedGameItemDto(game));
+    const featuredIds = new Set(featured.map((game) => game.id));
+    const search = normalizeSearchTerm(q)?.toLowerCase();
+    const available = games
+      .filter((game) => !featuredIds.has(game.id))
+      .filter((game) => {
+        if (!search) {
+          return true;
+        }
+        return (
+          game.title.toLowerCase().includes(search) ||
+          game.slug.toLowerCase().includes(search)
+        );
+      })
+      .map((game) => this.toFeaturedGameItemDto(game));
+
+    return { featured, available };
+  }
+
+  async updateFeaturedGames(gameIds: string[]): Promise<AdminFeaturedGamesDto> {
+    if (gameIds.length > MAX_FEATURED_GAMES) {
+      throw new BadRequestException(
+        `At most ${MAX_FEATURED_GAMES} games can be featured`,
+      );
+    }
+
+    const uniqueIds = [...new Set(gameIds)];
+    if (uniqueIds.length !== gameIds.length) {
+      throw new BadRequestException('Duplicate game ids are not allowed');
+    }
+
+    if (uniqueIds.length === 0) {
+      await this.games.setFeaturedOrder([]);
+      return this.getFeaturedGames();
+    }
+
+    const games = await this.prisma.game.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true, publishedAt: true },
+    });
+
+    if (games.length !== uniqueIds.length) {
+      throw new BadRequestException('One or more games were not found');
+    }
+
+    const unpublished = games.filter((game) => game.publishedAt === null);
+    if (unpublished.length > 0) {
+      throw new BadRequestException('Only published games can be featured');
+    }
+
+    const items = uniqueIds.map((id, index) => ({
+      id,
+      featuredOrder: index + 1,
+    }));
+    await this.games.setFeaturedOrder(items);
+    return this.getFeaturedGames();
   }
 
   async getReadiness(id: string): Promise<AdminGameReadinessDto> {
@@ -178,6 +434,9 @@ export class AdminGamesService {
     const activationCount = game.media.filter(
       (m) => m.type === 'activation',
     ).length;
+    const defaultActivationUrl = await this.storeSettings.get(
+      DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+    );
 
     const checks: AdminReadinessCheck[] = [
       {
@@ -231,9 +490,13 @@ export class AdminGamesService {
       {
         id: 'requirements',
         label: 'Min and recommended requirements',
-        passed: Boolean(
-          game.requirementsMin?.trim() && game.requirementsRecommended?.trim(),
-        ),
+        passed:
+          hasGameSystemRequirementsContent(
+            parseStoredGameSystemRequirements(game.requirementsMin),
+          ) &&
+          hasGameSystemRequirementsContent(
+            parseStoredGameSystemRequirements(game.requirementsRecommended),
+          ),
         required: false,
       },
       {
@@ -245,7 +508,7 @@ export class AdminGamesService {
       {
         id: 'activation',
         label: 'Activation walkthrough media',
-        passed: activationCount >= 1,
+        passed: activationCount >= 1 || defaultActivationUrl !== null,
         required: false,
       },
     ];
@@ -261,8 +524,31 @@ export class AdminGamesService {
     return slugifyTitle(title);
   }
 
+  private async toDiscordDtoForGame(gameId: string): Promise<AdminGameDiscordDto> {
+    const state = await this.games.getDiscordAnnouncementState(gameId);
+    return {
+      configured: this.discordNotify.isWebhookConfigured(),
+      posted: Boolean(state.discordPublishMessageId),
+      messageId: state.discordPublishMessageId,
+      announceDescription: state.discordAnnounceDescription,
+    };
+  }
+
   private async toAdminGameDto(game: AdminGameRecord): Promise<AdminGameDto> {
-    const accountSummary = await this.getAccountSummary(game.id);
+    const [accountSummary, discord] = await Promise.all([
+      this.getAccountSummary(game.id),
+      this.toDiscordDtoForGame(game.id),
+    ]);
+    return {
+      ...this.toAdminGameDtoSync(game, accountSummary),
+      discord,
+    };
+  }
+
+  private toAdminGameDtoSync(
+    game: AdminGameRecord,
+    accountSummary: AdminGameAccountSummary,
+  ): AdminGameDto {
     return {
       id: game.id,
       title: game.title,
@@ -271,16 +557,68 @@ export class AdminGamesService {
       priceBase: game.priceBase.toString(),
       description: game.description,
       coverImage: game.coverImage,
+      coverCardImage: game.coverCardImage,
+      metaTitle: game.metaTitle,
+      metaDescription: game.metaDescription,
+      ogImage: game.ogImage,
       publishedAt: game.publishedAt?.toISOString() ?? null,
       published: game.publishedAt !== null,
+      soldOutManual: game.soldOut,
+      soldOut: resolveSoldOut(game.soldOut, accountSummary.hasActivePool),
+      featuredOrder: game.featuredOrder,
       igdbId: game.igdbId,
+      igdbSyncedAt: game.igdbSyncedAt?.toISOString() ?? null,
+      igdbCoverUrl: game.igdbCoverUrl,
       releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
       genres: game.genres,
-      requirementsMin: game.requirementsMin,
-      requirementsRecommended: game.requirementsRecommended,
+      requirementsMin: parseStoredGameSystemRequirements(game.requirementsMin),
+      requirementsRecommended: parseStoredGameSystemRequirements(
+        game.requirementsRecommended,
+      ),
       media: game.media.map(toMediaDto),
       accountSummary,
+      discord: {
+        configured: this.discordNotify.isWebhookConfigured(),
+        posted: false,
+        messageId: null,
+        announceDescription: null,
+      },
     };
+  }
+
+  private async getAccountSummariesBatch(
+    gameIds: string[],
+  ): Promise<Map<string, AdminGameAccountSummary>> {
+    if (gameIds.length === 0) {
+      return new Map();
+    }
+
+    const accounts = await this.prisma.gameAccount.findMany({
+      where: { gameId: { in: gameIds } },
+      select: { gameId: true, isActive: true },
+    });
+
+    const counts = new Map<string, { total: number; active: number }>();
+    for (const account of accounts) {
+      const current = counts.get(account.gameId) ?? { total: 0, active: 0 };
+      current.total += 1;
+      if (account.isActive) {
+        current.active += 1;
+      }
+      counts.set(account.gameId, current);
+    }
+
+    const summaries = new Map<string, AdminGameAccountSummary>();
+    for (const gameId of gameIds) {
+      const summary = counts.get(gameId) ?? { total: 0, active: 0 };
+      summaries.set(gameId, {
+        total: summary.total,
+        active: summary.active,
+        hasActivePool: summary.active > 0,
+      });
+    }
+
+    return summaries;
   }
 
   private async getAccountSummary(
@@ -303,6 +641,102 @@ export class AdminGamesService {
     }
   }
 
+  private applyDiscordDtoOverrides(
+    game: AdminGameDto,
+    dto: AdminUpdateGameDto,
+  ): AdminGameDto {
+    const announceDescription =
+      dto.discordAnnounceDescription !== undefined
+        ? normalizeOptionalAdminString(dto.discordAnnounceDescription) ?? null
+        : game.discord.announceDescription;
+
+    return {
+      ...game,
+      ...(dto.title !== undefined ? { title: dto.title } : {}),
+      ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
+      ...(dto.priceBase !== undefined
+        ? { priceBase: String(dto.priceBase) }
+        : {}),
+      ...(dto.coverImage !== undefined ? { coverImage: dto.coverImage } : {}),
+      ...(dto.soldOut !== undefined
+        ? {
+            soldOutManual: dto.soldOut,
+            soldOut: resolveSoldOut(dto.soldOut, game.accountSummary.hasActivePool),
+          }
+        : {}),
+      discord: {
+        ...game.discord,
+        announceDescription,
+      },
+    };
+  }
+
+  private shouldSyncDiscordUpdate(dto: AdminUpdateGameDto): boolean {
+    return (
+      dto.title !== undefined ||
+      dto.slug !== undefined ||
+      dto.priceBase !== undefined ||
+      dto.coverImage !== undefined ||
+      dto.soldOut !== undefined ||
+      dto.discordAnnounceDescription !== undefined
+    );
+  }
+
+  private buildDiscordPayload(game: AdminGameDto) {
+    return {
+      title: game.title,
+      slug: game.slug,
+      coverUrl: game.coverImage ?? game.coverCardImage ?? game.igdbCoverUrl,
+      platform: game.platform,
+      price: game.priceBase,
+      soldOut: game.soldOut,
+      announceDescription: game.discord.announceDescription,
+    };
+  }
+
+  private async deleteDiscordAnnouncement(
+    gameId: string,
+    messageId: string,
+  ): Promise<void> {
+    try {
+      await this.discordNotify.deleteGameAnnouncement(messageId);
+      await this.games.setDiscordPublishMessageId(gameId, null);
+    } catch {
+      // Discord errors must not block admin APIs
+    }
+  }
+
+  private async syncDiscordForGame(
+    game: AdminGameDto,
+    intent: 'publish' | 'update',
+  ): Promise<void> {
+    try {
+      const payload = this.buildDiscordPayload(game);
+      if (intent === 'publish') {
+        const messageId = await this.discordNotify.publishGameAnnouncement(payload);
+        if (messageId) {
+          await this.games.setDiscordPublishMessageId(game.id, messageId);
+        }
+        return;
+      }
+
+      const messageId = game.discord.messageId;
+      if (messageId) {
+        await this.discordNotify.updateGameAnnouncement(messageId, payload);
+        return;
+      }
+
+      if (game.published) {
+        const newMessageId = await this.discordNotify.publishGameAnnouncement(payload);
+        if (newMessageId) {
+          await this.games.setDiscordPublishMessageId(game.id, newMessageId);
+        }
+      }
+    } catch {
+      // Discord errors must not block admin APIs
+    }
+  }
+
   private buildCreateInput(dto: AdminCreateGameDto): Prisma.GameCreateInput {
     const publishedAt =
       dto.published === true
@@ -318,11 +752,23 @@ export class AdminGamesService {
       priceBase: dto.priceBase,
       description: dto.description,
       coverImage: dto.coverImage,
+      ...(dto.metaTitle !== undefined
+        ? { metaTitle: normalizeOptionalAdminString(dto.metaTitle) }
+        : {}),
+      ...(dto.metaDescription !== undefined
+        ? { metaDescription: normalizeOptionalAdminString(dto.metaDescription) }
+        : {}),
+      ...(dto.ogImage !== undefined
+        ? { ogImage: normalizeOptionalAdminString(dto.ogImage) }
+        : {}),
       publishedAt,
       genres: dto.genres ?? [],
       releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : undefined,
-      requirementsMin: dto.requirementsMin,
-      requirementsRecommended: dto.requirementsRecommended,
+      requirementsMin: serializeGameSystemRequirements(dto.requirementsMin),
+      requirementsRecommended: serializeGameSystemRequirements(
+        dto.requirementsRecommended,
+      ),
+      soldOut: dto.soldOut ?? false,
     };
   }
 
@@ -347,6 +793,15 @@ export class AdminGamesService {
     if (dto.coverImage !== undefined) {
       data.coverImage = dto.coverImage;
     }
+    if (dto.metaTitle !== undefined) {
+      data.metaTitle = normalizeOptionalAdminString(dto.metaTitle);
+    }
+    if (dto.metaDescription !== undefined) {
+      data.metaDescription = normalizeOptionalAdminString(dto.metaDescription);
+    }
+    if (dto.ogImage !== undefined) {
+      data.ogImage = normalizeOptionalAdminString(dto.ogImage);
+    }
     if (dto.genres !== undefined) {
       data.genres = dto.genres;
     }
@@ -354,10 +809,12 @@ export class AdminGamesService {
       data.releaseDate = dto.releaseDate ? new Date(dto.releaseDate) : null;
     }
     if (dto.requirementsMin !== undefined) {
-      data.requirementsMin = dto.requirementsMin;
+      data.requirementsMin = serializeGameSystemRequirements(dto.requirementsMin);
     }
     if (dto.requirementsRecommended !== undefined) {
-      data.requirementsRecommended = dto.requirementsRecommended;
+      data.requirementsRecommended = serializeGameSystemRequirements(
+        dto.requirementsRecommended,
+      );
     }
 
     if (dto.published === true) {
@@ -366,8 +823,13 @@ export class AdminGamesService {
         : new Date();
     } else if (dto.published === false) {
       data.publishedAt = null;
+      data.featuredOrder = null;
     } else if (dto.publishedAt !== undefined) {
       data.publishedAt = dto.publishedAt ? new Date(dto.publishedAt) : null;
+    }
+
+    if (dto.soldOut !== undefined) {
+      data.soldOut = dto.soldOut;
     }
 
     if (dto.platform !== undefined && dto.platform !== existing.platform) {
@@ -375,5 +837,31 @@ export class AdminGamesService {
     }
 
     return data;
+  }
+
+  private toFeaturedGameItemDto(
+    game: {
+      id: string;
+      title: string;
+      slug: string;
+      platform: string;
+      priceBase: { toString(): string };
+      coverImage: string | null;
+      coverCardImage: string | null;
+      featuredOrder: number | null;
+      releaseDate: Date | null;
+    },
+  ): AdminFeaturedGameItemDto {
+    return {
+      id: game.id,
+      title: game.title,
+      slug: game.slug,
+      platform: game.platform,
+      priceBase: game.priceBase.toString(),
+      coverImage: game.coverImage,
+      coverCardImage: game.coverCardImage,
+      featuredOrder: game.featuredOrder,
+      releaseDate: game.releaseDate?.toISOString().slice(0, 10) ?? null,
+    };
   }
 }

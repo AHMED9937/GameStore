@@ -1,13 +1,11 @@
-import { HomeFeaturedGrid } from './components/home-featured-grid';
 import { HomeHero } from './components/home-hero';
-import { HomePromoBanner } from './components/home-promo-banner';
+import { HomeStoreHighlight } from './components/home-store-highlight';
 
 export function HomePage() {
   return (
     <>
       <HomeHero />
-      <HomeFeaturedGrid />
-      <HomePromoBanner />
+      <HomeStoreHighlight />
     </>
   );
 }

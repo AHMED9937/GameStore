@@ -19,7 +19,7 @@ describe('AdminLicensesPage', () => {
 
   it('renders loading spinner', () => {
     render(<AdminLicensesPage listState={{ status: 'loading' }} />);
-    expect(screen.getByText('Loading…')).toBeTruthy();
+    expect(screen.getByTestId('admin-async-loading')).toBeTruthy();
   });
 
   it('renders error message', () => {
@@ -55,11 +55,16 @@ describe('AdminLicensesPage', () => {
     );
     expect(screen.getByTestId('admin-licenses-table')).toBeTruthy();
     expect(screen.getByText('GS-****-ABCD')).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Edit' }).getAttribute('href')).toBe(
-      '/admin/licenses/lic-1',
-    );
-    expect(screen.getByRole('button', { name: 'Revoke' }).hasAttribute('disabled')).toBe(
-      true,
-    );
+    expect(
+      screen
+        .getByRole('button', { name: 'Edit license GS-****-ABCD' })
+        .closest('a')
+        ?.getAttribute('href'),
+    ).toBe('/admin/licenses/lic-1');
+    expect(
+      screen
+        .getByRole('button', { name: 'Revoke license GS-****-ABCD' })
+        .hasAttribute('disabled'),
+    ).toBe(true);
   });
 });

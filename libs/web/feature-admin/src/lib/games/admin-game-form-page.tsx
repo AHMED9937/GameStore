@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Text } from '@gamestore/shared/ui';
@@ -86,6 +87,11 @@ export function AdminGameFormPage({ formState }: AdminGameFormPageProps) {
                 Save the game first, then use the Publish tab on the edit page.
               </Text>
             }
+            marketingSection={
+              <Text tone="dim">
+                Save the game first, then use the Marketing tab on the edit page.
+              </Text>
+            }
           />
           <AdminGameFormActions />
         </AdminPageShell>
@@ -98,7 +104,12 @@ export function AdminGameFormPage({ formState }: AdminGameFormPageProps) {
       <AdminPageShell>
         <AdminPageHeader
           title="New game"
-          description="Add a catalog title manually or import metadata from IGDB."
+          description={
+            <Text tone="muted">
+              Add a catalog title manually or{' '}
+              <Link href="/admin/igdb">import metadata from IGDB</Link>.
+            </Text>
+          }
         />
         <form onSubmit={(event) => void handleSubmit(event)}>
           <AdminGameForm
@@ -111,6 +122,11 @@ export function AdminGameFormPage({ formState }: AdminGameFormPageProps) {
             publishSection={
               <Text tone="dim">
                 Save the game first, then use the Publish tab on the edit page.
+              </Text>
+            }
+            marketingSection={
+              <Text tone="dim">
+                Save the game first, then use the Marketing tab on the edit page.
               </Text>
             }
           />

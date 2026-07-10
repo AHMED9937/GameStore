@@ -36,7 +36,7 @@ export function AdminIgdbSearch({
         aria-label="Search IGDB"
         onChange={(event) => onQueryChange(event.target.value)}
       />
-      <Button type="submit" disabled={isDisabled || query.trim().length === 0}>
+      <Button type="submit" disabled={isDisabled}>
         {searching ? 'Searching…' : 'Search'}
       </Button>
     </form>

@@ -10,5 +10,31 @@
     "moduleResolution": "node"
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"]
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../../libs/shared/marketing"
+    },
+    {
+      "path": "../../libs/api/stripe"
+    },
+    {
+      "path": "../../libs/shared/game-requirements"
+    },
+    {
+      "path": "../../libs/api/steam"
+    },
+    {
+      "path": "../../libs/api/igdb"
+    },
+    {
+      "path": "../../libs/api/prisma"
+    },
+    {
+      "path": "../../libs/api/data-access"
+    },
+    {
+      "path": "../../libs/api/auth"
+    }
+  ]
 }

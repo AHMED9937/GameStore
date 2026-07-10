@@ -1,6 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@gamestore/api/prisma';
 import type { Prisma } from '@prisma/client';
+import {
+  buildContainsFilter,
+  buildExactFilter,
+  normalizeSearchTerm,
+} from './admin-list-filters';
+
+export type AdminOrderListFilters = {
+  q?: string;
+  status?: string;
+  orderType?: string;
+};
 
 const gameSummarySelect = {
   id: true,
@@ -17,6 +28,8 @@ const licenseSummarySelect = {
 
 export type CreatePendingOrderInput = {
   gameId: string;
+  gameTitleSnapshot?: string;
+  gameSlugSnapshot?: string;
   stripeSessionId: string;
   amount: Prisma.Decimal | string | number;
   currency?: string;
@@ -39,6 +52,8 @@ export class OrdersRepository {
     return this.prisma.order.create({
       data: {
         game: { connect: { id: data.gameId } },
+        gameTitleSnapshot: data.gameTitleSnapshot,
+        gameSlugSnapshot: data.gameSlugSnapshot,
         stripeSessionId: data.stripeSessionId,
         amount: data.amount,
         currency: data.currency ?? 'USD',
@@ -72,8 +87,32 @@ export class OrdersRepository {
     });
   }
 
-  findAll() {
+  findAll(filters?: AdminOrderListFilters) {
+    const where: Prisma.OrderWhereInput = {};
+
+    const q = normalizeSearchTerm(filters?.q);
+    if (q) {
+      where.OR = [
+        { gameTitleSnapshot: buildContainsFilter(q)! },
+        { gameSlugSnapshot: buildContainsFilter(q)! },
+        { buyerEmail: buildContainsFilter(q)! },
+        { game: { title: buildContainsFilter(q)! } },
+        { game: { slug: buildContainsFilter(q)! } },
+      ];
+    }
+
+    const status = buildExactFilter(filters?.status);
+    if (status) {
+      where.status = status;
+    }
+
+    const orderType = buildExactFilter(filters?.orderType);
+    if (orderType) {
+      where.orderType = orderType;
+    }
+
     return this.prisma.order.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         game: { select: gameSummarySelect },
@@ -106,5 +145,9 @@ export class OrdersRepository {
       where: { stripeSessionId },
       data: { status: 'failed' },
     });
+  }
+
+  deleteById(id: string) {
+    return this.prisma.order.delete({ where: { id } });
   }
 }

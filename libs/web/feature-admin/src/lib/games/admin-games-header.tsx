@@ -8,9 +8,21 @@ export function AdminGamesHeader() {
       title="Games"
       description="Create, edit, and publish catalog titles."
       actions={
-        <Link href="/admin/games/new">
-          <Button type="button">Add game</Button>
-        </Link>
+        <>
+          <Link href="/admin/games/featured">
+            <Button type="button" variant="secondary">
+              Manage featured
+            </Button>
+          </Link>
+          <Link href="/admin/igdb">
+            <Button type="button" variant="secondary">
+              Import from IGDB
+            </Button>
+          </Link>
+          <Link href="/admin/games/new">
+            <Button type="button">Add game</Button>
+          </Link>
+        </>
       }
     />
   );

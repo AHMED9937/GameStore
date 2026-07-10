@@ -8,4 +8,4 @@ export type OrderFulfillmentState =
       order: OrderSummary;
       license: OrderLicense;
     }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; signInHref?: string };

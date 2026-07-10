@@ -17,6 +17,8 @@ const sampleListItem = {
   gameTitle: 'Demo Game',
   ownerEmail: 'buyer@example.com',
   status: 'available',
+  source: 'admin',
+  expiresAt: null,
 };
 
 describe('AdminLicensesController', () => {
@@ -51,6 +53,8 @@ describe('AdminLicensesController', () => {
       activatedAt: null,
     }),
     remove: vi.fn().mockResolvedValue({ id: 'license-1', deleted: true as const }),
+    bulkRevoke: vi.fn().mockResolvedValue({ succeeded: ['license-1'], failed: [] }),
+    bulkDelete: vi.fn().mockResolvedValue({ succeeded: ['license-1'], failed: [] }),
   } satisfies AdminLicensesService;
 
   const auditLogService = {
@@ -61,9 +65,10 @@ describe('AdminLicensesController', () => {
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
   const request = { headers: {}, ip: '127.0.0.1' };
 
-  it('findAll returns admin licenses', async () => {
-    await expect(controller.findAll()).resolves.toEqual([sampleListItem]);
-    expect(licenses.findAll).toHaveBeenCalled();
+  it('findAll returns admin licenses and forwards Filters', async () => {
+    const Filters = { game: 'demo', source: 'admin', expires: 'lifetime' as const };
+    await expect(controller.findAll(Filters)).resolves.toEqual([sampleListItem]);
+    expect(licenses.findAll).toHaveBeenCalledWith(Filters);
   });
 
   it('generateKey records audit log', async () => {
@@ -143,6 +148,20 @@ describe('AdminLicensesController', () => {
       expect.objectContaining({
         action: 'admin.license.delete',
         resourceId: 'license-1',
+      }),
+    );
+  });
+
+  it('bulkRevoke records bulk audit log', async () => {
+    await controller.bulkRevoke(
+      { ids: ['license-1'] },
+      adminUser,
+      request as never,
+    );
+    expect(licenses.bulkRevoke).toHaveBeenCalledWith(['license-1']);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.license.bulk_revoke',
       }),
     );
   });

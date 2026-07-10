@@ -1,8 +1,8 @@
-import { ApiError, getGameBySlug, type GameDetail } from '@gamestore/web/data-access';
+import { ApiError, apiErrorMessage, getGameBySlug, type GameDetail } from '@gamestore/web/data-access';
 import { CheckoutPage, type CheckoutAsyncState } from '@gamestore/web/feature-checkout';
 
 type CheckoutRouteProps = {
-  searchParams: Promise<{ game?: string; cancelled?: string }>;
+  searchParams: Promise<{ game?: string; cancelled?: string; session_id?: string }>;
 };
 
 async function resolveGameState(
@@ -14,6 +14,12 @@ async function resolveGameState(
 
   try {
     const game = await getGameBySlug(gameSlug.trim());
+    if (game.soldOut) {
+      return {
+        status: 'error',
+        message: 'This game is currently sold out.',
+      };
+    }
     return { status: 'success', data: game };
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
@@ -22,7 +28,10 @@ async function resolveGameState(
         message: 'This game could not be found.',
       };
     }
-    return undefined;
+    return {
+      status: 'error',
+      message: apiErrorMessage(error, 'Could not reach the server. Try again.'),
+    };
   }
 }
 
@@ -35,6 +44,7 @@ export default async function Page({ searchParams }: CheckoutRouteProps) {
     <CheckoutPage
       gameSlug={gameSlug}
       cancelled={params.cancelled === '1'}
+      sessionId={params.session_id ?? null}
       gameState={gameState}
     />
   );

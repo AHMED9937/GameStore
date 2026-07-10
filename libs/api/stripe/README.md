@@ -1,6 +1,6 @@
 # @gamestore/api/stripe
 
-Stripe integration shell (Phase 4 — setup only). No Checkout Sessions or webhooks yet.
+Stripe integration shell (Phase 4 setup only). No Checkout Sessions or webhooks yet.
 
 ## Environment variables
 
@@ -12,7 +12,7 @@ Documented in the workspace root `.env.example`. All values are **optional** unt
 | `STRIPE_WEBHOOK_SECRET` | NestJS API | `whsec_...` |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Next.js (browser) | `pk_test_...` or `pk_live_...` |
 
-`StripeConfig.readEnv()` reads these from `process.env`. `StripeConfig.getEnvStatus()` validates format only — no Stripe API calls.
+`StripeConfig.readEnv()` reads these from `process.env`. `StripeConfig.getEnvStatus()` validates format only no Stripe API calls.
 
 ## Commands
 

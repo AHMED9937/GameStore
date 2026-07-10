@@ -1,23 +1,36 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Container } from '@gamestore/shared/ui';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Container } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
+  bulkDeactivateAdminAccounts,
+  bulkDeleteAdminAccounts,
   deactivateAdminAccount,
   getAdminAccounts,
   isSetupResponse,
   reactivateAdminAccount,
+  type AdminAccountListFilters,
   type AdminAccountRecord,
 } from '@gamestore/web/data-access';
+import { AdminActionFeedback } from '../components/admin-action-feedback';
 import { AdminAsyncView } from '../components/admin-async-view';
+import { AdminBulkToolbar } from '../components/admin-bulk-toolbar';
 import { AdminPageShell } from '../components/admin-page-shell';
+import { useAdminRowSelection } from '../components/use-admin-row-selection';
 import type { AdminAsyncState } from '../types/admin-async-state';
+import { useAdminActionFeedback } from '../hooks/use-admin-action-feedback';
 import { useAdminListState } from '../hooks/use-admin-resource';
+import { useAdminListFilters } from '../hooks/use-admin-list-filters';
+import { formatBulkActionSummary } from '../utils/bulk-action-summary';
+import { resolveAdminTableRows } from '../utils/resolve-admin-table-rows';
 import { AdminAccountsEmpty } from './admin-accounts-empty';
-import { AdminAccountsGameFilter } from './admin-accounts-game-filter';
 import { AdminAccountsHeader } from './admin-accounts-header';
 import { AdminAccountsTable } from './admin-accounts-table';
+import {
+  AdminAccountsFilters,
+  type AdminAccountFilterDraft,
+} from './admin-accounts-filters';
 import type { AdminAccountListItem } from './admin-accounts.types';
 
 export type AdminAccountsPageProps = {
@@ -43,20 +56,44 @@ function parseAccountsList(data: unknown): AdminAccountListItem[] {
     : [];
 }
 
+function canDeleteAccount(account: AdminAccountListItem): boolean {
+  return !account.isActive && account.activeUsersCount === 0;
+}
+
+const emptyAccountFilters: AdminAccountFilterDraft = {
+  q: '',
+  status: '',
+  platform: '',
+};
+
 export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
   const isControlled = listState !== undefined;
-  const [gameId, setGameId] = useState('');
+  const { draft, setDraft, activeFilters, hasActiveFilters } =
+    useAdminListFilters<AdminAccountFilterDraft>({
+      initial: emptyAccountFilters,
+      textKeys: ['q'],
+    });
+  const queryFilters = useMemo<AdminAccountListFilters>(
+    () => ({
+      ...(activeFilters.q ? { q: activeFilters.q } : {}),
+      ...(activeFilters.status
+        ? { status: activeFilters.status as AdminAccountListFilters['status'] }
+        : {}),
+      ...(activeFilters.platform ? { platform: activeFilters.platform } : {}),
+    }),
+    [activeFilters],
+  );
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [reactivatingId, setReactivatingId] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const actionFeedback = useAdminActionFeedback();
   const [accounts, setAccounts] = useState<AdminAccountListItem[]>([]);
 
-  const fetchAccounts = useCallback(
-    () => getAdminAccounts(gameId || undefined),
-    [gameId],
+  const { state: fetchedState } = useAdminListState(
+    () => getAdminAccounts(queryFilters),
+    parseAccountsList,
+    [queryFilters],
   );
-
-  const fetchedState = useAdminListState(fetchAccounts, parseAccountsList, [gameId]);
   const state = listState ?? fetchedState;
 
   useEffect(() => {
@@ -64,6 +101,100 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
       setAccounts(state.data);
     }
   }, [isControlled, state]);
+
+  const tableAccounts = resolveAdminTableRows(isControlled, state, accounts);
+
+  const accountById = useMemo(
+    () => new Map(tableAccounts.map((account) => [account.id, account])),
+    [tableAccounts],
+  );
+
+  const selection = useAdminRowSelection({
+    rowIds: tableAccounts.map((account) => account.id),
+    isRowSelectable: (id) => {
+      const account = accountById.get(id);
+      if (!account) {
+        return false;
+      }
+      return account.isActive || canDeleteAccount(account);
+    },
+  });
+
+  const refreshList = useCallback(async () => {
+    if (isControlled) {
+      return;
+    }
+    const result = await getAdminAccounts(queryFilters);
+    if (!isSetupResponse(result)) {
+      setAccounts(parseAccountsList(result));
+    }
+  }, [isControlled, queryFilters]);
+
+  const handleBulkDeactivate = useCallback(async () => {
+    if (isControlled || selection.selectedIds.length === 0) {
+      return;
+    }
+    if (
+      !window.confirm(
+        `Deactivate ${selection.selectedIds.length} selected account(s)?`,
+      )
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    actionFeedback.clearForAction();
+    try {
+      const result = await bulkDeactivateAdminAccounts(selection.selectedIds);
+      if (isSetupResponse(result)) {
+        actionFeedback.setError(result.message);
+        return;
+      }
+      actionFeedback.setMessage(formatBulkActionSummary(result, 'deactivated'));
+      selection.clearSelection();
+      await refreshList();
+    } catch (error: unknown) {
+      actionFeedback.setError(apiErrorMessage(error));
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [actionFeedback, isControlled, refreshList, selection]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (isControlled || selection.selectedIds.length === 0) {
+      return;
+    }
+    const deletableIds = selection.selectedIds.filter((id) => {
+      const account = accountById.get(id);
+      return account ? canDeleteAccount(account) : false;
+    });
+    if (deletableIds.length === 0) {
+      actionFeedback.setError('Select inactive accounts with no active license assignments.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Delete ${deletableIds.length} selected account(s)? This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    actionFeedback.clearForAction();
+    try {
+      const result = await bulkDeleteAdminAccounts(deletableIds);
+      if (isSetupResponse(result)) {
+        actionFeedback.setError(result.message);
+        return;
+      }
+      actionFeedback.setMessage(formatBulkActionSummary(result, 'deleted'));
+      selection.clearSelection();
+      await refreshList();
+    } catch (error: unknown) {
+      actionFeedback.setError(apiErrorMessage(error));
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [accountById, actionFeedback, isControlled, refreshList, selection]);
 
   const handleDeactivate = useCallback(
     async (accountId: string) => {
@@ -74,20 +205,18 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
         return;
       }
       setDeactivatingId(accountId);
-      setActionError(null);
+      actionFeedback.clearForAction();
       try {
         await deactivateAdminAccount(accountId);
-        const result = await getAdminAccounts(gameId || undefined);
-        if (!isSetupResponse(result)) {
-          setAccounts(parseAccountsList(result));
-        }
+        actionFeedback.setMessage('Account deactivated.');
+        await refreshList();
       } catch (error: unknown) {
-        setActionError(apiErrorMessage(error));
+        actionFeedback.setError(apiErrorMessage(error));
       } finally {
         setDeactivatingId(null);
       }
     },
-    [gameId, isControlled],
+    [actionFeedback, isControlled, refreshList],
   );
 
   const handleReactivate = useCallback(
@@ -99,51 +228,101 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
         return;
       }
       setReactivatingId(accountId);
-      setActionError(null);
+      actionFeedback.clearForAction();
       try {
         await reactivateAdminAccount(accountId);
-        const result = await getAdminAccounts(gameId || undefined);
-        if (!isSetupResponse(result)) {
-          setAccounts(parseAccountsList(result));
-        }
+        actionFeedback.setMessage('Account reactivated.');
+        await refreshList();
       } catch (error: unknown) {
-        setActionError(apiErrorMessage(error));
+        actionFeedback.setError(apiErrorMessage(error));
       } finally {
         setReactivatingId(null);
       }
     },
-    [gameId, isControlled],
+    [actionFeedback, isControlled, refreshList],
   );
-
-  const tableAccounts =
-    isControlled && state.status === 'success' ? state.data : accounts;
 
   return (
     <Container>
       <AdminPageShell>
         <AdminAccountsHeader />
-        <AdminAccountsGameFilter
-          gameId={gameId}
+        <AdminAccountsFilters
+          draft={draft}
           disabled={isControlled}
-          onGameIdChange={setGameId}
+          onDraftChange={(patch) => setDraft(patch)}
         />
-        {actionError ? (
-          <p role="alert" data-testid="admin-accounts-action-error">
-            {actionError}
-          </p>
-        ) : null}
-        <AdminAsyncView state={state} emptyMessage="No pool accounts yet.">
-          {(items) =>
-            items.length === 0 ? (
-              <AdminAccountsEmpty />
+        <AdminActionFeedback
+          error={actionFeedback.error}
+          message={actionFeedback.message}
+          isPending={
+            bulkLoading || deactivatingId !== null || reactivatingId !== null
+          }
+          pendingMessage={
+            bulkLoading
+              ? 'Applying bulk action…'
+              : deactivatingId
+                ? 'Deactivating account…'
+                : 'Reactivating account…'
+          }
+          testIdPrefix="admin-accounts-action"
+        />
+        <AdminAsyncView
+          state={state}
+          emptyMessage={
+            hasActiveFilters
+              ? 'No accounts match the current filters.'
+              : 'No pool accounts yet.'
+          }
+        >
+          {() =>
+            tableAccounts.length === 0 ? (
+              hasActiveFilters ? (
+                <AdminAccountsEmpty message="No accounts match the current filters." />
+              ) : (
+                <AdminAccountsEmpty />
+              )
             ) : (
-              <AdminAccountsTable
-                accounts={tableAccounts.length > 0 ? tableAccounts : items}
-                deactivatingId={deactivatingId}
-                reactivatingId={reactivatingId}
-                onDeactivate={isControlled ? undefined : handleDeactivate}
-                onReactivate={isControlled ? undefined : handleReactivate}
-              />
+              <>
+                {!isControlled ? (
+                  <AdminBulkToolbar
+                    selectedCount={selection.selectedCount}
+                    onClear={selection.clearSelection}
+                    disabled={bulkLoading}
+                  >
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={bulkLoading}
+                      onClick={() => void handleBulkDeactivate()}
+                    >
+                      {bulkLoading ? 'Deactivating…' : 'Deactivate selected'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={bulkLoading}
+                      onClick={() => void handleBulkDelete()}
+                    >
+                      {bulkLoading ? 'Deleting…' : 'Delete selected'}
+                    </Button>
+                  </AdminBulkToolbar>
+                ) : null}
+                <AdminAccountsTable
+                  accounts={tableAccounts}
+                  deactivatingId={deactivatingId}
+                  reactivatingId={reactivatingId}
+                  onDeactivate={isControlled ? undefined : handleDeactivate}
+                  onReactivate={isControlled ? undefined : handleReactivate}
+                  selection={
+                    isControlled
+                      ? undefined
+                      : {
+                          ...selection,
+                          disabled: bulkLoading,
+                        }
+                  }
+                />
+              </>
             )
           }
         </AdminAsyncView>

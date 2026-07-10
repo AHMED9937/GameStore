@@ -16,6 +16,9 @@ const SUPPORT_LINKS = [
   { href: '/contact', label: 'Contact Us' },
 ] as const;
 
+const discordInviteUrl =
+  process.env['NEXT_PUBLIC_DISCORD_INVITE_URL']?.trim() || 'https://discord.gg/';
+
 export function SiteFooter() {
   return (
     <footer className={styles.footer}>
@@ -32,7 +35,13 @@ export function SiteFooter() {
             game releases safely, affordably, and automatically.
           </p>
           <div className={styles.socialLinks}>
-            <a href="#" className={styles.socialBtn} aria-label="Discord">
+            <a
+              href={discordInviteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.socialBtn}
+              aria-label="Discord"
+            >
               D
             </a>
             <a href="#" className={styles.socialBtn} aria-label="Telegram">

@@ -2,6 +2,7 @@
 
 import { Button, Input, Text } from '@gamestore/shared/ui';
 import type { AdminGameFormValues, AdminGameTab } from './admin-games.types';
+import { AdminGameRequirementsFields } from './admin-game-requirements-fields';
 import styles from './games.module.css';
 
 const TABS: { id: AdminGameTab; label: string }[] = [
@@ -10,11 +11,13 @@ const TABS: { id: AdminGameTab; label: string }[] = [
   { id: 'requirements', label: 'Requirements' },
   { id: 'media', label: 'Media' },
   { id: 'accounts', label: 'Steam account' },
+  { id: 'marketing', label: 'Marketing' },
   { id: 'publish', label: 'Publish' },
 ];
 
 export type AdminGameFormProps = {
   values?: AdminGameFormValues;
+  coverCardImage?: string | null;
   disabled?: boolean;
   mode?: 'create' | 'edit';
   activeTab?: AdminGameTab;
@@ -22,11 +25,13 @@ export type AdminGameFormProps = {
   onValuesChange?: (values: AdminGameFormValues) => void;
   mediaSection?: React.ReactNode;
   accountsSection?: React.ReactNode;
+  marketingSection?: React.ReactNode;
   publishSection?: React.ReactNode;
 };
 
 export function AdminGameForm({
   values,
+  coverCardImage,
   disabled = false,
   mode = 'create',
   activeTab = 'basics',
@@ -34,6 +39,7 @@ export function AdminGameForm({
   onValuesChange,
   mediaSection,
   accountsSection,
+  marketingSection,
   publishSection,
 }: AdminGameFormProps) {
   const controlled = Boolean(onValuesChange);
@@ -140,6 +146,43 @@ export function AdminGameForm({
             <Text tone="dim">Use blank lines between paragraphs.</Text>
           </div>
           <div className={styles.formField}>
+            <Text tone="muted">Meta title</Text>
+            <Input
+              name="metaTitle"
+              value={formValues.metaTitle}
+              disabled={disabled}
+              onChange={(event) => updateField('metaTitle', event.target.value)}
+              placeholder="Auto-generated from game title when blank"
+            />
+            <Text tone="dim">
+              {formValues.metaTitle.length}/60 — Leave blank to use auto-generated defaults.
+              IGDB import pre-fills these on first import.
+            </Text>
+          </div>
+          <div className={styles.formField}>
+            <Text tone="muted">Meta description</Text>
+            <textarea
+              className={styles.textarea}
+              name="metaDescription"
+              rows={3}
+              value={formValues.metaDescription}
+              disabled={disabled}
+              onChange={(event) => updateField('metaDescription', event.target.value)}
+              placeholder="Short summary for search results"
+            />
+            <Text tone="dim">{formValues.metaDescription.length}/160</Text>
+          </div>
+          <div className={styles.formField}>
+            <Text tone="muted">OG image URL</Text>
+            <Input
+              name="ogImage"
+              value={formValues.ogImage}
+              disabled={disabled}
+              onChange={(event) => updateField('ogImage', event.target.value)}
+              placeholder={formValues.coverImage || 'Uses cover image when blank'}
+            />
+          </div>
+          <div className={styles.formField}>
             <Text tone="muted">Cover image URL</Text>
             <Input
               name="coverImage"
@@ -148,6 +191,12 @@ export function AdminGameForm({
               onChange={(event) => updateField('coverImage', event.target.value)}
             />
           </div>
+          {mode === 'edit' && coverCardImage?.trim() ? (
+            <div className={styles.formField}>
+              <Text tone="muted">Card cover URL (IGDB)</Text>
+              <Input name="coverCardImage" value={coverCardImage} disabled readOnly />
+            </div>
+          ) : null}
           <div className={styles.formField}>
             <Text tone="muted">Release date</Text>
             <Input
@@ -172,38 +221,27 @@ export function AdminGameForm({
       ) : null}
 
       {activeTab === 'requirements' ? (
-        <>
-          <div className={styles.formField}>
-            <Text tone="muted">Minimum requirements</Text>
-            <textarea
-              className={styles.textarea}
-              name="requirementsMin"
-              rows={8}
-              value={formValues.requirementsMin}
-              disabled={disabled}
-              onChange={(event) =>
-                updateField('requirementsMin', event.target.value)
-              }
-            />
-          </div>
-          <div className={styles.formField}>
-            <Text tone="muted">Recommended requirements</Text>
-            <textarea
-              className={styles.textarea}
-              name="requirementsRecommended"
-              rows={8}
-              value={formValues.requirementsRecommended}
-              disabled={disabled}
-              onChange={(event) =>
-                updateField('requirementsRecommended', event.target.value)
-              }
-            />
-          </div>
-        </>
+        <div className={styles.requirementsGrid}>
+          <AdminGameRequirementsFields
+            title="Minimum requirements"
+            values={formValues.requirementsMin}
+            disabled={disabled}
+            onChange={(requirementsMin) => updateField('requirementsMin', requirementsMin)}
+          />
+          <AdminGameRequirementsFields
+            title="Recommended requirements"
+            values={formValues.requirementsRecommended}
+            disabled={disabled}
+            onChange={(requirementsRecommended) =>
+              updateField('requirementsRecommended', requirementsRecommended)
+            }
+          />
+        </div>
       ) : null}
 
       {activeTab === 'media' ? mediaSection : null}
       {activeTab === 'accounts' ? accountsSection : null}
+      {activeTab === 'marketing' ? marketingSection : null}
       {activeTab === 'publish' ? publishSection : null}
     </div>
   );

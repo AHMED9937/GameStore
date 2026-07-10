@@ -1,5 +1,8 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
-import type { SetupResponse } from './admin.types';
+import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
+import type { BulkActionResult, SetupResponse } from './admin.types';
+
+export type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 
 export type AdminGameMediaRecord = {
   id: string;
@@ -16,6 +19,13 @@ export type AdminGameAccountSummary = {
   hasActivePool: boolean;
 };
 
+export type AdminGameDiscord = {
+  configured: boolean;
+  posted: boolean;
+  messageId: string | null;
+  announceDescription: string | null;
+};
+
 export type AdminGameRecord = {
   id: string;
   title: string;
@@ -24,15 +34,25 @@ export type AdminGameRecord = {
   priceBase: string;
   description: string | null;
   coverImage: string | null;
+  coverCardImage: string | null;
   publishedAt: string | null;
   published: boolean;
+  soldOut: boolean;
+  soldOutManual: boolean;
+  featuredOrder: number | null;
   igdbId: number | null;
+  igdbSyncedAt: string | null;
+  igdbCoverUrl: string | null;
   releaseDate: string | null;
   genres: string[];
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
   media: AdminGameMediaRecord[];
   accountSummary: AdminGameAccountSummary;
+  discord: AdminGameDiscord;
 };
 
 export type AdminGameInput = {
@@ -43,11 +63,16 @@ export type AdminGameInput = {
   description?: string;
   coverImage?: string;
   published?: boolean;
+  soldOut?: boolean;
   publishedAt?: string | null;
   genres?: string[];
   releaseDate?: string | null;
-  requirementsMin?: string | null;
-  requirementsRecommended?: string | null;
+  requirementsMin?: GameSystemRequirements | null;
+  requirementsRecommended?: GameSystemRequirements | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  ogImage?: string | null;
+  discordAnnounceDescription?: string | null;
 };
 
 export type AdminReadinessCheck = {
@@ -63,8 +88,25 @@ export type AdminGameReadiness = {
   checks: AdminReadinessCheck[];
 };
 
-export function getAdminGames() {
-  return apiGet<SetupResponse | AdminGameRecord[]>('/admin/games');
+export type AdminGameListFilters = {
+  q?: string;
+  platform?: string;
+  status?: 'published' | 'draft' | 'sold_out';
+};
+
+export function getAdminGames(filters: AdminGameListFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.platform) {
+    params.set('platform', filters.platform);
+  }
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  const suffix = params.size > 0 ? `?${params.toString()}` : '';
+  return apiGet<SetupResponse | AdminGameRecord[]>(`/admin/games${suffix}`);
 }
 
 export function getAdminGame(id: string) {
@@ -88,5 +130,50 @@ export function updateAdminGame(id: string, body: Partial<AdminGameInput>) {
 export function deleteAdminGame(id: string) {
   return apiDelete<SetupResponse | { id: string; deleted: true }>(
     `/admin/games/${id}`,
+  );
+}
+
+export function bulkUnpublishAdminGames(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/games/bulk-unpublish',
+    { ids },
+  );
+}
+
+export function bulkDeleteAdminGames(ids: string[]) {
+  return apiPost<SetupResponse | BulkActionResult>(
+    '/admin/games/bulk-delete',
+    { ids },
+  );
+}
+
+export type AdminFeaturedGameItem = {
+  id: string;
+  title: string;
+  slug: string;
+  platform: string;
+  priceBase: string;
+  coverImage: string | null;
+  coverCardImage: string | null;
+  featuredOrder: number | null;
+  releaseDate: string | null;
+};
+
+export type AdminFeaturedGamesResponse = {
+  featured: AdminFeaturedGameItem[];
+  available: AdminFeaturedGameItem[];
+};
+
+export function getAdminFeaturedGames(q?: string) {
+  const suffix = q?.trim() ? `?q=${encodeURIComponent(q.trim())}` : '';
+  return apiGet<SetupResponse | AdminFeaturedGamesResponse>(
+    `/admin/games/featured${suffix}`,
+  );
+}
+
+export function updateAdminFeaturedGames(gameIds: string[]) {
+  return apiPut<SetupResponse | AdminFeaturedGamesResponse>(
+    '/admin/games/featured',
+    { gameIds },
   );
 }

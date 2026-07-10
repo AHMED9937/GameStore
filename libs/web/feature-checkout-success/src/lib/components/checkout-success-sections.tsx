@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Heading, Text } from '@gamestore/shared/ui';
+import { Button, Card, Heading, SkeletonPanel, SkeletonText, Text } from '@gamestore/shared/ui';
 import type { OrderLicense } from '@gamestore/web/data-access';
 import styles from './section.module.css';
 
@@ -59,32 +59,30 @@ export function CheckoutLicenseDisplay({ license }: { license: OrderLicense }) {
 
 export function CheckoutSuccessPending({ message }: { message: string }) {
   return (
-    <div
-      className={styles.loading}
-      role="status"
-      aria-live="polite"
-      data-testid="checkout-success-pending"
-    >
-      <p className={styles.loadingTitle}>Processing your order…</p>
-      <p className={styles.loadingHint}>{message}</p>
+    <div data-testid="checkout-success-pending">
+      <SkeletonText width="45%" />
+      <SkeletonText width="70%" style={{ marginTop: '0.5rem' }} />
+      <SkeletonPanel height={72} style={{ marginTop: '0.75rem' }} aria-label={message} />
     </div>
   );
 }
 
 export function CheckoutSuccessLoading() {
   return (
-    <div
-      className={styles.loading}
-      role="status"
-      aria-live="polite"
-      data-testid="checkout-success-loading"
-    >
-      <p className={styles.loadingTitle}>Confirming your payment…</p>
+    <div data-testid="checkout-success-loading">
+      <SkeletonText width="50%" />
+      <SkeletonPanel height={88} style={{ marginTop: '0.75rem' }} />
     </div>
   );
 }
 
-export function CheckoutSuccessError({ message }: { message: string }) {
+export function CheckoutSuccessError({
+  message,
+  signInHref,
+}: {
+  message: string;
+  signInHref?: string;
+}) {
   return (
     <div
       className={`${styles.banner} ${styles.bannerError}`}
@@ -93,6 +91,11 @@ export function CheckoutSuccessError({ message }: { message: string }) {
     >
       <p>{message}</p>
       <div className={styles.errorActions}>
+        {signInHref ? (
+          <Link href={signInHref} className={styles.shopLink}>
+            Sign in
+          </Link>
+        ) : null}
         <Link href="/shop" className={styles.shopLink}>
           Browse games
         </Link>

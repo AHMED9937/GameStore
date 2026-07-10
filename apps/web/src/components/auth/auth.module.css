@@ -116,22 +116,6 @@
   font-weight: 600;
 }
 
-.authSpinner {
-  width: 2rem;
-  height: 2rem;
-  margin: 1.25rem auto 0;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.08);
-  border-top-color: var(--color-primary);
-  animation: authSpin 0.8s linear infinite;
-}
-
-@keyframes authSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Clerk element overrides (global class names from appearance.elements) */
 :global(.authClerkRoot) {
   width: 100%;

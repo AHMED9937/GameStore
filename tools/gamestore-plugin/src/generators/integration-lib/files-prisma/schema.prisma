@@ -8,4 +8,4 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// TODO(phase-3): expand schema — Game, License, GameAccount models
+// TODO(phase-3): expand schema Game, License, GameAccount models

@@ -9,10 +9,12 @@ function createPrismaMock() {
       findUnique: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'new' }),
       update: vi.fn().mockResolvedValue({ id: 'updated' }),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       delete: vi.fn().mockResolvedValue({ id: 'deleted' }),
     },
     license: {
       count: vi.fn().mockResolvedValue(0),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   };
 }
@@ -33,11 +35,11 @@ describe('GameAccountsRepository', () => {
     expect(select.maxActiveUsers).toBe(true);
   });
 
-  it('findAll filters by gameId when provided', async () => {
+  it('findAll Filters by gameId when provided', async () => {
     const prisma = createPrismaMock();
     const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
 
-    await repo.findAll('game-1');
+    await repo.findAll({ gameId: 'game-1' });
 
     expect(prisma.gameAccount.findMany.mock.calls[0][0].where).toEqual({
       gameId: 'game-1',
@@ -58,7 +60,7 @@ describe('GameAccountsRepository', () => {
     }
   });
 
-  it('countActivatedLicenses filters by account and status', async () => {
+  it('countActivatedLicenses Filters by account and status', async () => {
     const prisma = createPrismaMock();
     const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
 
@@ -113,5 +115,87 @@ describe('GameAccountsRepository', () => {
 
     expect(account).toBeNull();
     expect(prisma.gameAccount.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('decrementActiveUsers never goes below zero', async () => {
+    const prisma = createPrismaMock();
+    prisma.gameAccount.findUnique.mockResolvedValue({
+      id: 'acc-1',
+      activeUsersCount: 0,
+    });
+    prisma.gameAccount.update.mockResolvedValue({
+      id: 'acc-1',
+      activeUsersCount: 0,
+    });
+
+    const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
+    await repo.decrementActiveUsers('acc-1');
+
+    expect(prisma.gameAccount.update).toHaveBeenCalledWith({
+      where: { id: 'acc-1' },
+      data: { activeUsersCount: 0 },
+      select: expect.any(Object),
+    });
+  });
+
+  it('clearGuardLockIfMatches only clears matching guard lock', async () => {
+    const prisma = createPrismaMock();
+    prisma.gameAccount.updateMany = vi.fn().mockResolvedValue({ count: 1 });
+
+    const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
+    await repo.clearGuardLockIfMatches('acc-1', 'license-1');
+
+    expect(prisma.gameAccount.updateMany).toHaveBeenCalledWith({
+      where: { id: 'acc-1', guardLockedByLicenseId: 'license-1' },
+      data: { guardLockedByLicenseId: null },
+    });
+  });
+
+  it('findAvailableForAssignment returns unassigned active accounts', async () => {
+    const prisma = createPrismaMock();
+    prisma.gameAccount.findMany.mockResolvedValue([
+      { id: 'inv-1', username: 'pool-alpha', gameId: null, isActive: true },
+    ]);
+
+    const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
+    const rows = await repo.findAvailableForAssignment('alpha');
+
+    expect(prisma.gameAccount.findMany).toHaveBeenCalledWith({
+      where: {
+        gameId: null,
+        isActive: true,
+        username: { contains: 'alpha', mode: 'insensitive' },
+      },
+      orderBy: { username: 'asc' },
+      take: 50,
+      select: expect.any(Object),
+    });
+    expect(rows).toHaveLength(1);
+  });
+
+  it('assignToGame sets gameId on account', async () => {
+    const prisma = createPrismaMock();
+    const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
+
+    await repo.assignToGame('acc-1', 'game-1');
+
+    expect(prisma.gameAccount.update).toHaveBeenCalledWith({
+      where: { id: 'acc-1' },
+      data: { gameId: 'game-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('unassignFromGame clears gameId', async () => {
+    const prisma = createPrismaMock();
+    const repo = new GameAccountsRepository(prisma as unknown as PrismaService);
+
+    await repo.unassignFromGame('acc-1');
+
+    expect(prisma.gameAccount.update).toHaveBeenCalledWith({
+      where: { id: 'acc-1' },
+      data: { gameId: null },
+      select: expect.any(Object),
+    });
   });
 });

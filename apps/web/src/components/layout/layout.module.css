@@ -1,4 +1,4 @@
-/* Site shell — mockup-aligned header & footer */
+/* Site shell mockup-aligned header & footer */
 
 .siteMain {
   flex: 1;
@@ -98,68 +98,6 @@
   .headerActions {
     gap: 20px;
   }
-}
-
-.langSelector {
-  display: none;
-  background: var(--bg-input);
-  border: 1px solid var(--border-light);
-  color: var(--text-main);
-  padding: 8px 12px;
-  border-radius: 8px;
-  outline: none;
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 14px;
-  font-family: var(--font-body);
-  transition: var(--transition-smooth);
-}
-
-@media (min-width: 1024px) {
-  .langSelector {
-    display: block;
-  }
-}
-
-.langSelector:hover {
-  border-color: var(--border-hover);
-}
-
-.cartBtn {
-  position: relative;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-light);
-  color: var(--text-main);
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition-smooth);
-}
-
-.cartBtn:hover {
-  border-color: var(--border-hover);
-  background: var(--bg-card);
-}
-
-.cartBadge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background: var(--color-primary);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
 }
 
 .activateLink {

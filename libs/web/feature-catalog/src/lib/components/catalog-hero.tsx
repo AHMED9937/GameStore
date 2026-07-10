@@ -1,4 +1,5 @@
 import { Container, Heading, Text } from '@gamestore/shared/ui';
+import { CATALOG_HERO_DESCRIPTION } from '../catalog.constants';
 import styles from './section.module.css';
 
 export function CatalogHero() {
@@ -6,8 +7,8 @@ export function CatalogHero() {
     <section className={styles.section}>
       <Container>
         <Heading level="h1">Game Catalog</Heading>
-        <Text tone="muted" style={{ marginTop: '0.75rem' }}>
-          Browse offline activation titles across supported platforms.
+        <Text tone="muted" className={styles.heroLead}>
+          {CATALOG_HERO_DESCRIPTION}
         </Text>
       </Container>
     </section>

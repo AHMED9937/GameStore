@@ -1,4 +1,4 @@
-# Admin Panel — Implementation Plan (Scaffold-First)
+# Admin Panel Implementation Plan (Scaffold-First)
 
 This document is the **execution blueprint for the GameStore admin panel** (`/admin/*`). It mirrors the **scaffold-first** approach in [implementation_plan.md](./implementation_plan.md): structure → setup text → tests → wire → **real implementation last**.
 
@@ -9,7 +9,7 @@ This document is the **execution blueprint for the GameStore admin panel** (`/ad
 | File | Role |
 |------|------|
 | [implementation_plan.md](./implementation_plan.md) | Monorepo scaffold-first pattern |
-| [PHASE_6_PLAN.md](./PHASE_6_PLAN.md) | Storefront CRUD (games/licenses/accounts) — partial overlap |
+| [PHASE_6_PLAN.md](./PHASE_6_PLAN.md) | Storefront CRUD (games/licenses/accounts) partial overlap |
 | [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) | Phase 7 Stripe (referenced in AD.8) |
 | [CLERK_NEON_SYNC.md](./CLERK_NEON_SYNC.md) | Admin bootstrap |
 
@@ -25,7 +25,7 @@ This document is the **execution blueprint for the GameStore admin panel** (`/ad
 | IGDB integration | ❌ Not started |
 | Admin UI wired to API | ❌ Not started |
 
-**Goal:** Staff manage catalog (IGDB import → publish), licenses, Steam pool, orders, and audit — built in **nine phases**, one slice at a time, with tests at every step. **Each phase ends with a Git commit and push to GitHub.**
+**Goal:** Staff manage catalog (IGDB import → publish), licenses, Steam pool, orders, and audit built in **nine phases**, one slice at a time, with tests at every step. **Each phase ends with a Git commit and push to GitHub.**
 
 ---
 
@@ -33,15 +33,15 @@ This document is the **execution blueprint for the GameStore admin panel** (`/ad
 
 ```mermaid
 flowchart TD
-  AD0[AD.0 GitHub bootstrap — init repo + first push]
-  AD1[AD.1 Backend setup — setup text + tests]
+  AD0[AD.0 GitHub bootstrap init repo + first push]
+  AD1[AD.1 Backend setup setup text + tests]
   AD2[AD.2 Schema + DB for admin / IGDB]
-  AD3[AD.3 Frontend scaffold — trees + async states + tests]
+  AD3[AD.3 Frontend scaffold trees + async states + tests]
   AD4[AD.4 Wire frontend ↔ backend]
   AD5[AD.5 IGDB metadata seeder + Game schema sync]
-  AD6[AD.6 Real admin games CRUD — publish / edit / release]
-  AD7[AD.7 Steam — backend + admin UI + My Games integration]
-  AD8[AD.8 Stripe setup only — admin orders shell]
+  AD6[AD.6 Real admin games CRUD publish / edit / release]
+  AD7[AD.7 Steam backend + admin UI + My Games integration]
+  AD8[AD.8 Stripe setup only admin orders shell]
   AD9[AD.9 Implement everything still showing setup text]
   SEC[Security S.1–S.9 ✅]
   SEC --> AD0 --> AD1 --> AD2 --> AD3 --> AD4 --> AD5 --> AD6 --> AD7 --> AD8 --> AD9
@@ -49,7 +49,7 @@ flowchart TD
 
 | Phase | Focus | Real logic? | Tests | Git |
 |-------|--------|-------------|-------|-----|
-| **AD.0** | Initialize local git + new GitHub repo + baseline push | — | `git status` clean | ✅ **First commit** |
+| **AD.0** | Initialize local git + new GitHub repo + baseline push | | `git status` clean | ✅ **First commit** |
 | **AD.1** | Admin Nest modules + routes return **setup JSON** | ❌ Setup text only | Unit + api-e2e per slice | ✅ Commit + push |
 | **AD.2** | Prisma fields for admin + IGDB; migrate + seed | Schema only | Repository spec + migrate | ✅ Commit + push |
 | **AD.3** | `feature-admin` + page component trees; **visible setup text**; loading/error/success/empty | ❌ No API calls yet | Vitest per page | ✅ Commit + push |
@@ -79,21 +79,21 @@ Do **not** start the next phase until the current phase is committed and pushed.
 
 ---
 
-## Phase AD.0 — GitHub bootstrap (do this first)
+## Phase AD.0 GitHub bootstrap (do this first)
 
 **Goal:** Create a new GitHub repository on your account, initialize git locally, push the **current baseline** (Phases 0–6 + Security S.1–S.9 + this plan), then begin AD.1.
 
-**Repo is not initialized yet** — run these steps once before Slice AD.1.1.
+**Repo is not initialized yet** run these steps once before Slice AD.1.1.
 
 ### Prerequisites
 
 | Requirement | Notes |
 |-------------|--------|
 | [Git](https://git-scm.com/) installed | `git --version` |
-| [GitHub CLI](https://cli.github.com/) (`gh`) | `gh auth status` — logged into your account |
+| [GitHub CLI](https://cli.github.com/) (`gh`) | `gh auth status` logged into your account |
 | `.gitignore` exists | Already ignores `.env`, `node_modules`, `.next`, `dist` |
 
-### AD.0.1 — Safety check (never commit secrets)
+### AD.0.1 Safety check (never commit secrets)
 
 ```powershell
 cd C:\Projects\GameStore
@@ -108,7 +108,7 @@ git check-ignore -v .env
 
 `.env.example` **is** safe to commit (empty placeholders only).
 
-### AD.0.2 — Initialize local git
+### AD.0.2 Initialize local git
 
 ```powershell
 cd C:\Projects\GameStore
@@ -119,30 +119,30 @@ git status
 # Review: .env must NOT appear in "Changes to be committed"
 ```
 
-### AD.0.3 — Create new GitHub repo and push
+### AD.0.3 Create new GitHub repo and push
 
 Replace `YOUR_GITHUB_USERNAME` and choose a repo name (default: `GameStore`).
 
-**Option A — GitHub CLI (recommended):**
+**Option A GitHub CLI (recommended):**
 
 ```powershell
-gh repo create GameStore --private --source=. --remote=origin --description "GameStore Nx monorepo — storefront + admin"
-git commit -m "chore: initial commit — baseline before admin plan (phases 0–6, security, plans)"
+gh repo create GameStore --private --source=. --remote=origin --description "GameStore Nx monorepo storefront + admin"
+git commit -m "chore: initial commit baseline before admin plan (phases 0–6, security, plans)"
 git push -u origin main
 ```
 
-**Option B — GitHub website, then link remote:**
+**Option B GitHub website, then link remote:**
 
-1. On [github.com/new](https://github.com/new): create **GameStore** (empty — no README, no .gitignore).
+1. On [github.com/new](https://github.com/new): create **GameStore** (empty no README, no .gitignore).
 2. Then:
 
 ```powershell
 git remote add origin https://github.com/YOUR_GITHUB_USERNAME/GameStore.git
-git commit -m "chore: initial commit — baseline before admin plan (phases 0–6, security, plans)"
+git commit -m "chore: initial commit baseline before admin plan (phases 0–6, security, plans)"
 git push -u origin main
 ```
 
-### AD.0.4 — Verify remote
+### AD.0.4 Verify remote
 
 ```powershell
 git remote -v
@@ -156,11 +156,11 @@ gh repo view --web
 - [ ] `main` branch pushed; baseline visible on GitHub
 - [ ] `.env` not in the repository (`git ls-files | Select-String "\.env$"` returns nothing except `.env.example`)
 
-**Suggested commit message:** `chore: initial commit — baseline before admin plan (phases 0–6, security, plans)`
+**Suggested commit message:** `chore: initial commit baseline before admin plan (phases 0–6, security, plans)`
 
 ---
 
-## Git workflow — commit after every phase
+## Git workflow commit after every phase
 
 After **each** phase AD.1–AD.9 completes (all slices done, tests green):
 
@@ -178,7 +178,7 @@ git push
 
 | Phase | When to commit | Suggested message |
 |-------|----------------|-------------------|
-| **AD.0** | After first push | `chore: initial commit — baseline before admin plan (phases 0–6, security, plans)` |
+| **AD.0** | After first push | `chore: initial commit baseline before admin plan (phases 0–6, security, plans)` |
 | **AD.1** | All admin setup routes + e2e pass | `feat(admin): AD.1 backend setup routes with setup JSON and tests` |
 | **AD.2** | Migration applied + repository tests pass | `feat(admin): AD.2 schema and IGDB fields on Game model` |
 | **AD.3** | feature-admin trees + Vitest + scaffold e2e | `feat(admin): AD.3 frontend scaffold with async state component trees` |
@@ -199,7 +199,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) style; adjust w
 | Push after every phase commit | GitHub is the backup and progress checkpoint |
 | Never `git push --force` to `main` | Avoid overwriting shared history |
 | Never commit `.env` | Secrets stay local only |
-| Run tests before commit | Same bar as slice verify — don’t push broken phases |
+| Run tests before commit | Same bar as slice verify don’t push broken phases |
 
 Optional: create a GitHub branch per phase (`git checkout -b admin/ad-1`) and open a PR into `main` instead of committing directly to `main`. Default in this plan is **commit + push to `main`** unless you prefer PRs.
 
@@ -213,11 +213,11 @@ All AD.1 (and AD.8) admin routes return this until their implementation phase:
 {
   "status": "setup",
   "integration": "admin-games",
-  "message": "Admin games — not implemented yet"
+  "message": "Admin games not implemented yet"
 }
 ```
 
-Frontend components **render `message` as visible text** — no fake rows, no MSW in app code.
+Frontend components **render `message` as visible text** no fake rows, no MSW in app code.
 
 | `integration` value | Resource |
 |---------------------|----------|
@@ -326,7 +326,7 @@ apps/web/src/app/admin/
 
 ---
 
-# Phase AD.1 — Backend setup (setup text + tests)
+# Phase AD.1 Backend setup (setup text + tests)
 
 **Goal:** Admin Nest namespace exists. Every route returns setup JSON. **No Prisma business logic** in this phase.
 
@@ -336,7 +336,7 @@ apps/web/src/app/admin/
 
 ---
 
-### Slice AD.1.1 — `AdminModule` + dashboard setup
+### Slice AD.1.1 `AdminModule` + dashboard setup
 
 **Create:**
 
@@ -345,8 +345,8 @@ apps/web/src/app/admin/
 
 **Tests:**
 
-- `admin-dashboard.controller.spec.ts` — returns `{ status: 'setup' }`
-- `apps/api-e2e/src/admin/admin-setup.e2e-spec.ts` — admin JWT → 200 + setup body; user JWT → 403
+- `admin-dashboard.controller.spec.ts` returns `{ status: 'setup' }`
+- `apps/api-e2e/src/admin/admin-setup.e2e-spec.ts` admin JWT → 200 + setup body; user JWT → 403
 
 **Verify:**
 
@@ -362,7 +362,7 @@ pnpm nx e2e api-e2e -- src/admin/admin-setup.e2e-spec.ts
 
 ---
 
-### Slice AD.1.2 — Admin games setup routes
+### Slice AD.1.2 Admin games setup routes
 
 **Create:**
 
@@ -382,7 +382,7 @@ pnpm nx e2e api-e2e -- src/admin/admin-setup.e2e-spec.ts
 
 ---
 
-### Slice AD.1.3 — Admin licenses setup routes
+### Slice AD.1.3 Admin licenses setup routes
 
 **Create:** `AdminLicensesController`
 
@@ -398,7 +398,7 @@ Setup JSON only. Existing `/api/licenses` CRUD stays until AD.9 migration.
 
 ---
 
-### Slice AD.1.4 — Admin accounts setup routes
+### Slice AD.1.4 Admin accounts setup routes
 
 **Create:** `AdminAccountsController`
 
@@ -411,7 +411,7 @@ Setup JSON only. Existing `/api/licenses` CRUD stays until AD.9 migration.
 
 ---
 
-### Slice AD.1.5 — Admin audit + IGDB setup routes
+### Slice AD.1.5 Admin audit + IGDB setup routes
 
 **Create:**
 
@@ -437,7 +437,7 @@ Service methods return setup text (no Twitch API calls).
 
 ---
 
-# Phase AD.2 — Schema & database (admin + IGDB fields)
+# Phase AD.2 Schema & database (admin + IGDB fields)
 
 **Goal:** Extend `Game` (and optional admin tables) for IGDB sync and admin workflows. Migrate + seed + repository tests.
 
@@ -445,7 +445,7 @@ Service methods return setup text (no Twitch API calls).
 
 ---
 
-### Slice AD.2.1 — `Game` schema extensions (+ IGDB media gallery)
+### Slice AD.2.1 `Game` schema extensions (+ IGDB media gallery)
 
 **Add to `libs/api/prisma/prisma/schema.prisma`:**
 
@@ -473,7 +473,7 @@ model GameMedia {
 }
 ```
 
-**IGDB import targets (AD.5):** every imported game gets **2 screenshots** + **2 videos** by default (`IGDB_IMPORT_SCREENSHOT_LIMIT`, `IGDB_IMPORT_VIDEO_LIMIT` in `@gamestore/api/igdb`) — same pattern as [gamepass.offline-game.com](https://gamepass.offline-game.com) detail galleries.
+**IGDB import targets (AD.5):** every imported game gets **2 screenshots** + **2 videos** by default (`IGDB_IMPORT_SCREENSHOT_LIMIT`, `IGDB_IMPORT_VIDEO_LIMIT` in `@gamestore/api/igdb`) same pattern as [gamepass.offline-game.com](https://gamepass.offline-game.com) detail galleries.
 
 | Media | IGDB source | Stored as |
 |-------|-------------|-----------|
@@ -487,22 +487,22 @@ model GameMedia {
 
 ---
 
-### Slice AD.2.2 — Admin repository methods (read-only)
+### Slice AD.2.2 Admin repository methods (read-only)
 
 **Extend `GamesRepository`:**
 
-- `findAllAdmin()` — all games, include `publishedAt`, `igdbId`, `releaseDate`
-- `findByIdAdmin(id)` — same projection
+- `findAllAdmin()` all games, include `publishedAt`, `igdbId`, `releaseDate`
+- `findByIdAdmin(id)` same projection
 
-**Tests:** `games.repository.spec.ts` — mock Prisma, assert `where` / `select`.
+**Tests:** `games.repository.spec.ts` mock Prisma, assert `where` / `select`.
 
 **No HTTP changes** this slice.
 
 ---
 
-### Slice AD.2.3 — License list enrichment
+### Slice AD.2.3 License list enrichment
 
-**Extend `LicensesRepository.findAll()`** — `include: { game: { select: { title, slug } }, owner: { select: { email } } }`.
+**Extend `LicensesRepository.findAll()`** `include: { game: { select: { title, slug } }, owner: { select: { email } } }`.
 
 **Tests:** repository spec.
 
@@ -515,17 +515,17 @@ model GameMedia {
 
 ---
 
-# Phase AD.3 — Frontend scaffold (text + component trees + async states)
+# Phase AD.3 Frontend scaffold (text + component trees + async states)
 
 **Goal:** `feature-admin` lib with full component trees per page. Pages show **static labels + setup banner**. Every slice includes Vitest for loading / error / success / empty / setup states.
 
 **Depends on:** AD.1 (for route names), AD.2 optional
 
-**No real API calls** — pass mock `AdminAsyncState` in tests.
+**No real API calls** pass mock `AdminAsyncState` in tests.
 
 ---
 
-### Slice AD.3.1 — Generate `feature-admin` + shared shell
+### Slice AD.3.1 Generate `feature-admin` + shared shell
 
 ```bash
 pnpm nx g @gamestore/workspace:web-feature --name=admin --route=/admin
@@ -536,11 +536,11 @@ pnpm nx g @gamestore/workspace:web-feature --name=admin --route=/admin
 - `AdminPageShell`, `AdminAsyncView` (renders loading/error/setup/empty/children)
 - `AdminPageHeader`, `AdminTable` (structure only, no data yet)
 
-**Test:** `admin-async-view.spec.tsx` — all five states render correct text.
+**Test:** `admin-async-view.spec.tsx` all five states render correct text.
 
 ---
 
-### Slice AD.3.2 — Dashboard component tree
+### Slice AD.3.2 Dashboard component tree
 
 **Route:** `apps/web/src/app/admin/page.tsx` → `<AdminDashboardPage />`
 
@@ -558,7 +558,7 @@ AdminDashboardPage
 
 ---
 
-### Slice AD.3.3 — Games pages component trees
+### Slice AD.3.3 Games pages component trees
 
 **Routes:**
 
@@ -572,15 +572,15 @@ AdminDashboardPage
 
 ---
 
-### Slice AD.3.4 — Licenses component trees
+### Slice AD.3.4 Licenses component trees
 
 **Routes:** `/admin/licenses`, `/admin/licenses/new`
 
-**Tree:** `AdminLicensesPage` → header, filters, table, revoke button (disabled), `AdminLicenseForm`.
+**Tree:** `AdminLicensesPage` → header, Filters, table, revoke button (disabled), `AdminLicenseForm`.
 
 ---
 
-### Slice AD.3.5 — Accounts component trees
+### Slice AD.3.5 Accounts component trees
 
 **Routes:** `/admin/accounts`, `/admin/accounts/new`
 
@@ -588,13 +588,13 @@ AdminDashboardPage
 
 ---
 
-### Slice AD.3.6 — Orders + audit + IGDB component trees
+### Slice AD.3.6 Orders + audit + IGDB component trees
 
 **Routes:**
 
-- `/admin/orders` — setup text from orders integration
-- `/admin/audit` — table shell + pagination placeholders
-- `/admin/igdb` — search input + results grid shell
+- `/admin/orders` setup text from orders integration
+- `/admin/audit` table shell + pagination placeholders
+- `/admin/igdb` search input + results grid shell
 
 **Nav:** Add **Audit** and **IGDB** links to `admin/layout.tsx`.
 
@@ -616,19 +616,19 @@ Assert each `/admin/*` route shows expected setup/section headings (no auth flak
 
 ---
 
-# Phase AD.4 — Wire frontend ↔ backend
+# Phase AD.4 Wire frontend ↔ backend
 
-**Goal:** `admin-*.api.ts` + `apiPut`/`apiPatch`/`apiDelete`. Pages fetch real endpoints; **setup JSON is valid success** — UI shows `AdminSetupBanner` with API `message`.
+**Goal:** `admin-*.api.ts` + `apiPut`/`apiPatch`/`apiDelete`. Pages fetch real endpoints; **setup JSON is valid success** UI shows `AdminSetupBanner` with API `message`.
 
 **Depends on:** AD.1 + AD.3
 
 ---
 
-### Slice AD.4.1 — Data-access layer
+### Slice AD.4.1 Data-access layer
 
 **Extend `api-client.ts`:**
 
-- `apiPut`, `apiPatch`, `apiDelete` — attach Clerk bearer in browser.
+- `apiPut`, `apiPatch`, `apiDelete` attach Clerk bearer in browser.
 
 **Add:** `admin-dashboard.api.ts`, `admin-games.api.ts`, … (one file per resource).
 
@@ -642,24 +642,24 @@ export type SetupResponse = {
 };
 ```
 
-**Test:** `api-client.spec.ts` — mock fetch, assert Authorization header.
+**Test:** `api-client.spec.ts` mock fetch, assert Authorization header.
 
 ---
 
-### Slice AD.4.2 — Wire dashboard + games pages
+### Slice AD.4.2 Wire dashboard + games pages
 
-- `AdminDashboardPage` — `useEffect` → `getAdminStats()` → if `status === 'setup'` show banner.
-- `AdminGamesPage` — same pattern for `getAdminGames()`.
+- `AdminDashboardPage` `useEffect` → `getAdminStats()` → if `status === 'setup'` show banner.
+- `AdminGamesPage` same pattern for `getAdminGames()`.
 
 **Test:** mock API returns setup → banner visible; mock error → error state.
 
 ---
 
-### Slice AD.4.3 — Wire licenses, accounts, orders, audit, igdb
+### Slice AD.4.3 Wire licenses, accounts, orders, audit, igdb
 
 Same pattern for remaining pages.
 
-**E2E (api):** admin JWT hits all `/api/admin/*` — still setup bodies.
+**E2E (api):** admin JWT hits all `/api/admin/*` still setup bodies.
 
 **E2E (web):** signed-in admin sees setup messages from real BFF (optional; may need Clerk test user).
 
@@ -672,7 +672,7 @@ Same pattern for remaining pages.
 
 ---
 
-# Phase AD.5 — IGDB metadata seeder (setup → real sync)
+# Phase AD.5 IGDB metadata seeder (setup → real sync)
 
 **Goal:** Twitch IGDB API integration. Admin searches IGDB, imports metadata into `Game` rows. Schema from AD.2 is source of truth.
 
@@ -687,31 +687,31 @@ IGDB_CLIENT_SECRET=
 
 ---
 
-### Slice AD.5.1 — Real IGDB client
+### Slice AD.5.1 Real IGDB client
 
 **`libs/api/igdb`:**
 
-- `IgdbService.searchGames(query)` — OAuth client credentials → `POST https://api.igdb.com/v4/games`
-- `IgdbService.getGameDetails(igdbId)` — cover, summary, release date, genres
-- `IgdbService.getScreenshots(igdbId, limit=2)` — IGDB `screenshots` → `GameMedia` rows
-- `IgdbService.getVideos(igdbId, limit=2)` — IGDB `game_videos` → YouTube embed URLs
+- `IgdbService.searchGames(query)` OAuth client credentials → `POST https://api.igdb.com/v4/games`
+- `IgdbService.getGameDetails(igdbId)` cover, summary, release date, genres
+- `IgdbService.getScreenshots(igdbId, limit=2)` IGDB `screenshots` → `GameMedia` rows
+- `IgdbService.getVideos(igdbId, limit=2)` IGDB `game_videos` → YouTube embed URLs
 
 **Tests:** unit with mocked `fetch` (no live API in CI).
 
 ---
 
-### Slice AD.5.2 — Import endpoint (real)
+### Slice AD.5.2 Import endpoint (real)
 
 Replace setup on:
 
-- `GET /api/admin/igdb/search?q=` — proxy IGDB search (admin-only)
-- `POST /api/admin/igdb/import` — body `{ igdbId, priceBase, platform, slug? }` → upsert `Game` (draft) + **2 screenshots + 2 videos** in `game_media`
+- `GET /api/admin/igdb/search?q=` proxy IGDB search (admin-only)
+- `POST /api/admin/igdb/import` body `{ igdbId, priceBase, platform, slug? }` → upsert `Game` (draft) + **2 screenshots + 2 videos** in `game_media`
 
 **Audit:** `admin.igdb.import`
 
 ---
 
-### Slice AD.5.3 — CLI seeder script
+### Slice AD.5.3 CLI seeder script
 
 **`tools/scripts/igdb-seed.ts`** (or nx target `igdb-seed`):
 
@@ -723,7 +723,7 @@ For bulk dev seeding without UI.
 
 ---
 
-### Slice AD.5.4 — Admin IGDB UI (real)
+### Slice AD.5.4 Admin IGDB UI (real)
 
 **`/admin/igdb`:**
 
@@ -736,12 +736,12 @@ For bulk dev seeding without UI.
 
 - [ ] Import creates `Game` with `igdbId`, `description`, `coverImage`, `releaseDate`, **2 screenshots, 2 videos**
 - [ ] Draft game **not** on public `/shop` until published (AD.6)
-- [ ] No IGDB calls from storefront — admin only
+- [ ] No IGDB calls from storefront admin only
 - [ ] **Git:** commit `feat(admin): AD.5 IGDB metadata seeder and import UI` and push
 
 ---
 
-# Phase AD.6 — Real admin games CRUD (publish / edit / release)
+# Phase AD.6 Real admin games CRUD (publish / edit / release)
 
 **Goal:** Replace admin games setup stubs with real Prisma. Admin can create, edit, publish, unpublish, delete. Storefront reflects published games.
 
@@ -749,7 +749,7 @@ For bulk dev seeding without UI.
 
 ---
 
-### Slice AD.6.1 — Backend: real admin games service
+### Slice AD.6.1 Backend: real admin games service
 
 **Replace setup** in `AdminGamesController`:
 
@@ -767,7 +767,7 @@ Reuse validation from `GamesService` where possible. Keep public `GET /api/games
 
 ---
 
-### Slice AD.6.2 — Frontend: games list + forms (real data)
+### Slice AD.6.2 Frontend: games list + forms (real data)
 
 - Table: title, slug, platform, price, status badge (Draft / Published), IGDB id
 - **Publish** toggle → `PUT` sets `publishedAt`
@@ -776,12 +776,12 @@ Reuse validation from `GamesService` where possible. Keep public `GET /api/games
 
 ---
 
-### Slice AD.6.3 — Storefront sync verification
+### Slice AD.6.3 Storefront sync verification
 
 - Publish game → appears on `/shop`
 - Unpublish → removed from catalog (still in admin list)
 
-**E2E:** `admin-games.e2e-spec.ts` — create → publish → `GET /api/games` includes slug.
+**E2E:** `admin-games.e2e-spec.ts` create → publish → `GET /api/games` includes slug.
 
 **Phase AD.6 exit criteria:**
 
@@ -792,9 +792,9 @@ Reuse validation from `GamesService` where possible. Keep public `GET /api/games
 
 ---
 
-# Phase AD.7 — Steam (backend + admin UI + My Games integration)
+# Phase AD.7 Steam (backend + admin UI + My Games integration)
 
-**Goal:** Everything Steam-related — real `steam-totp`, AES-256 credential encryption, admin account pool UI, My Games activation wired end-to-end.
+**Goal:** Everything Steam-related real `steam-totp`, AES-256 credential encryption, admin account pool UI, My Games activation wired end-to-end.
 
 **Depends on:** AD.6 (games exist to attach accounts)
 
@@ -802,29 +802,29 @@ Reuse validation from `GamesService` where possible. Keep public `GET /api/games
 
 ---
 
-### Slice AD.7.1 — Encryption service
+### Slice AD.7.1 Encryption service
 
 **`libs/api/steam`:**
 
-- `encryptCredential(plain)` / `decryptCredential(cipher)` — AES-256-GCM, `STEAM_ENCRYPTION_KEY`
+- `encryptCredential(plain)` / `decryptCredential(cipher)` AES-256-GCM, `STEAM_ENCRYPTION_KEY`
 - `POST /api/game-accounts` accepts plaintext password → encrypt server-side (admin only)
 
 **Tests:** round-trip unit test.
 
 ---
 
-### Slice AD.7.2 — Real Steam Guard codes
+### Slice AD.7.2 Real Steam Guard codes
 
 Replace setup in `libs/api/steam`:
 
-- `POST /api/steam/guard/code` — real `generateAuthCode(sharedSecret)` after ownership check
+- `POST /api/steam/guard/code` real `generateAuthCode(sharedSecret)` after ownership check
 - Cooldown / `lockedUntil` stub or basic 15-min lock (expand in post-MVP)
 
 **Wire `feature-my-games`:** `SteamGuardPanel` shows live code or setup/error.
 
 ---
 
-### Slice AD.7.3 — Admin accounts UI (real)
+### Slice AD.7.3 Admin accounts UI (real)
 
 Replace `AdminAccountsController` setup:
 
@@ -835,7 +835,7 @@ Replace `AdminAccountsController` setup:
 
 ---
 
-### Slice AD.7.4 — Account assignment on license validate (optional in AD.7)
+### Slice AD.7.4 Account assignment on license validate (optional in AD.7)
 
 When `POST /licenses/validate` succeeds and `accountId` null → assign least-loaded active account under cap (50).
 
@@ -843,7 +843,7 @@ When `POST /licenses/validate` succeeds and `accountId` null → assign least-lo
 
 ---
 
-### Slice AD.7.5 — Integration E2E
+### Slice AD.7.5 Integration E2E
 
 - Admin adds account → user validates license → credentials panel → guard code
 - api-e2e + web-e2e steam specs (real TOTP in test env)
@@ -857,15 +857,15 @@ When `POST /licenses/validate` succeeds and `accountId` null → assign least-lo
 
 ---
 
-# Phase AD.8 — Stripe setup (later — admin orders shell)
+# Phase AD.8 Stripe setup (later admin orders shell)
 
-**Goal:** Admin orders area wired to **setup-only** Stripe/orders integration. **No real Checkout or webhooks** in this phase — that stays [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) Phase 7.
+**Goal:** Admin orders area wired to **setup-only** Stripe/orders integration. **No real Checkout or webhooks** in this phase that stays [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) Phase 7.
 
 **Depends on:** AD.4 (orders page wired)
 
 ---
 
-### Slice AD.8.1 — Admin orders setup controller
+### Slice AD.8.1 Admin orders setup controller
 
 - `GET /api/admin/orders` → setup JSON (`integration: admin-orders`)
 - `GET /api/admin/orders/:id` → setup JSON
@@ -874,7 +874,7 @@ Keep existing `GET /api/orders` setup until Phase 7 migrates to `Order` model.
 
 ---
 
-### Slice AD.8.2 — Admin orders UI shows setup text
+### Slice AD.8.2 Admin orders UI shows setup text
 
 `AdminOrdersPage` displays API `message` + link doc to Phase 7.
 
@@ -889,7 +889,7 @@ Keep existing `GET /api/orders` setup until Phase 7 migrates to `Order` model.
 
 ---
 
-# Phase AD.9 — Implement everything still showing setup text
+# Phase AD.9 Implement everything still showing setup text
 
 **Goal:** Replace **all** remaining `{ status: 'setup' }` responses and setup banners with real implementations.
 
@@ -897,7 +897,7 @@ Keep existing `GET /api/orders` setup until Phase 7 migrates to `Order` model.
 
 ---
 
-### Slice AD.9.1 — Admin licenses (real)
+### Slice AD.9.1 Admin licenses (real)
 
 - Wire `AdminLicensesController` to real `LicensesService`
 - UI: list, create, revoke, masked keys, generate-key helper
@@ -905,14 +905,14 @@ Keep existing `GET /api/orders` setup until Phase 7 migrates to `Order` model.
 
 ---
 
-### Slice AD.9.2 — Dashboard stats (real)
+### Slice AD.9.2 Dashboard stats (real)
 
 - `GET /api/admin/stats` → Prisma counts: games, published, licenses, active licenses, accounts, orders today
 - Dashboard stat cards live
 
 ---
 
-### Slice AD.9.3 — Audit log viewer (real)
+### Slice AD.9.3 Audit log viewer (real)
 
 - Wire `AdminAuditController` to `AuditLogsService` (or alias existing `GET /api/audit-logs`)
 - Paginated table, action filter
@@ -920,7 +920,7 @@ Keep existing `GET /api/orders` setup until Phase 7 migrates to `Order` model.
 
 ---
 
-### Slice AD.9.4 — Orders admin (real — after Phase 7)
+### Slice AD.9.4 Orders admin (real after Phase 7)
 
 **Blocked until** `Order` model + Stripe webhook from Phase 7.
 
@@ -929,7 +929,7 @@ Keep existing `GET /api/orders` setup until Phase 7 migrates to `Order` model.
 
 ---
 
-### Slice AD.9.5 — Licenses + storefront admin link polish
+### Slice AD.9.5 Licenses + storefront admin link polish
 
 - Header **Admin** link for `role === admin`
 - Breadcrumbs, confirm dialogs, keyboard a11y
@@ -991,18 +991,18 @@ pnpm nx dev web
 
 ## Full exit criteria (entire admin plan)
 
-- [ ] **AD.0** — GitHub repo created; baseline pushed; `.env` not tracked
-- [ ] **AD.1** — All admin API routes exist; setup JSON + e2e
-- [ ] **AD.2** — IGDB fields on `Game`; admin repository queries
-- [ ] **AD.3** — Component trees + async states + unit tests
-- [ ] **AD.4** — Frontend calls backend; setup text from API
-- [ ] **AD.5** — IGDB search/import + CLI seeder
-- [ ] **AD.6** — Real games CRUD + publish → storefront
-- [ ] **AD.7** — Steam encryption, guard codes, admin accounts, My Games
-- [ ] **AD.8** — Orders admin shows setup; Stripe deferred
-- [ ] **AD.9** — Licenses, dashboard, audit, orders (post–Phase 7) — all real
-- [ ] **Security** — Admin-only; no secret leakage
-- [ ] **Git** — Ten phase commits on GitHub (AD.0–AD.9), each pushed before the next phase starts
+- [ ] **AD.0** GitHub repo created; baseline pushed; `.env` not tracked
+- [ ] **AD.1** All admin API routes exist; setup JSON + e2e
+- [ ] **AD.2** IGDB fields on `Game`; admin repository queries
+- [ ] **AD.3** Component trees + async states + unit tests
+- [ ] **AD.4** Frontend calls backend; setup text from API
+- [ ] **AD.5** IGDB search/import + CLI seeder
+- [ ] **AD.6** Real games CRUD + publish → storefront
+- [ ] **AD.7** Steam encryption, guard codes, admin accounts, My Games
+- [ ] **AD.8** Orders admin shows setup; Stripe deferred
+- [ ] **AD.9** Licenses, dashboard, audit, orders (post–Phase 7) all real
+- [ ] **Security** Admin-only; no secret leakage
+- [ ] **Git** Ten phase commits on GitHub (AD.0–AD.9), each pushed before the next phase starts
 
 ---
 
@@ -1022,7 +1022,7 @@ pnpm nx dev web
 
 | File | Role |
 |------|------|
-| **ADMIN_PLAN.md** | **This file** — admin scaffold-first phases AD.1–AD.9 |
+| **ADMIN_PLAN.md** | **This file** admin scaffold-first phases AD.1–AD.9 |
 | [implementation_plan.md](./implementation_plan.md) | Parent scaffold pattern |
 | [SECURITY_PLAN.md](./SECURITY_PLAN.md) | Prerequisite auth |
 | [NEXT_PHASES_PLAN.md](./NEXT_PHASES_PLAN.md) | Phase 7 Stripe → feeds AD.9.4 |

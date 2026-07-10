@@ -11,6 +11,7 @@ import { AppModule } from '../../api/src/app/app.module';
 import {
   authAs,
   closeE2eApp,
+  ensurePublishedDemoGame,
   seedE2eUsers,
 } from './support/e2e-app';
 import { E2eClerkAuthGuard } from './support/e2e-auth.guard';
@@ -62,6 +63,7 @@ describe.skipIf(!hasDatabase)('Stripe checkout → activation → Steam Guard', 
     });
 
     await seedE2eUsers(app);
+    await ensurePublishedDemoGame(prisma);
 
     const game = await prisma.game.findFirst({
       where: { slug: 'demo-game-1', publishedAt: { not: null } },

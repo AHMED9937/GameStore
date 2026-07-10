@@ -1,7 +1,9 @@
 import { CatalogPage } from '@gamestore/web/feature-catalog';
+import { buildPageMetadata } from '@gamestore/shared/seo';
 
-/** Fetch catalog from the API on each request — not at build time */
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
+
+export const metadata = buildPageMetadata('shop');
 
 export default function Page() {
   return <CatalogPage />;

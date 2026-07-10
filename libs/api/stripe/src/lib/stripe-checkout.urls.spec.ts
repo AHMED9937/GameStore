@@ -11,7 +11,8 @@ describe('stripe-checkout.urls', () => {
     expect(buildCheckoutUrls('demo-game-1', 'http://localhost:3000')).toEqual({
       successUrl:
         'http://localhost:3000/checkout/success?session_id={CHECKOUT_SESSION_ID}',
-      cancelUrl: 'http://localhost:3000/checkout?game=demo-game-1&cancelled=1',
+      cancelUrl:
+        'http://localhost:3000/checkout?game=demo-game-1&cancelled=1&session_id={CHECKOUT_SESSION_ID}',
     });
   });
 

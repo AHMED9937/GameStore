@@ -1,4 +1,4 @@
-/* GameStore design system — from mockup (Amethyst & Aqua Neon) */
+/* GameStore design system from mockup (Amethyst & Aqua Neon) */
 
 :root {
   --bg-darker: #06070d;
@@ -149,7 +149,7 @@ h4,
   -webkit-text-fill-color: transparent;
 }
 
-/* Readable text utilities — use across features */
+/* Readable text utilities use across features */
 .text-body {
   color: var(--text-body);
   font-size: var(--font-size-sm);
@@ -175,7 +175,7 @@ h4,
   line-height: var(--line-height-prose);
 }
 
-/* Meta chips — platform, release date, genre tags */
+/* Meta chips platform, release date, genre tags */
 .meta-chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -239,6 +239,30 @@ h4,
     rgba(168, 85, 247, 0.12) 0%,
     rgba(6, 182, 212, 0.08) 100%
   );
+}
+
+.meta-chip-access {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.meta-chip-access--offline {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.meta-chip-access--online {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .genre-chip-row {
@@ -368,7 +392,7 @@ h4,
   height: 1.125rem;
 }
 
-/* Detail tabs — premium game info panels */
+/* Detail tabs premium game info panels */
 .detail-tabs {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
@@ -467,7 +491,7 @@ h4,
   max-width: 42rem;
 }
 
-/* Info card grid — product details, warnings */
+/* Info card grid product details, warnings */
 .info-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
@@ -546,7 +570,7 @@ h4,
   color: var(--text-body);
 }
 
-/* Step timeline — activation flow */
+/* Step timeline activation flow */
 .step-timeline {
   position: relative;
   display: flex;
@@ -626,7 +650,7 @@ h4,
   color: var(--text-body);
 }
 
-/* Readable prose — game description */
+/* Readable prose game description */
 .prose-readable {
   margin: 0;
   font-size: var(--font-size-md);
@@ -763,7 +787,7 @@ h4,
   border: 0;
 }
 
-/* Buy CTA — mobile-first purchase highlight */
+/* Buy CTA mobile-first purchase highlight */
 .buy-cta-mobile-only {
   display: block;
   margin-top: 1.25rem;

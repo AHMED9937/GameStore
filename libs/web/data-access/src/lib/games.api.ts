@@ -1,5 +1,13 @@
 import { cache } from 'react';
-import { apiGet } from './api-client';
+import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
+import { apiGetPublic, type ApiPublicCacheOptions } from './api-client';
+
+const PUBLIC_GAME_CACHE: ApiPublicCacheOptions = {
+  revalidate: 60,
+  tags: ['games'],
+};
+
+export type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 
 export type Game = {
   id: string;
@@ -10,6 +18,8 @@ export type Game = {
   /** Decimal serialized as string from the API */
   priceBase: string;
   coverImage: string | null;
+  coverCardImage?: string | null;
+  soldOut?: boolean;
 };
 
 export type GameMedia = {
@@ -23,8 +33,11 @@ export type GameMedia = {
 export type GameDetail = Game & {
   genres: string[];
   releaseDate: string | null;
-  requirementsMin: string | null;
-  requirementsRecommended: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  ogImage: string | null;
+  requirementsMin: GameSystemRequirements | null;
+  requirementsRecommended: GameSystemRequirements | null;
   media: GameMedia[];
 };
 
@@ -40,9 +53,23 @@ export function formatGamePrice(priceBase: string): string {
 }
 
 export const getGames = cache(async (): Promise<Game[]> => {
-  return apiGet<Game[]>('/games');
+  return apiGetPublic<Game[]>('/games', PUBLIC_GAME_CACHE);
 });
 
-export async function getGameBySlug(slug: string): Promise<GameDetail> {
-  return apiGet<GameDetail>(`/games/${slug}`);
+export const getFeaturedGames = cache(async (): Promise<Game[]> => {
+  return apiGetPublic<Game[]>('/games/featured', PUBLIC_GAME_CACHE);
+});
+
+export function getGameCardCover(
+  game: { coverCardImage?: string | null; coverImage?: string | null },
+  fallback = '/og/default.png',
+): string {
+  return game.coverCardImage?.trim() || game.coverImage?.trim() || fallback;
 }
+
+export const getGameBySlug = cache(async (slug: string): Promise<GameDetail> => {
+  return apiGetPublic<GameDetail>(`/games/${slug}`, {
+    revalidate: PUBLIC_GAME_CACHE.revalidate,
+    tags: [...(PUBLIC_GAME_CACHE.tags ?? []), `game:${slug}`],
+  });
+});

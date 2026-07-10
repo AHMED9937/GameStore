@@ -36,18 +36,6 @@ export function SiteHeader() {
         </nav>
 
         <div className={styles.headerActions}>
-          <select className={styles.langSelector} defaultValue="en" aria-label="Language">
-            <option value="en">EN</option>
-            <option value="ar">AR</option>
-            <option value="fr">FR</option>
-            <option value="es">ES</option>
-          </select>
-
-          <button type="button" className={styles.cartBtn} aria-label="Cart">
-            <span aria-hidden>🛒</span>
-            <span className={styles.cartBadge}>0</span>
-          </button>
-
           <Link href="/my-games" className={styles.activateLink}>
             <span aria-hidden>🔑</span>
             Activate Key
@@ -69,7 +57,6 @@ export function SiteHeader() {
             ) : null}
             <UserButton
               userProfileUrl="/account"
-              afterSignOutUrl="/"
               appearance={{
                 elements: {
                   avatarBox: styles.userAvatar,

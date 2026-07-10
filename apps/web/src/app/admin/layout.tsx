@@ -12,6 +12,7 @@ const NAV_ITEMS: Array<{ href: string; label: string; exact?: boolean }> = [
   { href: '/admin/accounts', label: 'Accounts' },
   { href: '/admin/orders', label: 'Orders' },
   { href: '/admin/subscriptions', label: 'Subscriptions' },
+  { href: '/admin/video-guides', label: 'Video guides' },
   { href: '/admin/audit', label: 'Audit' },
   { href: '/admin/igdb', label: 'IGDB' },
 ];
@@ -72,7 +73,6 @@ export default function AdminLayout({
           </Link>
           <UserButton
             userProfileUrl="/account"
-            afterSignOutUrl="/admin/sign-in"
             appearance={{
               elements: {
                 avatarBox: styles.userAvatar,
@@ -87,7 +87,6 @@ export default function AdminLayout({
           <h1 className={styles.topbarTitle}>Administration</h1>
           <UserButton
             userProfileUrl="/account"
-            afterSignOutUrl="/admin/sign-in"
             appearance={{
               elements: {
                 avatarBox: styles.userAvatar,

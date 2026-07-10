@@ -21,7 +21,7 @@ export class StripeConfig {
     return {
       status: 'setup' as const,
       integration: 'stripe',
-      message: `Stripe ${action} — not implemented yet`,
+      message: `Stripe ${action} not implemented yet`,
     };
   }
 

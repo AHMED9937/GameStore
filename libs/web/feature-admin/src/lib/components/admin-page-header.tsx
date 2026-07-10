@@ -4,7 +4,7 @@ import styles from './admin-components.module.css';
 
 export type AdminPageHeaderProps = {
   title: string;
-  description?: string;
+  description?: ReactNode;
   actions?: ReactNode;
 };
 
@@ -17,7 +17,13 @@ export function AdminPageHeader({
     <header className={styles.header}>
       <div className={styles.headerTitles}>
         <Heading level="h2">{title}</Heading>
-        {description ? <Text tone="muted">{description}</Text> : null}
+        {description ? (
+          typeof description === 'string' ? (
+            <Text tone="muted">{description}</Text>
+          ) : (
+            description
+          )
+        ) : null}
       </div>
       {actions ? <div>{actions}</div> : null}
     </header>

@@ -7,9 +7,19 @@ import {
   GamesRepository,
   generateLicenseKey,
   maskLicenseKey,
+  resolveLicenseExpiresAt,
 } from '@gamestore/api/data-access';
 import { Prisma } from '@prisma/client';
 import { LicensesService } from '../../licenses/licenses.service';
+import type {
+  AdminLicenseListFiltersDto,
+  LicenseExpiresFilter,
+} from './admin-license-list-filters.dto';
+import {
+  normalizeBulkIds,
+  runBulkIds,
+  type BulkActionResult,
+} from '../bulk-action.types';
 
 export type AdminLicenseListItemDto = {
   id: string;
@@ -73,8 +83,8 @@ export class AdminLicensesService {
     private readonly games: GamesRepository,
   ) {}
 
-  async findAll(): Promise<AdminLicenseListItemDto[]> {
-    const rows = await this.licenses.findAll();
+  async findAll(Filters?: AdminLicenseListFiltersDto): Promise<AdminLicenseListItemDto[]> {
+    const rows = await this.licenses.findAll(this.toLicenseFilters(Filters));
     return rows.map((row) => ({
       id: row.id,
       licenseKeyMasked: maskLicenseKey(row.licenseKey),
@@ -82,8 +92,34 @@ export class AdminLicensesService {
       ownerEmail: row.owner?.email ?? row.buyerEmail ?? null,
       status: row.status,
       source: row.source,
-      expiresAt: row.expiresAt?.toISOString() ?? null,
+      expiresAt: resolveLicenseExpiresAt(
+        row.expiresAt,
+        row.validFrom,
+      ).toISOString(),
     }));
+  }
+
+  private toLicenseFilters(Filters?: AdminLicenseListFiltersDto): {
+    game?: string;
+    source?: string;
+    owner?: string;
+    status?: string;
+    expires?: LicenseExpiresFilter;
+  } {
+    const game = Filters?.game?.trim();
+    const source = Filters?.source?.trim().toLowerCase();
+    const owner = Filters?.owner?.trim().toLowerCase();
+    const status = Filters?.status?.trim().toLowerCase();
+    const expires = Filters?.expires;
+    return {
+      ...(game ? { game } : {}),
+      ...(source ? { source } : {}),
+      ...(owner ? { owner } : {}),
+      ...(status ? { status } : {}),
+      ...(expires === 'lifetime' || expires === 'expiring' || expires === 'expired'
+        ? { expires }
+        : {}),
+    };
   }
 
   async findOne(id: string): Promise<AdminLicenseDetailDto> {
@@ -146,6 +182,20 @@ export class AdminLicensesService {
 
   async remove(id: string): Promise<{ id: string; deleted: true }> {
     return this.licenses.remove(id);
+  }
+
+  async bulkRevoke(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.revoke(id);
+    });
+  }
+
+  async bulkDelete(ids: string[]): Promise<BulkActionResult> {
+    const normalized = normalizeBulkIds(ids);
+    return runBulkIds(normalized, async (id) => {
+      await this.remove(id);
+    });
   }
 
   private async createLicense(input: {

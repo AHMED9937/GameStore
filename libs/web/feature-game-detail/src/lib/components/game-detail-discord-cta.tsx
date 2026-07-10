@@ -15,7 +15,7 @@ export function GameDetailDiscordCta() {
             Need help? Join our Discord
           </h3>
           <p className="support-cta-description">
-            Questions or setup issues? Our team is online in Discord — join the community for
+            Questions or setup issues? Our team is online in Discord join the community for
             fast support and updates.
           </p>
         </div>

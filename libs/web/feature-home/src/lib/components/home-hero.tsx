@@ -1,26 +1,27 @@
-import { Card, Container, Heading, Text } from '@gamestore/shared/ui';
+import { Container, Heading } from '@gamestore/shared/ui';
 import Link from 'next/link';
+import { Suspense } from 'react';
+import { HERO_LEAD } from '../home.constants';
+import { HomeHeroShowcase } from './home-hero-showcase';
+import { HomeHeroShowcaseSkeleton } from './home-hero-showcase-skeleton';
 import styles from './section.module.css';
 
 export function HomeHero() {
   return (
     <section className={styles.section}>
       <Container className={styles.heroGrid}>
-        <div>
+        <div className={styles.heroCopy}>
           <Heading level="h1" gradient>
             Next-Gen Offline Game Activations
           </Heading>
-          <Text tone="muted" style={{ marginTop: '1rem', maxWidth: '32rem' }}>
-            Gain instant access to a growing library of blockbuster titles. Keep your saves
-            local and play with zero restrictions.
-          </Text>
+          <p className={styles.heroLead}>{HERO_LEAD}</p>
           <Link href="/shop" className={styles.heroCta}>
             Explore Games →
           </Link>
         </div>
-        <Card className={styles.panel}>
-          <Text tone="dim">HomeHero showcase — visual cards arrive with real catalog data.</Text>
-        </Card>
+        <Suspense fallback={<HomeHeroShowcaseSkeleton />}>
+          <HomeHeroShowcase />
+        </Suspense>
       </Container>
     </section>
   );

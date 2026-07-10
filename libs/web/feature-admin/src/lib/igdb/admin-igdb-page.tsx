@@ -10,12 +10,16 @@ import {
   searchAdminIgdb,
 } from '@gamestore/web/data-access';
 import { AdminAsyncView } from '../components/admin-async-view';
+import adminStyles from '../components/admin-components.module.css';
 import { AdminPageShell } from '../components/admin-page-shell';
+import { useAdminMutation } from '../hooks/use-admin-mutation';
 import type { AdminAsyncState } from '../types/admin-async-state';
 import { AdminIgdbHeader } from './admin-igdb-header';
+import { AdminIgdbImportDialog } from './admin-igdb-import-dialog';
 import { AdminIgdbResultsGrid } from './admin-igdb-results-grid';
 import { AdminIgdbSearch } from './admin-igdb-search';
 import type { AdminIgdbResultItem } from './admin-igdb.types';
+import styles from './igdb.module.css';
 
 export type AdminIgdbPageProps = {
   resultsState?: AdminAsyncState<AdminIgdbResultItem[]>;
@@ -31,25 +35,29 @@ export function AdminIgdbPage({ resultsState }: AdminIgdbPageProps) {
   const [state, setState] = useState<AdminAsyncState<AdminIgdbResultItem[]>>({
     status: 'idle',
   });
-  const [importingId, setImportingId] = useState<number | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
+  const [searchValidation, setSearchValidation] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [importTarget, setImportTarget] = useState<AdminIgdbResultItem | null>(null);
+  const importMutation = useAdminMutation<{ game: { id: string }; updated?: boolean }>();
 
   const resolvedState = resultsState ?? state;
   const isControlled = resultsState !== undefined;
   const isSetup = resolvedState.status === 'setup';
   const isSearching = !isControlled && resolvedState.status === 'loading';
 
-  const handleSearch = useCallback(async () => {
+  const runSearch = useCallback(async () => {
     if (isControlled) {
       return;
     }
 
     const trimmed = query.trim();
     if (!trimmed) {
+      setSearchValidation('Enter a game title to search.');
       return;
     }
 
-    setImportError(null);
+    setSearchValidation(null);
+    importMutation.reset();
     setState({ status: 'loading' });
 
     try {
@@ -68,33 +76,45 @@ export function AdminIgdbPage({ resultsState }: AdminIgdbPageProps) {
       setState({ status: 'success', data });
     } catch (error: unknown) {
       setState({ status: 'error', message: apiErrorMessage(error) });
+    } finally {
+      setIsRetrying(false);
     }
-  }, [isControlled, query]);
+  }, [importMutation, isControlled, query]);
 
-  const handleImport = useCallback(
-    async (igdbId: number) => {
+  const handleSearch = useCallback(() => {
+    void runSearch();
+  }, [runSearch]);
+
+  const handleRetry = useCallback(() => {
+    setIsRetrying(true);
+    void runSearch();
+  }, [runSearch]);
+
+  const handleImportConfirm = useCallback(
+    async (options: {
+      igdbId: number;
+      platform: string;
+      priceBase: number;
+      slug?: string;
+    }) => {
       if (isControlled || isSetup) {
         return;
       }
 
-      setImportError(null);
-      setImportingId(igdbId);
-
-      try {
-        const result = await importAdminIgdbGame({ igdbId });
-        if (isSetupResponse(result)) {
-          setImportError(result.message);
-          return;
+      const result = await importMutation.mutate(async () => {
+        const response = await importAdminIgdbGame(options);
+        if (isSetupResponse(response)) {
+          throw new Error(response.message);
         }
+        return response;
+      });
 
+      if (result?.game?.id) {
+        setImportTarget(null);
         router.push(`/admin/games/${result.game.id}/edit`);
-      } catch (error: unknown) {
-        setImportError(apiErrorMessage(error));
-      } finally {
-        setImportingId(null);
       }
     },
-    [isControlled, isSetup, router],
+    [importMutation, isControlled, isSetup, router],
   );
 
   return (
@@ -105,14 +125,26 @@ export function AdminIgdbPage({ resultsState }: AdminIgdbPageProps) {
           query={query}
           searching={isSearching}
           disabled={isControlled || isSetup}
-          onQueryChange={setQuery}
-          onSearch={() => {
-            void handleSearch();
+          onQueryChange={(value) => {
+            setQuery(value);
+            if (searchValidation) {
+              setSearchValidation(null);
+            }
           }}
+          onSearch={handleSearch}
         />
-        {importError ? (
-          <div role="alert" data-testid="admin-igdb-import-error">
-            <Text tone="muted">{importError}</Text>
+        {searchValidation ? (
+          <p className={styles.searchValidation} role="alert">
+            {searchValidation}
+          </p>
+        ) : null}
+        {importMutation.error ? (
+          <div
+            className={`${adminStyles.banner} ${adminStyles.bannerError}`}
+            role="alert"
+            data-testid="admin-igdb-import-error"
+          >
+            <p>{importMutation.error}</p>
           </div>
         ) : null}
         {resolvedState.status === 'idle' ? (
@@ -120,19 +152,47 @@ export function AdminIgdbPage({ resultsState }: AdminIgdbPageProps) {
             <Text tone="muted">Search results will appear here.</Text>
           </div>
         ) : (
-          <AdminAsyncView state={resolvedState} emptyMessage="No IGDB matches found.">
+          <AdminAsyncView
+            state={resolvedState}
+            emptyMessage="No IGDB matches found."
+            onRetry={isControlled ? undefined : handleRetry}
+            isRetrying={isRetrying}
+          >
             {(results) => (
-              <AdminIgdbResultsGrid
-                results={results}
-                importingId={importingId}
-                disabled={isControlled || isSetup}
-                onImport={(igdbId) => {
-                  void handleImport(igdbId);
-                }}
-              />
+              <>
+                <Text tone="dim" className={styles.resultsMeta}>
+                  {results.length} result{results.length === 1 ? '' : 's'} (max 20)
+                </Text>
+                <AdminIgdbResultsGrid
+                  results={results}
+                  importingId={
+                    importMutation.status === 'pending'
+                      ? importTarget?.igdbId ?? null
+                      : null
+                  }
+                  disabled={isControlled || isSetup || importMutation.status === 'pending'}
+                  onImport={(igdbId) => {
+                    const item = results.find((row) => row.igdbId === igdbId);
+                    if (item) {
+                      importMutation.reset();
+                      setImportTarget(item);
+                    }
+                  }}
+                />
+              </>
             )}
           </AdminAsyncView>
         )}
+        <AdminIgdbImportDialog
+          item={importTarget}
+          importing={importMutation.status === 'pending'}
+          onClose={() => {
+            if (importMutation.status !== 'pending') {
+              setImportTarget(null);
+            }
+          }}
+          onConfirm={(options) => void handleImportConfirm(options)}
+        />
       </AdminPageShell>
     </Container>
   );
