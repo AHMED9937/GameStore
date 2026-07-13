@@ -25,6 +25,9 @@ describe('railway.toml (D2)', () => {
     expect(RAILWAY_BUILD_COMMAND).toContain('pnpm nx build api');
     expect(RAILWAY_BUILD_COMMAND).not.toContain('db:migrate');
     expect(RAILWAY_BUILD_COMMAND).toContain('NX_DAEMON=false');
+    expect(RAILWAY_BUILD_COMMAND).toContain('NX_PARALLEL=1');
+    expect(RAILWAY_BUILD_COMMAND).toContain('--parallel=1');
+    expect(RAILWAY_BUILD_COMMAND).toContain('max-old-space-size=3072');
   });
 
   it('runs prisma migrate as releaseCommand before start', () => {
@@ -47,6 +50,8 @@ describe('nixpacks.toml (D2)', () => {
   it('pins Node 20 and forces the node provider (not Next)', () => {
     expect(NIXPACKS_TOML).toContain('NIXPACKS_NODE_VERSION = "20"');
     expect(NIXPACKS_TOML).toContain('providers = ["node"]');
+    expect(NIXPACKS_TOML).toContain('NX_DAEMON = "false"');
+    expect(NIXPACKS_TOML).toContain('NX_PARALLEL = "1"');
   });
 });
 

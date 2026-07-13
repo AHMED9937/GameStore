@@ -7,9 +7,9 @@
 
 [build]
 builder = "NIXPACKS"
-# Build the webpack bundle only. Migrations run in releaseCommand so they use
-# runtime DATABASE_URL and do not fail the image build on transient DB issues.
-buildCommand = "pnpm install --frozen-lockfile && NX_DAEMON=false pnpm nx build api"
+# Serial Nx build: exit 130 on Railway is usually SIGINT from OOM/daemon under
+# parallel graph + webpack. Keep daemon/TUI off and parallel=1.
+buildCommand = "pnpm install --frozen-lockfile && NX_DAEMON=false NX_PARALLEL=1 NX_TUI=false NODE_OPTIONS=--max-old-space-size=3072 pnpm nx build api --parallel=1"
 
 [deploy]
 releaseCommand = "pnpm db:migrate"

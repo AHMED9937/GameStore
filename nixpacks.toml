@@ -5,3 +5,7 @@ providers = ["node"]
 [variables]
 NIXPACKS_NODE_VERSION = "20"
 NPM_CONFIG_PRODUCTION = "false"
+NX_DAEMON = "false"
+NX_PARALLEL = "1"
+NX_TUI = "false"
+NODE_OPTIONS = "--max-old-space-size=3072"
