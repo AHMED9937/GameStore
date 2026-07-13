@@ -7,6 +7,7 @@ import {
   buildStripeWebhookUrl,
   RAILWAY_BUILD_COMMAND,
   RAILWAY_HEALTHCHECK_PATH,
+  RAILWAY_RELEASE_COMMAND,
   RAILWAY_STAGING_ENV_KEYS,
   RAILWAY_START_COMMAND,
   STRIPE_WEBHOOK_EVENTS,
@@ -16,12 +17,19 @@ import {
 const ROOT = join(__dirname, '../..');
 const RAILWAY_TOML = readFileSync(join(ROOT, 'railway.toml'), 'utf8');
 const NIXPACKS_TOML = readFileSync(join(ROOT, 'nixpacks.toml'), 'utf8');
+const NX_JSON = readFileSync(join(ROOT, 'nx.json'), 'utf8');
 
 describe('railway.toml (D2)', () => {
-  it('uses monorepo build: install, nx build api, migrate', () => {
+  it('builds Nest API without migrate in the image build step', () => {
     expect(RAILWAY_TOML).toContain(RAILWAY_BUILD_COMMAND);
     expect(RAILWAY_BUILD_COMMAND).toContain('pnpm nx build api');
-    expect(RAILWAY_BUILD_COMMAND).toContain('pnpm db:migrate');
+    expect(RAILWAY_BUILD_COMMAND).not.toContain('db:migrate');
+    expect(RAILWAY_BUILD_COMMAND).toContain('NX_DAEMON=false');
+  });
+
+  it('runs prisma migrate as releaseCommand before start', () => {
+    expect(RAILWAY_TOML).toContain(`releaseCommand = "${RAILWAY_RELEASE_COMMAND}"`);
+    expect(RAILWAY_RELEASE_COMMAND).toBe('pnpm db:migrate');
   });
 
   it('starts Nest from webpack output path', () => {
@@ -36,8 +44,15 @@ describe('railway.toml (D2)', () => {
 });
 
 describe('nixpacks.toml (D2)', () => {
-  it('pins Node 20 for Railway builds', () => {
+  it('pins Node 20 and forces the node provider (not Next)', () => {
     expect(NIXPACKS_TOML).toContain('NIXPACKS_NODE_VERSION = "20"');
+    expect(NIXPACKS_TOML).toContain('providers = ["node"]');
+  });
+});
+
+describe('nx.json Railway-safe project graph', () => {
+  it('does not load @nx/playwright/plugin (breaks graph on .mts/.ts load in CI)', () => {
+    expect(NX_JSON).not.toContain('@nx/playwright/plugin');
   });
 });
 

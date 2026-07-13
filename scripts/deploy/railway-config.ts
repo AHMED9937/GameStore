@@ -4,7 +4,9 @@
  */
 
 export const RAILWAY_BUILD_COMMAND =
-  'pnpm install --frozen-lockfile && pnpm nx build api && pnpm db:migrate';
+  'pnpm install --frozen-lockfile && NX_DAEMON=false pnpm nx build api';
+
+export const RAILWAY_RELEASE_COMMAND = 'pnpm db:migrate';
 
 export const RAILWAY_START_COMMAND = 'node dist/apps/api/main.js';
 
