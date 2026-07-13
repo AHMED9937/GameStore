@@ -4,7 +4,7 @@
  */
 
 export const RAILWAY_BUILD_COMMAND =
-  'pnpm install --frozen-lockfile && NX_DAEMON=false NX_PARALLEL=1 NX_TUI=false NODE_OPTIONS=--max-old-space-size=3072 pnpm nx build api --parallel=1';
+  'pnpm install --frozen-lockfile && pnpm db:generate && NX_DAEMON=false NX_PARALLEL=1 NX_TUI=false NODE_OPTIONS=--max-old-space-size=3072 pnpm nx build api --parallel=1';
 
 export const RAILWAY_RELEASE_COMMAND = 'pnpm db:migrate';
 

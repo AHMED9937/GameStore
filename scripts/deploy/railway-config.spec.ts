@@ -28,6 +28,10 @@ describe('railway.toml (D2)', () => {
     expect(RAILWAY_BUILD_COMMAND).toContain('NX_PARALLEL=1');
     expect(RAILWAY_BUILD_COMMAND).toContain('--parallel=1');
     expect(RAILWAY_BUILD_COMMAND).toContain('max-old-space-size=3072');
+    const generateAt = RAILWAY_BUILD_COMMAND.indexOf('pnpm db:generate');
+    const buildAt = RAILWAY_BUILD_COMMAND.indexOf('pnpm nx build api');
+    expect(generateAt).toBeGreaterThanOrEqual(0);
+    expect(buildAt).toBeGreaterThan(generateAt);
   });
 
   it('runs prisma migrate as releaseCommand before start', () => {
