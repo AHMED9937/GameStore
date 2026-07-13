@@ -5,16 +5,6 @@
   "projectType": "library",
   "tags": ["scope:api", "type:integration", "platform:integration"],
   "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/api/igdb",
-        "main": "libs/api/igdb/src/index.ts",
-        "tsConfig": "libs/api/igdb/tsconfig.lib.json",
-        "assets": ["libs/api/igdb/*.md"]
-      }
-    },
     "test": {
       "executor": "@nx/vitest:test",
       "outputs": ["{options.reportsDirectory}"],

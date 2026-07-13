@@ -5,16 +5,6 @@
   "projectType": "library",
   "tags": ["scope:api", "type:integration", "platform:payments"],
   "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/api/stripe",
-        "main": "libs/api/stripe/src/index.ts",
-        "tsConfig": "libs/api/stripe/tsconfig.lib.json",
-        "assets": ["libs/api/stripe/*.md"]
-      }
-    },
     "test": {
       "executor": "@nx/vitest:test",
       "outputs": ["{options.reportsDirectory}"],

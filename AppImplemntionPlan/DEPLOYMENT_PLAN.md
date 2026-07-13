@@ -777,8 +777,8 @@ Full key list: [`.env.example`](../.env.example). Extend `.env.example` with Sen
 
 | ID | Work | You do first (summary) | Status |
 |----|------|------------------------|--------|
-| D1 | Provision isolated Neon / Clerk / Stripe / IGDB / Steam keys | Create accounts; collect env values; unique Steam key | In progress |
-| D2 | Deploy Nest API to Railway + migrate + Stripe webhook | Railway project; Neon snapshot; Stripe Test webhook after URL | Pending |
+| D1 | Provision isolated Neon / Clerk / Stripe / IGDB / Steam keys | Create accounts; collect env values; unique Steam key | Done (fix Steam key if verify fails) |
+| D2 | Deploy Nest API to Railway + migrate + Stripe webhook | Railway project; Neon snapshot; Stripe Test webhook after URL | In progress |
 | D3 | Deploy Next web to Vercel + Clerk webhook | Vercel project; Clerk origins + webhook secret; site URL | Pending |
 | D4 | Staging smoke (shop → pay → license → Steam Guard → admin) | Admin user; published game; staging Steam pool; Test card | Pending |
 | D5 | Harden: block `/dev`; CORS; no secret logging; dashboard 2FA | 2FA on all dashboards; D4 passed | Pending |
@@ -789,4 +789,4 @@ Full key list: [`.env.example`](../.env.example). Extend `.env.example` with Sen
 | D10 | Neon PITR + restore drill + migration/rollback runbook | PITR on; snapshot; staging env for drill | Pending |
 | D11 | Release checklist + incident cheat-sheet dry-run | Monitoring + restore done; alert owners named | Pending |
 
-**Next action:** Complete **D1 → You do first**, then say **continue** to start D1 slice work.
+**Next action:** Finish **D2 You do first** (Railway project + env + Stripe webhook after URL), run `pnpm deploy:smoke-api`, then say **continue** for D3.

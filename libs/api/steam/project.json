@@ -5,16 +5,6 @@
   "projectType": "library",
   "tags": ["scope:api", "type:integration", "platform:steam"],
   "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/api/steam",
-        "main": "libs/api/steam/src/index.ts",
-        "tsConfig": "libs/api/steam/tsconfig.lib.json",
-        "assets": ["libs/api/steam/*.md"]
-      }
-    },
     "test": {
       "executor": "@nx/vitest:test",
       "outputs": ["{options.reportsDirectory}"],

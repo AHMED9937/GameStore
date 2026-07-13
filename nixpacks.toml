@@ -1,0 +1,3 @@
+# Nixpacks settings for Railway Nest API deploys (pnpm monorepo).
+[variables]
+NIXPACKS_NODE_VERSION = "20"
