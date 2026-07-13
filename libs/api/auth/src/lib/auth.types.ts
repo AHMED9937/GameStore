@@ -94,6 +94,35 @@ export function parseUserRole(metadata: unknown): UserRole {
   return 'user';
 }
 
+/**
+ * Role from a verified Clerk session JWT.
+ * Supports session-token template `{ "metadata": "{{user.public_metadata}}" }`
+ * and raw `public_metadata` claims.
+ */
+export function parseUserRoleFromJwtClaims(
+  payload: Record<string, unknown> | null | undefined,
+): UserRole {
+  if (!payload) {
+    return 'user';
+  }
+  return parseUserRole(payload['metadata'] ?? payload['public_metadata']);
+}
+
+/** True when the JWT includes an explicit role claim we can trust without Clerk API. */
+export function jwtHasRoleClaim(
+  payload: Record<string, unknown> | null | undefined,
+): boolean {
+  if (!payload) {
+    return false;
+  }
+  const meta = payload['metadata'] ?? payload['public_metadata'];
+  return (
+    !!meta &&
+    typeof meta === 'object' &&
+    'role' in (meta as Record<string, unknown>)
+  );
+}
+
 export function primaryEmailFromClerkUser(data: {
   email_addresses?: Array<{ id: string; email_address: string }>;
   primary_email_address_id?: string | null;

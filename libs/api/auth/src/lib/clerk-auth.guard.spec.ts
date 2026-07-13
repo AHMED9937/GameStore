@@ -86,4 +86,61 @@ describe('ClerkAuthGuard', () => {
       UnauthorizedException,
     );
   });
+
+  it('syncs from Clerk when JWT metadata marks admin but Neon role is user', async () => {
+    vi.mocked(reflector.getAllAndOverride).mockReturnValue(false);
+    vi.mocked(verifyToken).mockResolvedValue({
+      sub: 'user_admin',
+      metadata: { role: 'admin' },
+    } as never);
+    vi.mocked(usersRepository.findByClerkId).mockResolvedValue({
+      id: 'db_1',
+      clerkId: 'user_admin',
+      email: 'admin@example.com',
+      role: 'user',
+      firstName: null,
+      lastName: null,
+    } as never);
+    vi.mocked(usersRepository.syncFromClerkApiUser).mockResolvedValue({
+      id: 'db_1',
+      clerkId: 'user_admin',
+      email: 'admin@example.com',
+      role: 'admin',
+      firstName: null,
+      lastName: null,
+    } as never);
+
+    const getUser = vi.fn().mockResolvedValue({
+      id: 'user_admin',
+      firstName: null,
+      lastName: null,
+      primaryEmailAddressId: 'eml_1',
+      emailAddresses: [{ id: 'eml_1', emailAddress: 'admin@example.com' }],
+      publicMetadata: { role: 'admin' },
+    });
+    const { createClerkClient } = await import('@clerk/backend');
+    vi.mocked(createClerkClient).mockReturnValue({
+      users: { getUser },
+    } as never);
+    guard = new ClerkAuthGuard(reflector, usersRepository);
+
+    const request: {
+      headers: { authorization: string };
+      user?: { role: string };
+    } = {
+      headers: { authorization: 'Bearer good-token' },
+    };
+
+    const context = {
+      getHandler: () => ({}),
+      getClass: () => ({}),
+      switchToHttp: () => ({
+        getRequest: () => request,
+      }),
+    } as unknown as ExecutionContext;
+
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(usersRepository.syncFromClerkApiUser).toHaveBeenCalledOnce();
+    expect(request.user?.role).toBe('admin');
+  });
 });

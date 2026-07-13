@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   displayNameFromParts,
+  jwtHasRoleClaim,
   parseProfileUpdateInput,
   parseUserRole,
+  parseUserRoleFromJwtClaims,
   primaryEmailFromClerkUser,
 } from './auth.types';
 
@@ -11,6 +13,22 @@ describe('auth.types', () => {
     expect(parseUserRole({ role: 'admin' })).toBe('admin');
     expect(parseUserRole({ role: 'user' })).toBe('user');
     expect(parseUserRole(null)).toBe('user');
+  });
+
+  it('parseUserRoleFromJwtClaims reads metadata or public_metadata', () => {
+    expect(parseUserRoleFromJwtClaims({ metadata: { role: 'admin' } })).toBe(
+      'admin',
+    );
+    expect(
+      parseUserRoleFromJwtClaims({ public_metadata: { role: 'admin' } }),
+    ).toBe('admin');
+    expect(parseUserRoleFromJwtClaims({ sub: 'user_1' })).toBe('user');
+  });
+
+  it('jwtHasRoleClaim detects explicit role claims', () => {
+    expect(jwtHasRoleClaim({ metadata: { role: 'user' } })).toBe(true);
+    expect(jwtHasRoleClaim({ public_metadata: { role: 'admin' } })).toBe(true);
+    expect(jwtHasRoleClaim({ sub: 'user_1' })).toBe(false);
   });
 
   it('primaryEmailFromClerkUser prefers the primary email address', () => {
