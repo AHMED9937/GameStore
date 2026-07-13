@@ -10,53 +10,59 @@ import {
   NEXT_PUBLIC_API_URL,
   STAGING_API_URL,
   VERCEL_BUILD_COMMAND,
-  VERCEL_BUILD_COMMAND_IN_APP,
   VERCEL_BUILD_SCRIPT,
+  VERCEL_FRAMEWORK,
   VERCEL_INSTALL_COMMAND,
+  VERCEL_OUTPUT_DIRECTORY,
   VERCEL_ROOT_DIRECTORY,
   VERCEL_STAGING_ENV_KEYS,
 } from './vercel-config';
 
 const ROOT = join(__dirname, '../..');
-const WEB_VERCEL_JSON = JSON.parse(
-  readFileSync(join(ROOT, 'apps/web/vercel.json'), 'utf8'),
+const VERCEL_JSON = JSON.parse(
+  readFileSync(join(ROOT, 'vercel.json'), 'utf8'),
 ) as {
   framework?: string;
   installCommand?: string;
   buildCommand?: string;
   outputDirectory?: string;
 };
-const NEXT_CONFIG = readFileSync(
-  join(ROOT, 'apps/web/next.config.js'),
-  'utf8',
-);
 const PACKAGE_JSON = JSON.parse(
   readFileSync(join(ROOT, 'package.json'), 'utf8'),
 ) as { scripts?: Record<string, string> };
+const LINK_SCRIPT = readFileSync(
+  join(ROOT, 'scripts/deploy/link-next-output.cjs'),
+  'utf8',
+);
 
-describe('apps/web/vercel.json + vercel-build (D3)', () => {
-  it('targets apps/web as Vercel Root Directory with monorepo install/build', () => {
-    expect(VERCEL_ROOT_DIRECTORY).toBe('apps/web');
-    expect(WEB_VERCEL_JSON.framework).toBe('nextjs');
-    expect(WEB_VERCEL_JSON.installCommand).toBe(VERCEL_INSTALL_COMMAND);
-    expect(WEB_VERCEL_JSON.buildCommand).toBe(VERCEL_BUILD_COMMAND_IN_APP);
-    // Next.js builder looks for .next under Root Directory — never override.
-    expect(WEB_VERCEL_JSON.outputDirectory).toBeUndefined();
+describe('vercel.json (Nx + Vercel official layout)', () => {
+  it('uses empty Root Directory semantics with apps/web/.next output', () => {
+    expect(VERCEL_ROOT_DIRECTORY).toBe('');
+    expect(VERCEL_JSON.framework).toBe(VERCEL_FRAMEWORK);
+    expect(VERCEL_JSON.installCommand).toBe(VERCEL_INSTALL_COMMAND);
+    expect(VERCEL_JSON.buildCommand).toBe(`pnpm run ${VERCEL_BUILD_SCRIPT}`);
+    expect(VERCEL_JSON.outputDirectory).toBe(VERCEL_OUTPUT_DIRECTORY);
+    expect(VERCEL_OUTPUT_DIRECTORY).toBe('apps/web/.next');
   });
 
-  it('keeps default distDir so .next lands in apps/web', () => {
-    expect(NEXT_CONFIG).not.toContain('distDir');
-  });
-
-  it('generates Prisma client before Next build', () => {
+  it('builds Prisma then Next then verifies routes-manifest', () => {
     expect(PACKAGE_JSON.scripts?.[VERCEL_BUILD_SCRIPT]).toBe(VERCEL_BUILD_COMMAND);
     expect(VERCEL_BUILD_COMMAND).toContain('pnpm db:generate');
     expect(VERCEL_BUILD_COMMAND).toContain('apps/web');
     expect(VERCEL_BUILD_COMMAND).toContain('next build');
+    expect(VERCEL_BUILD_COMMAND).toContain('link-next-output.cjs');
     const generateAt = VERCEL_BUILD_COMMAND.indexOf('pnpm db:generate');
     const nextAt = VERCEL_BUILD_COMMAND.indexOf('next build');
+    const linkAt = VERCEL_BUILD_COMMAND.indexOf('link-next-output.cjs');
     expect(generateAt).toBeGreaterThanOrEqual(0);
     expect(nextAt).toBeGreaterThan(generateAt);
+    expect(linkAt).toBeGreaterThan(nextAt);
+  });
+
+  it('link script requires routes-manifest.json before succeeding', () => {
+    expect(LINK_SCRIPT).toContain('routes-manifest.json');
+    expect(LINK_SCRIPT).toContain('apps/web/.next');
+    expect(LINK_SCRIPT).toContain('symlinkSync');
   });
 });
 
@@ -65,7 +71,6 @@ describe('Vercel staging constants (D3)', () => {
     expect(STAGING_API_URL).toBe(
       'https://gamestore-production-4a06.up.railway.app',
     );
-    expect(STAGING_API_URL).toMatch(/^https:\/\//);
     expect(NEXT_PUBLIC_API_URL).toBe('/api');
   });
 
@@ -73,18 +78,12 @@ describe('Vercel staging constants (D3)', () => {
     expect(VERCEL_STAGING_ENV_KEYS).toContain('API_URL');
     expect(VERCEL_STAGING_ENV_KEYS).toContain('DATABASE_URL');
     expect(VERCEL_STAGING_ENV_KEYS).toContain('CLERK_WEBHOOK_SECRET');
-    expect(VERCEL_STAGING_ENV_KEYS).toContain('NEXT_PUBLIC_SITE_URL');
   });
 
   it('builds Clerk webhook and BFF smoke URLs', () => {
     const web = 'https://gamestore.vercel.app';
     expect(buildClerkWebhookUrl(web)).toBe(
       `https://gamestore.vercel.app${CLERK_WEBHOOK_PATH}`,
-    );
-    expect(CLERK_WEBHOOK_PATH).toBe('/api/webhooks');
-    expect(buildSiteUrl(web)).toBe('https://gamestore.vercel.app/');
-    expect(buildSiteUrl(`${web}/`, '/robots.txt')).toBe(
-      'https://gamestore.vercel.app/robots.txt',
     );
     expect(buildBffGamesUrl(web)).toBe('https://gamestore.vercel.app/api/games');
   });

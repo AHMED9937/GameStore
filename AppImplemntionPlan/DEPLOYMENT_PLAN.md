@@ -251,7 +251,7 @@ Report: API host URL, health 200, Stripe Test webhook created, `CORS_ORIGINS` st
 #### Slice work
 
 1. Install: `pnpm install --frozen-lockfile`; Build: `pnpm nx build web`.
-2. Vercel Root Directory = `apps/web`; enable “Include files outside Root Directory”; leave Output Directory empty. Install/build via `apps/web/vercel.json` (`cd ../.. && pnpm run vercel-build`).
+2. Vercel: **Root Directory leave EMPTY** (Nx requirement). Framework = Next.js. Output Directory override = `apps/web/.next`. Build = `pnpm run vercel-build` (see root `vercel.json`).
 3. Set Vercel env; deploy staging.
 4. Update Railway `CORS_ORIGINS` to the exact Vercel HTTPS origin(s); redeploy API if needed.
 5. Confirm Clerk webhook deliveries after a test sign-up.
