@@ -38,6 +38,7 @@ export const RAILWAY_STAGING_ENV_KEYS = [
   'STEAM_ENCRYPTION_KEY',
   'IGDB_CLIENT_ID',
   'IGDB_CLIENT_SECRET',
+  'NEXT_PUBLIC_SITE_URL',
 ] as const;
 
 export function buildStripeWebhookUrl(apiBaseUrl: string): string {

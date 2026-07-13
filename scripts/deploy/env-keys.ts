@@ -114,8 +114,15 @@ export const LATER_DEPLOY_ENV_KEYS: DeployEnvKey[] = [
   },
   {
     name: 'NEXT_PUBLIC_SITE_URL',
-    host: 'vercel',
-    description: 'Public site URL (https://*.vercel.app or custom domain)',
+    host: 'both',
+    description:
+      'Public site URL (https://offlinegamenia.com). Required on Railway for Stripe redirects; Vercel for SEO',
+    d1Required: false,
+  },
+  {
+    name: 'SITE_URL',
+    host: 'railway',
+    description: 'Optional Nest alias for NEXT_PUBLIC_SITE_URL (preferred if both set)',
     d1Required: false,
   },
   {

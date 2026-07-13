@@ -90,5 +90,6 @@ describe('Railway staging URLs + Stripe webhook (D2)', () => {
     expect(RAILWAY_STAGING_ENV_KEYS).toContain('STRIPE_WEBHOOK_SECRET');
     expect(RAILWAY_STAGING_ENV_KEYS).toContain('CORS_ORIGINS');
     expect(RAILWAY_STAGING_ENV_KEYS).toContain('STEAM_ENCRYPTION_KEY');
+    expect(RAILWAY_STAGING_ENV_KEYS).toContain('NEXT_PUBLIC_SITE_URL');
   });
 });
