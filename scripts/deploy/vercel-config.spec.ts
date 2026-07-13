@@ -10,6 +10,7 @@ import {
   NEXT_PUBLIC_API_URL,
   STAGING_API_URL,
   VERCEL_BUILD_COMMAND,
+  VERCEL_BUILD_COMMAND_IN_APP,
   VERCEL_BUILD_SCRIPT,
   VERCEL_INSTALL_COMMAND,
   VERCEL_ROOT_DIRECTORY,
@@ -17,9 +18,10 @@ import {
 } from './vercel-config';
 
 const ROOT = join(__dirname, '../..');
-const VERCEL_JSON = JSON.parse(
-  readFileSync(join(ROOT, 'vercel.json'), 'utf8'),
+const WEB_VERCEL_JSON = JSON.parse(
+  readFileSync(join(ROOT, 'apps/web/vercel.json'), 'utf8'),
 ) as {
+  framework?: string;
   installCommand?: string;
   buildCommand?: string;
   outputDirectory?: string;
@@ -32,18 +34,18 @@ const PACKAGE_JSON = JSON.parse(
   readFileSync(join(ROOT, 'package.json'), 'utf8'),
 ) as { scripts?: Record<string, string> };
 
-describe('vercel.json + vercel-build (D3)', () => {
-  it('uses monorepo root install and vercel-build script', () => {
-    expect(VERCEL_ROOT_DIRECTORY).toBe('.');
-    expect(VERCEL_JSON.installCommand).toBe(VERCEL_INSTALL_COMMAND);
-    expect(VERCEL_JSON.buildCommand).toBe(`pnpm run ${VERCEL_BUILD_SCRIPT}`);
-    // Next.js builder always looks for .next under Root Directory — do not override.
-    expect(VERCEL_JSON.outputDirectory).toBeUndefined();
+describe('apps/web/vercel.json + vercel-build (D3)', () => {
+  it('targets apps/web as Vercel Root Directory with monorepo install/build', () => {
+    expect(VERCEL_ROOT_DIRECTORY).toBe('apps/web');
+    expect(WEB_VERCEL_JSON.framework).toBe('nextjs');
+    expect(WEB_VERCEL_JSON.installCommand).toBe(VERCEL_INSTALL_COMMAND);
+    expect(WEB_VERCEL_JSON.buildCommand).toBe(VERCEL_BUILD_COMMAND_IN_APP);
+    // Next.js builder looks for .next under Root Directory — never override.
+    expect(WEB_VERCEL_JSON.outputDirectory).toBeUndefined();
   });
 
-  it('emits .next at repo root on Vercel so the Next builder finds it', () => {
-    expect(NEXT_CONFIG).toContain('process.env.VERCEL');
-    expect(NEXT_CONFIG).toContain("path.join('..', '..', '.next')");
+  it('keeps default distDir so .next lands in apps/web', () => {
+    expect(NEXT_CONFIG).not.toContain('distDir');
   });
 
   it('generates Prisma client before Next build', () => {
