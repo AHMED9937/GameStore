@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
   ServiceUnavailableException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import type { AuthUser } from '@gamestore/api/auth';
 import { assertOwnedResourceAccess } from '@gamestore/api/auth';
@@ -310,6 +311,11 @@ export class LicensesService {
   }
 
   private decryptPassword(stored: string): string {
+    if (!stored?.trim()) {
+      throw new UnprocessableEntityException(
+        'Steam account has no stored password. Re-save the account credentials in admin.',
+      );
+    }
     if (this.crypto.isEncrypted(stored)) {
       return this.crypto.decrypt(stored);
     }
