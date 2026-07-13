@@ -41,8 +41,6 @@ const { composePlugins, withNx } = require('@nx/next');
 const nextConfig = {
   // Prisma ships native binaries do not bundle (avoids stale schema in Turbopack cache).
   serverExternalPackages: ['@prisma/client', 'prisma'],
-  // Vercel Root Directory = monorepo root looks for /vercel/path0/.next; Next builds from apps/web.
-  distDir: process.env.VERCEL ? path.join('..', '..', '.next') : '.next',
   // Use this to set Nx-specific options
   // See: https://nx.dev/docs/technologies/react/next/Guides/next-config-setup
   nx: {},
