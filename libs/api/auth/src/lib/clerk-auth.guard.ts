@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { createClerkClient, verifyToken } from '@clerk/backend';
 import type { AuthUser } from './auth.types';
-import { parseUserRole } from './auth.types';
+import { jwtHasRoleClaim, parseUserRoleFromJwtClaims } from './auth.types';
 import { ClerkConfig } from './clerk.config';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { clerkApiUserFromSdk } from './clerk-user-sync';
@@ -94,7 +94,8 @@ export class ClerkAuthGuard implements CanActivate {
     }
 
     let clerkId: string;
-    let roleFromToken: ReturnType<typeof parseUserRole> = 'user';
+    let roleFromToken: ReturnType<typeof parseUserRoleFromJwtClaims> = 'user';
+    let hasRoleClaim = false;
 
     try {
       const payload = await verifyToken(token, { secretKey });
@@ -102,15 +103,20 @@ export class ClerkAuthGuard implements CanActivate {
         throw new UnauthorizedException('Invalid token subject');
       }
       clerkId = payload.sub;
-      roleFromToken = parseUserRole(
-        (payload as { public_metadata?: unknown }).public_metadata,
-      );
+      const jwtPayload = payload as Record<string, unknown>;
+      hasRoleClaim = jwtHasRoleClaim(jwtPayload);
+      roleFromToken = parseUserRoleFromJwtClaims(jwtPayload);
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
     let user = await this.usersRepository.findByClerkId(clerkId);
-    if (!user || (roleFromToken === 'admin' && user.role !== 'admin')) {
+    const needsClerkSync =
+      !user ||
+      (roleFromToken === 'admin' && user.role !== 'admin') ||
+      !hasRoleClaim;
+
+    if (needsClerkSync) {
       const clerkUser = await this.clerk.users.getUser(clerkId);
       user = await this.usersRepository.syncFromClerkApiUser(
         clerkApiUserFromSdk(clerkUser),

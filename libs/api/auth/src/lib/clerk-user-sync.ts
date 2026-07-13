@@ -93,16 +93,42 @@ export async function upsertClerkUser(
   prisma: PrismaUserDelegate,
   input: ClerkUserMirrorInput,
 ): Promise<User> {
-  return prisma.user.upsert({
+  const byClerkId = await prisma.user.findUnique({
     where: { clerkId: input.clerkId },
-    create: {
+  });
+
+  if (byClerkId) {
+    return prisma.user.update({
+      where: { id: byClerkId.id },
+      data: {
+        email: input.email,
+        role: input.role,
+        firstName: input.firstName,
+        lastName: input.lastName,
+      },
+    });
+  }
+
+  const byEmail = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+
+  if (byEmail) {
+    // Same email, new Clerk user id (dev→live, recreated account): relink row.
+    return prisma.user.update({
+      where: { id: byEmail.id },
+      data: {
+        clerkId: input.clerkId,
+        role: input.role,
+        firstName: input.firstName,
+        lastName: input.lastName,
+      },
+    });
+  }
+
+  return prisma.user.create({
+    data: {
       clerkId: input.clerkId,
-      email: input.email,
-      role: input.role,
-      firstName: input.firstName,
-      lastName: input.lastName,
-    },
-    update: {
       email: input.email,
       role: input.role,
       firstName: input.firstName,
