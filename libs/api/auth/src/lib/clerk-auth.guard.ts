@@ -123,6 +123,10 @@ export class ClerkAuthGuard implements CanActivate {
       );
     }
 
+    if (!user) {
+      throw new UnauthorizedException('Unable to resolve authenticated user');
+    }
+
     request.user = {
       id: user.id,
       clerkId: user.clerkId,
