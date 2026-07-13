@@ -44,6 +44,22 @@ describe('admin-setup helpers', () => {
     );
   });
 
+  it('apiErrorMessage surfaces Steam decrypt mismatch from Nest 422', () => {
+    expect(
+      apiErrorMessage(
+        new ApiError(
+          422,
+          JSON.stringify({
+            statusCode: 422,
+            message:
+              'Unable to decrypt Steam credentials. STEAM_ENCRYPTION_KEY on this server must match the key used when accounts were saved.',
+            error: 'Unprocessable Entity',
+          }),
+        ),
+      ),
+    ).toMatch(/STEAM_ENCRYPTION_KEY/);
+  });
+
   it('isTransientApiError detects retryable failures', () => {
     expect(isTransientApiError(new ApiError(503, 'busy'))).toBe(true);
     expect(isTransientApiError(new ApiError(404, 'missing'))).toBe(false);

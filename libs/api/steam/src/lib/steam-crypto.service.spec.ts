@@ -1,7 +1,12 @@
+import {
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { SteamCryptoService } from './steam-crypto.service';
 
 const TEST_KEY = 'a'.repeat(64);
+const OTHER_KEY = 'b'.repeat(64);
 
 describe('SteamCryptoService', () => {
   beforeEach(() => {
@@ -35,5 +40,27 @@ describe('SteamCryptoService', () => {
     const encrypted = service.encrypt('secret');
     expect(service.isEncrypted(encrypted)).toBe(true);
     expect(service.isEncrypted('ENCRYPTED_PLACEHOLDER')).toBe(false);
+  });
+
+  it('throws UnprocessableEntityException when encryption key cannot decrypt', () => {
+    const encrypter = new SteamCryptoService();
+    const cipher = encrypter.encrypt('secret-password');
+
+    vi.stubEnv('STEAM_ENCRYPTION_KEY', OTHER_KEY);
+    const decrypter = new SteamCryptoService();
+
+    expect(() => decrypter.decrypt(cipher)).toThrow(UnprocessableEntityException);
+    expect(() => decrypter.decrypt(cipher)).toThrow(/STEAM_ENCRYPTION_KEY/);
+  });
+
+  it('throws UnprocessableEntityException for invalid ciphertext format', () => {
+    const service = new SteamCryptoService();
+    expect(() => service.decrypt('not-valid')).toThrow(UnprocessableEntityException);
+  });
+
+  it('throws ServiceUnavailableException when key is missing', () => {
+    vi.stubEnv('STEAM_ENCRYPTION_KEY', '');
+    const service = new SteamCryptoService();
+    expect(() => service.encrypt('x')).toThrow(ServiceUnavailableException);
   });
 });
