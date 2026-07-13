@@ -1,27 +1,29 @@
 /**
- * Vercel staging web deploy constants (DEPLOYMENT_PLAN.md D3).
- * Keep in sync with apps/web/vercel.json + package.json vercel-build — tests assert that.
+ * Vercel web deploy constants (DEPLOYMENT_PLAN.md D3) — official Nx + Vercel layout.
  *
- * Vercel Project Settings (required):
- * - Root Directory = apps/web
- * - Include files outside Root Directory = ON
- * - Output Directory = empty (default; do not override)
- * - Framework = Next.js
+ * Dashboard (must match; Root Directory empty is required for Nx):
+ * - Root Directory: leave EMPTY (not apps/web, not .)
+ * - Framework Preset: Next.js
+ * - Build Command override: pnpm run vercel-build  (or leave to vercel.json)
+ * - Output Directory override: apps/web/.next
+ * - Install Command: pnpm install --frozen-lockfile
+ *
+ * @see https://nx.dev/docs/technologies/react/guides/deploy-nextjs-to-vercel
  */
 
-export const VERCEL_ROOT_DIRECTORY = 'apps/web';
+export const VERCEL_ROOT_DIRECTORY = '';
 
-export const VERCEL_INSTALL_COMMAND =
-  'cd ../.. && pnpm install --frozen-lockfile';
+export const VERCEL_FRAMEWORK = 'nextjs';
 
-export const VERCEL_BUILD_COMMAND_IN_APP =
-  'cd ../.. && pnpm run vercel-build';
+export const VERCEL_INSTALL_COMMAND = 'pnpm install --frozen-lockfile';
 
 export const VERCEL_BUILD_SCRIPT = 'vercel-build';
 
-/** Root package.json script body — prisma generate before Next (Clerk webhook uses Prisma). */
+export const VERCEL_OUTPUT_DIRECTORY = 'apps/web/.next';
+
+/** Root package.json vercel-build — generate Prisma, next build in apps/web, verify+link .next */
 export const VERCEL_BUILD_COMMAND =
-  'pnpm db:generate && cd apps/web && node ../../node_modules/next/dist/bin/next build';
+  'pnpm db:generate && node node_modules/next/dist/bin/next build apps/web && node scripts/deploy/link-next-output.cjs';
 
 /** Known Railway staging API (BFF upstream). */
 export const STAGING_API_URL =
@@ -29,7 +31,6 @@ export const STAGING_API_URL =
 
 export const NEXT_PUBLIC_API_URL = '/api';
 
-/** Clerk webhook route on Next (not Railway). */
 export const CLERK_WEBHOOK_PATH = '/api/webhooks';
 
 export const CLERK_WEBHOOK_EVENTS = [
@@ -38,7 +39,6 @@ export const CLERK_WEBHOOK_EVENTS = [
   'user.deleted',
 ] as const;
 
-/** Env vars that must be set on the Vercel web project for staging. */
 export const VERCEL_STAGING_ENV_KEYS = [
   'API_URL',
   'NEXT_PUBLIC_API_URL',

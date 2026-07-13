@@ -16,7 +16,7 @@
     "deploy:smoke-web": "tsx scripts/deploy/smoke-web-cli.ts",
     "deploy:railway-config:test": "vitest run scripts/deploy/railway-config.spec.ts",
     "deploy:vercel-config:test": "vitest run scripts/deploy/vercel-config.spec.ts",
-    "vercel-build": "pnpm db:generate && cd apps/web && node ../../node_modules/next/dist/bin/next build"
+    "vercel-build": "pnpm db:generate && node node_modules/next/dist/bin/next build apps/web && node scripts/deploy/link-next-output.cjs"
   },
   "prisma": {
     "seed": "tsx libs/api/prisma/prisma/seed.ts"
