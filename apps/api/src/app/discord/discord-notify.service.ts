@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { resolveSiteUrl } from '@gamestore/api/stripe';
 import {
   buildDiscordAnnouncementEmbed,
   discordEmbedToApiFormat,
@@ -32,14 +33,6 @@ export function parseWebhookUrl(url: string): ParsedWebhookUrl | null {
     webhookId: match[2],
     token: match[3],
   };
-}
-
-export function resolveSiteUrl(): string {
-  return (
-    process.env['NEXT_PUBLIC_SITE_URL']?.trim() ||
-    process.env['SITE_URL']?.trim() ||
-    'http://localhost:3000'
-  ).replace(/\/$/, '');
 }
 
 export function buildAnnouncementBody(
