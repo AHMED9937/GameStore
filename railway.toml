@@ -1,12 +1,18 @@
 # Railway — Nest API (DEPLOYMENT_PLAN.md slice D2)
 # Root Directory = monorepo root (not apps/api).
 # Set variables from .env.staging in the Railway dashboard (never commit secrets).
+#
+# Use one service for the Nest API. Do not create per-package services
+# (e.g. @gamestore/api/data-access) — those are libraries, not deployables.
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm nx build api && pnpm db:migrate"
+# Build the webpack bundle only. Migrations run in releaseCommand so they use
+# runtime DATABASE_URL and do not fail the image build on transient DB issues.
+buildCommand = "pnpm install --frozen-lockfile && NX_DAEMON=false pnpm nx build api"
 
 [deploy]
+releaseCommand = "pnpm db:migrate"
 startCommand = "node dist/apps/api/main.js"
 healthcheckPath = "/api/health/db"
 healthcheckTimeout = 120

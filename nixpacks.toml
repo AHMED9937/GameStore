@@ -1,3 +1,7 @@
 # Nixpacks settings for Railway Nest API deploys (pnpm monorepo).
+# Force the Node provider so monorepo apps/web (Next.js) is not treated as the app.
+providers = ["node"]
+
 [variables]
 NIXPACKS_NODE_VERSION = "20"
+NPM_CONFIG_PRODUCTION = "false"
