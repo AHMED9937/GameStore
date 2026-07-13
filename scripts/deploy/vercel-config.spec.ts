@@ -12,7 +12,7 @@ import {
   VERCEL_BUILD_COMMAND,
   VERCEL_BUILD_SCRIPT,
   VERCEL_INSTALL_COMMAND,
-  VERCEL_OUTPUT_DIRECTORY,
+  VERCEL_ROOT_DIRECTORY,
   VERCEL_STAGING_ENV_KEYS,
 } from './vercel-config';
 
@@ -24,15 +24,26 @@ const VERCEL_JSON = JSON.parse(
   buildCommand?: string;
   outputDirectory?: string;
 };
+const NEXT_CONFIG = readFileSync(
+  join(ROOT, 'apps/web/next.config.js'),
+  'utf8',
+);
 const PACKAGE_JSON = JSON.parse(
   readFileSync(join(ROOT, 'package.json'), 'utf8'),
 ) as { scripts?: Record<string, string> };
 
 describe('vercel.json + vercel-build (D3)', () => {
   it('uses monorepo root install and vercel-build script', () => {
+    expect(VERCEL_ROOT_DIRECTORY).toBe('.');
     expect(VERCEL_JSON.installCommand).toBe(VERCEL_INSTALL_COMMAND);
     expect(VERCEL_JSON.buildCommand).toBe(`pnpm run ${VERCEL_BUILD_SCRIPT}`);
-    expect(VERCEL_JSON.outputDirectory).toBe(VERCEL_OUTPUT_DIRECTORY);
+    // Next.js builder always looks for .next under Root Directory — do not override.
+    expect(VERCEL_JSON.outputDirectory).toBeUndefined();
+  });
+
+  it('emits .next at repo root on Vercel so the Next builder finds it', () => {
+    expect(NEXT_CONFIG).toContain('process.env.VERCEL');
+    expect(NEXT_CONFIG).toContain("path.join('..', '..', '.next')");
   });
 
   it('generates Prisma client before Next build', () => {

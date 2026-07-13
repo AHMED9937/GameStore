@@ -7,8 +7,12 @@ export const VERCEL_INSTALL_COMMAND = 'pnpm install --frozen-lockfile';
 
 export const VERCEL_BUILD_SCRIPT = 'vercel-build';
 
-/** Next writes under apps/web; root Vercel project must point here. */
-export const VERCEL_OUTPUT_DIRECTORY = 'apps/web/.next';
+/**
+ * Vercel Root Directory must be monorepo `.` (not apps/web alone).
+ * Do not set outputDirectory — Next.js builder ignores it and looks for `.next` at root.
+ * apps/web/next.config.js sets distDir to ../../.next when VERCEL=1.
+ */
+export const VERCEL_ROOT_DIRECTORY = '.';
 
 /** Root package.json script body — prisma generate before Next (Clerk webhook uses Prisma). */
 export const VERCEL_BUILD_COMMAND =
