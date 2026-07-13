@@ -5,16 +5,6 @@
   "projectType": "library",
   "tags": ["scope:api", "type:integration", "platform:database"],
   "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "outputs": ["{options.outputPath}"],
-      "options": {
-        "outputPath": "dist/libs/api/prisma",
-        "main": "libs/api/prisma/src/index.ts",
-        "tsConfig": "libs/api/prisma/tsconfig.lib.json",
-        "assets": ["libs/api/prisma/*.md"]
-      }
-    },
     "prisma-generate": {
       "executor": "nx:run-commands",
       "cache": true,

@@ -9,13 +9,7 @@
       "executor": "@nx/webpack:webpack",
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
-      "dependsOn": [
-        "api-prisma:prisma-generate",
-        "api-prisma:build",
-        "api-stripe:build",
-        "api-steam:build",
-        "api-igdb:build"
-      ],
+      "dependsOn": ["^build", "api-prisma:prisma-generate"],
       "options": {
         "target": "node",
         "compiler": "tsc",

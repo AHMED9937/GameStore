@@ -1,0 +1,14 @@
+# Railway — Nest API (DEPLOYMENT_PLAN.md slice D2)
+# Root Directory = monorepo root (not apps/api).
+# Set variables from .env.staging in the Railway dashboard (never commit secrets).
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "pnpm install --frozen-lockfile && pnpm nx build api && pnpm db:migrate"
+
+[deploy]
+startCommand = "node dist/apps/api/main.js"
+healthcheckPath = "/api/health/db"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

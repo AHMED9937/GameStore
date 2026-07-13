@@ -71,8 +71,10 @@ export class AdminAccountsService {
       ...new Set(rows.map((row) => row.gameId).filter((id): id is string => id !== null)),
     ];
     const games = await Promise.all(gameIds.map((id) => this.games.findById(id)));
-    const titleById = new Map(
-      games.filter(Boolean).map((game) => [game!.id, game!.title]),
+    const titleById = new Map<string, string>(
+      games
+        .filter((game): game is NonNullable<typeof game> => Boolean(game))
+        .map((game) => [game.id, game.title]),
     );
 
     return rows.map((row) =>
