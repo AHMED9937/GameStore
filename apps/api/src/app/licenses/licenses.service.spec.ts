@@ -43,6 +43,8 @@ describe('LicensesService ownership', () => {
 
   const accounts = {
     findAvailableForGame: vi.fn(),
+    claimSeatForGame: vi.fn(),
+    advanceNextAccountIfFull: vi.fn(),
   } as unknown as import('@gamestore/api/data-access').GameAccountsRepository;
 
   const crypto = {
@@ -164,7 +166,114 @@ describe('LicensesService ownership', () => {
     await expect(service.activate('EXPIRED-KEY', userA)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
-    expect(accounts.findAvailableForGame).not.toHaveBeenCalled();
+    expect(accounts.claimSeatForGame).not.toHaveBeenCalled();
+  });
+
+  it('activates a reserved license without claiming another seat', async () => {
+    vi.mocked(licenses.findByKeyForActivation).mockResolvedValue({
+      id: 'lic-1',
+      licenseKey: 'RESERVED-KEY',
+      status: 'available',
+      ownerId: 'user-a',
+      gameId: 'g1',
+      accountId: 'acct-1',
+      expiresAt: null,
+      validFrom: new Date(),
+      game: {
+        id: 'g1',
+        title: 'Game',
+        slug: 'game',
+        coverImage: null,
+        coverCardImage: null,
+      },
+      account: {
+        id: 'acct-1',
+        username: 'pool-user',
+        passwordEncrypted: 'plain-pass',
+        isActive: true,
+        lockedUntil: null,
+      },
+    } as never);
+    vi.mocked(licenses.activateLicense).mockResolvedValue({
+      licenseKey: 'RESERVED-KEY',
+      status: 'activated',
+      game: {
+        id: 'g1',
+        title: 'Game',
+        slug: 'game',
+        coverImage: null,
+        coverCardImage: null,
+      },
+      account: {
+        id: 'acct-1',
+        username: 'pool-user',
+        passwordEncrypted: 'plain-pass',
+      },
+    } as never);
+
+    const result = await service.activate('RESERVED-KEY', userA);
+
+    expect(accounts.claimSeatForGame).not.toHaveBeenCalled();
+    expect(licenses.activateLicense).toHaveBeenCalledWith({
+      licenseId: 'lic-1',
+      accountId: 'acct-1',
+      ownerId: 'user-a',
+      seatAlreadyReserved: true,
+    });
+    expect(result.account.username).toBe('pool-user');
+  });
+
+  it('falls back to claimSeatForGame when reservation is missing', async () => {
+    vi.mocked(licenses.findByKeyForActivation).mockResolvedValue({
+      id: 'lic-2',
+      licenseKey: 'OPEN-KEY',
+      status: 'available',
+      ownerId: 'user-a',
+      gameId: 'g1',
+      accountId: null,
+      expiresAt: null,
+      validFrom: new Date(),
+      game: {
+        id: 'g1',
+        title: 'Game',
+        slug: 'game',
+        coverImage: null,
+        coverCardImage: null,
+      },
+      account: null,
+    } as never);
+    vi.mocked(accounts.claimSeatForGame).mockResolvedValue({
+      id: 'acct-2',
+      username: 'fallback-user',
+      passwordEncrypted: 'secret',
+    } as never);
+    vi.mocked(licenses.activateLicense).mockResolvedValue({
+      licenseKey: 'OPEN-KEY',
+      status: 'activated',
+      game: {
+        id: 'g1',
+        title: 'Game',
+        slug: 'game',
+        coverImage: null,
+        coverCardImage: null,
+      },
+      account: {
+        id: 'acct-2',
+        username: 'fallback-user',
+        passwordEncrypted: 'secret',
+      },
+    } as never);
+
+    await service.activate('OPEN-KEY', userA);
+
+    expect(accounts.claimSeatForGame).toHaveBeenCalledWith('g1');
+    expect(licenses.activateLicense).toHaveBeenCalledWith({
+      licenseId: 'lic-2',
+      accountId: 'acct-2',
+      ownerId: 'user-a',
+      seatAlreadyReserved: true,
+    });
+    expect(accounts.advanceNextAccountIfFull).toHaveBeenCalledWith('g1');
   });
 
   it('findMine returns licenses for the current user', async () => {

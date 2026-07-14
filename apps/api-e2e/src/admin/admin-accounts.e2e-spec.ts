@@ -115,20 +115,32 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
     });
   });
 
-  it('PUT /api/admin/accounts/:id updates username and region', async () => {
+  it('PUT /api/admin/accounts/:id updates region and leaves username immutable', async () => {
     const response = await request(app.getHttpServer())
       .put(`/api/admin/accounts/${createdAccountId}`)
       .set(authAs(E2E_TOKENS.admin))
       .send({
-        username: `pool-${slug}-updated`,
         region: 'eu',
       })
       .expect(200);
 
     expect(response.body).toMatchObject({
       id: createdAccountId,
-      username: `pool-${slug}-updated`,
+      username: `pool-${slug}`,
       region: 'eu',
+    });
+  });
+
+  it('POST /api/admin/accounts/:id/clear-guard-lock clears Steam Guard lock', async () => {
+    const response = await request(app.getHttpServer())
+      .post(`/api/admin/accounts/${createdAccountId}/clear-guard-lock`)
+      .set(authAs(E2E_TOKENS.admin))
+      .expect(200);
+
+    expect(response.body).toMatchObject({
+      id: createdAccountId,
+      lockedUntil: null,
+      guardLockedByLicenseId: null,
     });
   });
 
@@ -203,7 +215,7 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
     });
   });
 
-  it('POST /api/admin/accounts/:id/unassign is blocked while account is active', async () => {
+  it('POST /api/admin/accounts/:id/unassign returns account to inventory while active', async () => {
     const linked = await request(app.getHttpServer())
       .get(`/api/admin/accounts?gameId=${steamGameId}`)
       .set(authAs(E2E_TOKENS.admin))
@@ -213,27 +225,6 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
       (row: { username: string }) => row.username === `inventory-${slug}`,
     );
     expect(inventoryAccount?.id).toBeTruthy();
-
-    await request(app.getHttpServer())
-      .post(`/api/admin/accounts/${inventoryAccount.id}/unassign`)
-      .set(authAs(E2E_TOKENS.admin))
-      .expect(400);
-  });
-
-  it('POST /api/admin/accounts/:id/unassign returns account to inventory after deactivation', async () => {
-    const linked = await request(app.getHttpServer())
-      .get(`/api/admin/accounts?gameId=${steamGameId}`)
-      .set(authAs(E2E_TOKENS.admin))
-      .expect(200);
-
-    const inventoryAccount = linked.body.find(
-      (row: { username: string }) => row.username === `inventory-${slug}`,
-    );
-
-    await request(app.getHttpServer())
-      .post(`/api/admin/accounts/${inventoryAccount.id}/deactivate`)
-      .set(authAs(E2E_TOKENS.admin))
-      .expect(201);
 
     const response = await request(app.getHttpServer())
       .post(`/api/admin/accounts/${inventoryAccount.id}/unassign`)
@@ -245,6 +236,28 @@ describe.skipIf(!hasDatabase)('Admin accounts API', () => {
       gameId: null,
       gameTitle: null,
     });
+  });
+
+  it('PATCH /api/admin/games/:id/next-account sets preferred next account', async () => {
+    const createResponse = await request(app.getHttpServer())
+      .post('/api/admin/accounts')
+      .set(authAs(E2E_TOKENS.admin))
+      .send({
+        gameId: steamGameId,
+        username: `next-${slug}`,
+        password: TEST_PASSWORD,
+        sharedSecret: TEST_SHARED_SECRET,
+        region: 'global',
+      })
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .patch(`/api/admin/games/${steamGameId}/next-account`)
+      .set(authAs(E2E_TOKENS.admin))
+      .send({ accountId: createResponse.body.id })
+      .expect(200);
+
+    expect(response.body.nextAccountId).toBe(createResponse.body.id);
   });
 
   it('POST /api/admin/accounts/bulk-deactivate marks multiple accounts inactive', async () => {

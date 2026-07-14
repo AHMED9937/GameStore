@@ -23,6 +23,8 @@ import {
   AdminAccountsService,
   type AssignAdminAccountDto,
   type CreateAdminAccountDto,
+  type DeactivateAdminAccountDto,
+  type UnassignAdminAccountDto,
   type UpdateAdminAccountDto,
 } from './admin-accounts.service';
 import type { AdminAccountListFiltersDto } from './admin-account-list-filters.dto';
@@ -140,14 +142,39 @@ export class AdminAccountsController {
   @HttpCode(200)
   async unassign(
     @Param('id') id: string,
+    @Body() body: UnassignAdminAccountDto = {},
     @CurrentUser() user: AuthUser,
     @Req() request: AuditRequest,
   ) {
-    const account = await this.accounts.unassignFromGame(id);
+    const before = await this.accounts.findOne(id);
+    const account = await this.accounts.unassignFromGame(id, body ?? {});
     recordAudit(this.auditLogService, {
       ...auditContextFromRequest(request),
       userId: user.id,
       action: 'admin.account.unassign',
+      resource: 'game_account',
+      resourceId: id,
+      metadata: {
+        username: account.username,
+        targetAccountId: body?.targetAccountId ?? null,
+        occupiedSeats: before.activeUsersCount,
+      },
+    });
+    return account;
+  }
+
+  @Post(':id/clear-guard-lock')
+  @HttpCode(200)
+  async clearGuardLock(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const account = await this.accounts.clearGuardLock(id);
+    recordAudit(this.auditLogService, {
+      ...auditContextFromRequest(request),
+      userId: user.id,
+      action: 'admin.account.clear_guard_lock',
       resource: 'game_account',
       resourceId: id,
       metadata: { username: account.username },
@@ -158,16 +185,24 @@ export class AdminAccountsController {
   @Post(':id/deactivate')
   async deactivate(
     @Param('id') id: string,
+    @Body() body: DeactivateAdminAccountDto = {},
     @CurrentUser() user: AuthUser,
     @Req() request: AuditRequest,
   ) {
-    const account = await this.accounts.deactivate(id);
+    const before = await this.accounts.findOne(id);
+    const account = await this.accounts.deactivate(id, body ?? {});
     recordAudit(this.auditLogService, {
       ...auditContextFromRequest(request),
       userId: user.id,
       action: 'admin.account.deactivate',
       resource: 'game_account',
       resourceId: id,
+      metadata: {
+        username: account.username,
+        targetAccountId: body?.targetAccountId ?? null,
+        occupiedSeats: before.activeUsersCount,
+        unassigned: true,
+      },
     });
     return account;
   }

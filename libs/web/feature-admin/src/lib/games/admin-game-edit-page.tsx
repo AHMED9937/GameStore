@@ -43,6 +43,7 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
   const [igdbMeta, setIgdbMeta] = useState<AdminGameIgdbMeta | null>(null);
   const [coverCardImage, setCoverCardImage] = useState<string | null>(null);
   const [hasActivePool, setHasActivePool] = useState(false);
+  const [nextAccountId, setNextAccountId] = useState<string | null>(null);
   const [discordMeta, setDiscordMeta] = useState<AdminGameDiscord | null>(null);
 
   const loadGame = useCallback(async () => {
@@ -55,6 +56,7 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
       });
       setCoverCardImage(result.coverCardImage ?? null);
       setHasActivePool(result.accountSummary.hasActivePool);
+      setNextAccountId(result.nextAccountId ?? null);
       setDiscordMeta(result.discord ?? null);
     }
     return result;
@@ -188,6 +190,7 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
               accountsSection={
                 <AdminGameAccountsSection
                   gameId={gameId}
+                  nextAccountId={nextAccountId}
                   disabled={saving || deleting || isControlled}
                   onAccountsChange={() => {
                     setAccountsVersion((version) => version + 1);

@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { GamesRepository, StoreSettingsRepository } from '@gamestore/api/data-access';
+import type { GameAccountsRepository, GamesRepository, StoreSettingsRepository } from '@gamestore/api/data-access';
 import type { PrismaService } from '@gamestore/api/prisma';
 import type { EntitlementCleanupService } from '../../entitlements/entitlement-cleanup.service';
 import type { DiscordNotifyService } from '../../discord/discord-notify.service';
@@ -27,11 +27,20 @@ const sampleGame = {
   requirementsMin: null,
   requirementsRecommended: null,
   featuredOrder: null,
+  nextAccountId: null,
   soldOut: false,
   discordPublishMessageId: null,
   discordAnnounceDescription: null,
   media: [],
 };
+
+function createGameAccountsMock(): GameAccountsRepository {
+  return {
+    findById: vi.fn(),
+    setNextAccountId: vi.fn().mockResolvedValue({ id: 'game-1', nextAccountId: null }),
+    getNextAccountId: vi.fn().mockResolvedValue(null),
+  } as unknown as GameAccountsRepository;
+}
 
 function createDiscordNotify(): DiscordNotifyService {
   return {
@@ -64,6 +73,8 @@ describe('AdminGamesService bulk actions', () => {
     delete: vi.fn(),
   } as unknown as GamesRepository);
 
+  const gameAccounts = createGameAccountsMock();
+
   const prisma = {
     gameAccount: {
       count: vi.fn().mockResolvedValue(0),
@@ -95,6 +106,7 @@ describe('AdminGamesService bulk actions', () => {
     vi.clearAllMocks();
     service = new AdminGamesService(
       games,
+      gameAccounts,
       prisma,
       entitlementCleanup as EntitlementCleanupService,
       storeSettings,
@@ -140,6 +152,8 @@ describe('AdminGamesService findAll', () => {
     findByIdAdmin: vi.fn(),
   } as unknown as GamesRepository;
 
+  const gameAccounts = createGameAccountsMock();
+
   const prisma = {
     gameAccount: {
       count: vi.fn(),
@@ -164,6 +178,7 @@ describe('AdminGamesService findAll', () => {
     vi.clearAllMocks();
     service = new AdminGamesService(
       games,
+      gameAccounts,
       prisma,
       entitlementCleanup,
       storeSettings,
@@ -225,6 +240,8 @@ describe('AdminGamesService featured games', () => {
     update: vi.fn(),
   } as unknown as GamesRepository);
 
+  const gameAccounts = createGameAccountsMock();
+
   const prisma = {
     game: {
       findMany: vi.fn(),
@@ -252,6 +269,7 @@ describe('AdminGamesService featured games', () => {
     vi.clearAllMocks();
     service = new AdminGamesService(
       games,
+      gameAccounts,
       prisma,
       entitlementCleanup,
       storeSettings,
@@ -346,6 +364,8 @@ describe('AdminGamesService getReadiness', () => {
     findByIdAdmin: vi.fn(),
   } as unknown as GamesRepository;
 
+  const gameAccounts = createGameAccountsMock();
+
   const prisma = {
     gameAccount: {
       count: vi.fn().mockResolvedValue(1),
@@ -365,8 +385,9 @@ describe('AdminGamesService getReadiness', () => {
   } as unknown as StoreSettingsRepository;
 
   const service = new AdminGamesService(
-    games,
-    prisma,
+      games,
+      gameAccounts,
+      prisma,
     entitlementCleanup,
     storeSettings,
     createDiscordNotify(),
@@ -398,6 +419,8 @@ describe('AdminGamesService soldOut', () => {
     update: vi.fn(),
   } as unknown as GamesRepository);
 
+  const gameAccounts = createGameAccountsMock();
+
   const prisma = {
     gameAccount: {
       count: vi.fn(),
@@ -422,6 +445,7 @@ describe('AdminGamesService soldOut', () => {
     vi.clearAllMocks();
     service = new AdminGamesService(
       games,
+      gameAccounts,
       prisma,
       entitlementCleanup,
       storeSettings,
@@ -478,6 +502,57 @@ describe('AdminGamesService soldOut', () => {
       expect.objectContaining({ soldOut: true }),
     );
   });
+
+  it('setNextAccount validates account belongs to the game', async () => {
+    vi.mocked(games.findByIdAdmin).mockResolvedValue(sampleGame as never);
+    vi.mocked(gameAccounts.findById).mockResolvedValue({
+      id: 'acct-1',
+      gameId: 'other-game',
+      isActive: true,
+    } as never);
+
+    await expect(
+      service.setNextAccount('game-1', 'acct-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('setNextAccount stores preferred next account id', async () => {
+    vi.mocked(games.findByIdAdmin).mockResolvedValue({
+      ...sampleGame,
+      nextAccountId: 'acct-1',
+    } as never);
+    vi.mocked(gameAccounts.findById).mockResolvedValue({
+      id: 'acct-1',
+      gameId: 'game-1',
+      isActive: true,
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      lockedUntil: null,
+    } as never);
+    vi.mocked(prisma.gameAccount.count).mockResolvedValue(1);
+
+    const result = await service.setNextAccount('game-1', 'acct-1');
+
+    expect(gameAccounts.setNextAccountId).toHaveBeenCalledWith('game-1', 'acct-1');
+    expect(result.nextAccountId).toBe('acct-1');
+  });
+
+  it('setNextAccount rejects Steam Guard locked accounts', async () => {
+    vi.mocked(games.findByIdAdmin).mockResolvedValue(sampleGame as never);
+    vi.mocked(gameAccounts.findById).mockResolvedValue({
+      id: 'acct-1',
+      gameId: 'game-1',
+      isActive: true,
+      activeUsersCount: 1,
+      maxActiveUsers: 50,
+      lockedUntil: new Date('2099-01-01T00:00:00.000Z'),
+    } as never);
+
+    await expect(
+      service.setNextAccount('game-1', 'acct-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(gameAccounts.setNextAccountId).not.toHaveBeenCalled();
+  });
 });
 
 describe('AdminGamesService Discord publish notify', () => {
@@ -486,6 +561,8 @@ describe('AdminGamesService Discord publish notify', () => {
     update: vi.fn(),
     delete: vi.fn(),
   } as unknown as GamesRepository);
+
+  const gameAccounts = createGameAccountsMock();
 
   const prisma = {
     gameAccount: {
@@ -521,6 +598,7 @@ describe('AdminGamesService Discord publish notify', () => {
     });
     service = new AdminGamesService(
       games,
+      gameAccounts,
       prisma,
       entitlementCleanup,
       storeSettings,

@@ -17,6 +17,7 @@ const sampleGame = {
   soldOut: false,
   soldOutManual: false,
   featuredOrder: null,
+  nextAccountId: null,
   igdbId: null,
   igdbSyncedAt: null,
   igdbCoverUrl: null,
@@ -44,6 +45,10 @@ describe('AdminGamesController', () => {
     }),
     getFeaturedGames: vi.fn().mockResolvedValue({ featured: [], available: [] }),
     updateFeaturedGames: vi.fn().mockResolvedValue({ featured: [], available: [] }),
+    setNextAccount: vi.fn().mockResolvedValue({
+      ...sampleGame,
+      nextAccountId: 'acct-1',
+    }),
   } satisfies AdminGamesService;
 
   const igdbImport = {

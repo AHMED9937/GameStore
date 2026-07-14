@@ -9,6 +9,7 @@ export type AdminAccountFormProps = {
   mode: 'create' | 'edit';
   values: AdminAccountFormValues;
   disabled?: boolean;
+  minMaxActiveUsers?: number;
   onValuesChange?: (values: AdminAccountFormValues) => void;
 };
 
@@ -16,6 +17,7 @@ export function AdminAccountForm({
   mode,
   values,
   disabled = false,
+  minMaxActiveUsers = 1,
   onValuesChange,
 }: AdminAccountFormProps) {
   const updateField = <K extends keyof AdminAccountFormValues>(
@@ -64,9 +66,13 @@ export function AdminAccountForm({
           name="username"
           autoComplete="off"
           value={values.username}
-          disabled={disabled}
+          disabled={disabled || mode === 'edit'}
+          readOnly={mode === 'edit'}
           onChange={(event) => updateField('username', event.target.value)}
         />
+        {mode === 'edit' ? (
+          <Text tone="dim">Username cannot be changed after create.</Text>
+        ) : null}
       </div>
       <div className={styles.formField}>
         <Text tone="muted">Platform</Text>
@@ -86,38 +92,73 @@ export function AdminAccountForm({
         <Input
           name="maxActiveUsers"
           type="number"
-          min={1}
+          min={minMaxActiveUsers}
           value={values.maxActiveUsers}
           disabled={disabled}
           onChange={(event) => updateField('maxActiveUsers', event.target.value)}
         />
+        {mode === 'edit' ? (
+          <Text tone="dim">
+            Cannot be set below occupied seats ({minMaxActiveUsers}).
+          </Text>
+        ) : null}
       </div>
-      <div className={styles.formField}>
-        <Text tone="muted">
-          Password{mode === 'edit' ? ' (leave blank to keep current)' : ''}
-        </Text>
-        <Input
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          value={values.password}
-          disabled={disabled}
-          onChange={(event) => updateField('password', event.target.value)}
-        />
-      </div>
-      <div className={styles.formField}>
-        <Text tone="muted">
-          Shared secret{mode === 'edit' ? ' (leave blank to keep current)' : ''}
-        </Text>
-        <Input
-          name="sharedSecret"
-          type="password"
-          autoComplete="off"
-          value={values.sharedSecret}
-          disabled={disabled}
-          onChange={(event) => updateField('sharedSecret', event.target.value)}
-        />
-      </div>
+      {mode === 'create' ? (
+        <>
+          <div className={styles.formField}>
+            <Text tone="muted">Password</Text>
+            <Input
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={values.password}
+              disabled={disabled}
+              onChange={(event) => updateField('password', event.target.value)}
+            />
+          </div>
+          <div className={styles.formField}>
+            <Text tone="muted">Shared secret</Text>
+            <Input
+              name="sharedSecret"
+              type="password"
+              autoComplete="off"
+              value={values.sharedSecret}
+              disabled={disabled}
+              onChange={(event) => updateField('sharedSecret', event.target.value)}
+            />
+          </div>
+        </>
+      ) : (
+        <div className={styles.credentialsSection} data-testid="admin-account-credentials">
+          <Text>Credentials</Text>
+          <Text tone="dim">
+            Leave blank to keep current values. Rotating password or shared secret
+            clears any active Steam Guard lock.
+          </Text>
+          <div className={styles.formField}>
+            <Text tone="muted">New password (optional)</Text>
+            <Input
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={values.password}
+              disabled={disabled}
+              onChange={(event) => updateField('password', event.target.value)}
+            />
+          </div>
+          <div className={styles.formField}>
+            <Text tone="muted">New shared secret (optional)</Text>
+            <Input
+              name="sharedSecret"
+              type="password"
+              autoComplete="off"
+              value={values.sharedSecret}
+              disabled={disabled}
+              onChange={(event) => updateField('sharedSecret', event.target.value)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

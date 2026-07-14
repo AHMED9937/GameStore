@@ -1,4 +1,4 @@
-import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './api-client';
 import type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 import type { BulkActionResult, SetupResponse } from './admin.types';
 
@@ -40,6 +40,7 @@ export type AdminGameRecord = {
   soldOut: boolean;
   soldOutManual: boolean;
   featuredOrder: number | null;
+  nextAccountId: string | null;
   igdbId: number | null;
   igdbSyncedAt: string | null;
   igdbCoverUrl: string | null;
@@ -111,6 +112,16 @@ export function getAdminGames(filters: AdminGameListFilters = {}) {
 
 export function getAdminGame(id: string) {
   return apiGet<SetupResponse | AdminGameRecord>(`/admin/games/${id}`);
+}
+
+export function setAdminGameNextAccount(
+  gameId: string,
+  accountId: string | null,
+) {
+  return apiPatch<SetupResponse | AdminGameRecord>(
+    `/admin/games/${gameId}/next-account`,
+    { accountId },
+  );
 }
 
 export function getAdminGameReadiness(id: string) {

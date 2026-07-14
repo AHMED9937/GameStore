@@ -7,8 +7,10 @@ import {
 } from '@nestjs/common';
 import {
   DEFAULT_ACTIVATION_VIDEO_URL_KEY,
+  GameAccountsRepository,
   GamesRepository,
   StoreSettingsRepository,
+  resolveAccountPoolStatus,
   resolveSoldOut,
 } from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
@@ -66,6 +68,7 @@ export type AdminGameDto = {
   soldOut: boolean;
   soldOutManual: boolean;
   featuredOrder: number | null;
+  nextAccountId: string | null;
   igdbId: number | null;
   igdbSyncedAt: string | null;
   igdbCoverUrl: string | null;
@@ -83,6 +86,7 @@ export type AdminCreateGameDto = CreateGameDto & {
   soldOut?: boolean;
   genres?: string[];
   releaseDate?: string | null;
+  coverCardImage?: string | null;
   requirementsMin?: GameSystemRequirements | null;
   requirementsRecommended?: GameSystemRequirements | null;
   discordAnnounceDescription?: string | null;
@@ -150,6 +154,7 @@ export class AdminGamesService {
 
   constructor(
     private readonly games: GamesRepository,
+    private readonly gameAccounts: GameAccountsRepository,
     private readonly prisma: PrismaService,
     private readonly entitlementCleanup: EntitlementCleanupService,
     private readonly storeSettings: StoreSettingsRepository,
@@ -192,6 +197,49 @@ export class AdminGamesService {
       throw new NotFoundException(`No game found with id "${id}"`);
     }
     return this.toAdminGameDto(game);
+  }
+
+  async setNextAccount(
+    gameId: string,
+    accountId: string | null,
+  ): Promise<AdminGameDto> {
+    const game = await this.games.findByIdAdmin(gameId);
+    if (!game) {
+      throw new NotFoundException(`No game found with id "${gameId}"`);
+    }
+
+    if (accountId === null) {
+      await this.gameAccounts.setNextAccountId(gameId, null);
+      return this.findOne(gameId);
+    }
+
+    const account = await this.gameAccounts.findById(accountId);
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+    if (account.gameId !== gameId) {
+      throw new BadRequestException(
+        'Account must be assigned to this game before it can be set as next',
+      );
+    }
+    if (!account.isActive) {
+      throw new BadRequestException('Only active accounts can be set as next');
+    }
+
+    const status = resolveAccountPoolStatus({
+      isActive: account.isActive,
+      activeUsersCount: account.activeUsersCount,
+      maxActiveUsers: account.maxActiveUsers,
+      lockedUntil: account.lockedUntil ?? null,
+    });
+    if (status.poolStatus === 'locked') {
+      throw new BadRequestException(
+        'Cannot set a Steam Guard–locked account as next for buyers',
+      );
+    }
+
+    await this.gameAccounts.setNextAccountId(gameId, accountId);
+    return this.findOne(gameId);
   }
 
   async create(dto: AdminCreateGameDto): Promise<AdminGameDto> {
@@ -576,6 +624,7 @@ export class AdminGamesService {
       soldOutManual: game.soldOut,
       soldOut: resolveSoldOut(game.soldOut, accountSummary.hasActivePool),
       featuredOrder: game.featuredOrder,
+      nextAccountId: game.nextAccountId ?? null,
       igdbId: game.igdbId,
       igdbSyncedAt: game.igdbSyncedAt?.toISOString() ?? null,
       igdbCoverUrl: game.igdbCoverUrl,
@@ -610,6 +659,9 @@ export class AdminGamesService {
 
     const counts = new Map<string, { total: number; active: number }>();
     for (const account of accounts) {
+      if (!account.gameId) {
+        continue;
+      }
       const current = counts.get(account.gameId) ?? { total: 0, active: 0 };
       current.total += 1;
       if (account.isActive) {

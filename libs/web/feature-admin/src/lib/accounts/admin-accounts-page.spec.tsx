@@ -49,6 +49,10 @@ describe('AdminAccountsPage', () => {
               activeUsersCount: 3,
               maxActiveUsers: 50,
               isActive: true,
+              lockedUntil: null,
+              openSeats: 47,
+              isClaimable: true,
+              poolStatus: 'available',
             },
           ],
         }}

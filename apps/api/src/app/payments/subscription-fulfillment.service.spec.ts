@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type Stripe from 'stripe';
 import type {
+  GameAccountsRepository,
   SubscriptionPlansRepository,
   UserSubscriptionsRepository,
 } from '@gamestore/api/data-access';
@@ -25,15 +25,28 @@ const stripeSubscription = {
       },
     ],
   },
-} as Stripe.Subscription;
+} as import('stripe').default.Subscription;
 
 describe('SubscriptionFulfillmentService', () => {
+  const tx = {
+    license: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({ id: 'lic-1' }),
+      update: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+  };
+
   const prisma = {
     license: {
       upsert: vi.fn(),
       findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    $transaction: vi.fn(async (fn: (client: typeof tx) => Promise<unknown>) =>
+      fn(tx),
+    ),
   } as unknown as PrismaService;
 
   const plans = {
@@ -45,6 +58,11 @@ describe('SubscriptionFulfillmentService', () => {
     create: vi.fn(),
     update: vi.fn(),
   } as unknown as UserSubscriptionsRepository;
+
+  const gameAccounts = {
+    claimSeatForGame: vi.fn().mockResolvedValue({ id: 'acct-1' }),
+    advanceNextAccountIfFull: vi.fn().mockResolvedValue('acct-1'),
+  } as unknown as GameAccountsRepository;
 
   const stripe = {
     retrieveSubscription: vi.fn(),
@@ -58,6 +76,7 @@ describe('SubscriptionFulfillmentService', () => {
       prisma,
       plans,
       userSubscriptions,
+      gameAccounts,
       stripe,
     );
 
@@ -70,7 +89,9 @@ describe('SubscriptionFulfillmentService', () => {
     vi.mocked(userSubscriptions.findByStripeSubscriptionId).mockResolvedValue(null);
     vi.mocked(userSubscriptions.create).mockResolvedValue({ id: 'user-sub-1' } as never);
     vi.mocked(stripe.retrieveSubscription).mockResolvedValue(stripeSubscription);
-    vi.mocked(prisma.license.upsert).mockResolvedValue({ id: 'lic-1' } as never);
+    vi.mocked(gameAccounts.claimSeatForGame).mockResolvedValue({ id: 'acct-1' } as never);
+    tx.license.findUnique.mockResolvedValue(null);
+    tx.license.create.mockResolvedValue({ id: 'lic-1' });
   });
 
   it('fulfills a paid subscription checkout session', async () => {
@@ -81,18 +102,19 @@ describe('SubscriptionFulfillmentService', () => {
       subscription: 'sub_stripe_123',
       metadata: { planId: 'plan-1', userId: 'user-1' },
       customer_details: { email: 'buyer@example.com' },
-    } as Stripe.Checkout.Session);
+    } as never);
 
     expect(result).toEqual({
       action: 'subscription_fulfilled',
       subscriptionId: 'user-sub-1',
       licenseIds: ['lic-1'],
     });
-    expect(prisma.license.upsert).toHaveBeenCalledWith(
+    expect(gameAccounts.claimSeatForGame).toHaveBeenCalled();
+    expect(tx.license.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           source: 'subscription',
-          expiresAt: expect.any(Date),
+          account: { connect: { id: 'acct-1' } },
         }),
       }),
     );

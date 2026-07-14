@@ -3,7 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { GamesRepository, GameAccountsRepository, normalizeEnumFilter, normalizeSearchTerm } from '@gamestore/api/data-access';
+import {
+  GamesRepository,
+  GameAccountsRepository,
+  normalizeEnumFilter,
+  normalizeSearchTerm,
+  resolveAccountPoolStatus,
+  type AccountPoolStatus,
+} from '@gamestore/api/data-access';
 import { GameAccountsService } from '../../game-accounts/game-accounts.service';
 import { EntitlementCleanupService } from '../../entitlements/entitlement-cleanup.service';
 import type { AdminAccountListFiltersDto } from './admin-account-list-filters.dto';
@@ -18,6 +25,13 @@ export type AdminAccountDto = {
   activeUsersCount: number;
   maxActiveUsers: number;
   isActive: boolean;
+  lockedUntil: string | null;
+  guardLockedByLicenseId: string | null;
+  lastHealthCheck: string | null;
+  createdAt: string;
+  openSeats: number;
+  isClaimable: boolean;
+  poolStatus: AccountPoolStatus;
 };
 
 export type CreateAdminAccountDto = {
@@ -30,7 +44,6 @@ export type CreateAdminAccountDto = {
 };
 
 export type UpdateAdminAccountDto = {
-  username?: string;
   password?: string;
   sharedSecret?: string;
   region?: string;
@@ -41,6 +54,14 @@ export type AssignAdminAccountDto = {
   gameId: string;
 };
 
+export type UnassignAdminAccountDto = {
+  targetAccountId?: string;
+};
+
+export type DeactivateAdminAccountDto = {
+  targetAccountId?: string;
+};
+
 export type BulkAccountIdsDto = {
   ids: string[];
 };
@@ -48,6 +69,21 @@ export type BulkAccountIdsDto = {
 export type BulkAccountActionResult = {
   succeeded: string[];
   failed: Array<{ id: string; reason: string }>;
+};
+
+type AccountRowForDto = {
+  id: string;
+  gameId: string | null;
+  username: string;
+  platform: string;
+  region: string;
+  activeUsersCount: number;
+  maxActiveUsers: number;
+  isActive: boolean;
+  lockedUntil?: Date | string | null;
+  guardLockedByLicenseId?: string | null;
+  lastHealthCheck?: Date | string | null;
+  createdAt?: Date | string;
 };
 
 @Injectable()
@@ -142,6 +178,13 @@ export class AdminAccountsService {
       maxActiveUsers: dto.maxActiveUsers,
     });
 
+    if (dto.gameId) {
+      const existingNext = await this.accounts.getNextAccountId(dto.gameId);
+      if (!existingNext) {
+        await this.accounts.setNextAccountId(dto.gameId, account.id);
+      }
+    }
+
     const gameTitle = dto.gameId
       ? ((await this.games.findById(dto.gameId))?.title ?? 'Unknown game')
       : null;
@@ -163,12 +206,17 @@ export class AdminAccountsService {
     await this.assertSteamGame(dto.gameId);
 
     const updated = await this.accounts.assignToGame(accountId, dto.gameId);
+    const existingNext = await this.accounts.getNextAccountId(dto.gameId);
+    if (!existingNext) {
+      await this.accounts.setNextAccountId(dto.gameId, accountId);
+    }
+
     const gameTitle =
       (await this.games.findById(dto.gameId))?.title ?? 'Unknown game';
     return this.mapAdminAccountDto(updated, gameTitle);
   }
 
-  async unassignFromGame(accountId: string) {
+  async unassignFromGame(accountId: string, dto: UnassignAdminAccountDto = {}) {
     const account = await this.gameAccounts.findOne(accountId);
     if (!account) {
       throw new NotFoundException('Account not found');
@@ -176,26 +224,25 @@ export class AdminAccountsService {
     if (!account.gameId) {
       throw new BadRequestException('Account is not assigned to a game');
     }
-    if (account.activeUsersCount > 0) {
+
+    if (account.activeUsersCount > 0 && !dto.targetAccountId) {
       throw new BadRequestException(
-        'Cannot unassign an account with active users',
-      );
-    }
-    if (account.isActive) {
-      throw new BadRequestException(
-        'Deactivate the account before unassigning it from a game',
+        'targetAccountId is required when the account has occupied seats',
       );
     }
 
-    const activatedCount = await this.accounts.countActivatedLicenses(accountId);
-    if (activatedCount > 0) {
-      throw new BadRequestException(
-        'Cannot unassign an account with activated licenses',
+    try {
+      const updated = await this.accounts.migrateLicensesOffAccount(
+        accountId,
+        account.gameId,
+        dto.targetAccountId,
       );
+      return this.mapAdminAccountDto(updated, null);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to unassign account';
+      throw new BadRequestException(message);
     }
-
-    const updated = await this.accounts.unassignFromGame(accountId);
-    return this.mapAdminAccountDto(updated, null);
   }
 
   async update(id: string, dto: UpdateAdminAccountDto) {
@@ -208,6 +255,20 @@ export class AdminAccountsService {
       await this.assertSteamGame(account.gameId);
     }
 
+    if (dto.maxActiveUsers !== undefined) {
+      if (
+        !Number.isInteger(dto.maxActiveUsers) ||
+        dto.maxActiveUsers < 1
+      ) {
+        throw new BadRequestException('maxActiveUsers must be a positive integer');
+      }
+      if (dto.maxActiveUsers < account.activeUsersCount) {
+        throw new BadRequestException(
+          `maxActiveUsers cannot be below occupied seats (${account.activeUsersCount})`,
+        );
+      }
+    }
+
     const updated = await this.gameAccounts.update(id, dto);
     const gameTitle = updated.gameId
       ? ((await this.games.findById(updated.gameId))?.title ?? 'Unknown game')
@@ -215,7 +276,7 @@ export class AdminAccountsService {
     return this.mapAdminAccountDto(updated, gameTitle);
   }
 
-  async deactivate(id: string) {
+  async clearGuardLock(id: string) {
     const account = await this.gameAccounts.findOne(id);
     if (!account) {
       throw new NotFoundException('Account not found');
@@ -223,6 +284,41 @@ export class AdminAccountsService {
 
     if (account.gameId) {
       await this.assertSteamGame(account.gameId);
+    }
+
+    const updated = await this.accounts.clearGuardLock(id);
+    const gameTitle = updated.gameId
+      ? ((await this.games.findById(updated.gameId))?.title ?? 'Unknown game')
+      : null;
+    return this.mapAdminAccountDto(updated, gameTitle);
+  }
+
+  async deactivate(id: string, dto: DeactivateAdminAccountDto = {}) {
+    const account = await this.gameAccounts.findOne(id);
+    if (!account) {
+      throw new NotFoundException('Account not found');
+    }
+
+    if (account.gameId) {
+      await this.assertSteamGame(account.gameId);
+
+      if (account.activeUsersCount > 0 && !dto.targetAccountId) {
+        throw new BadRequestException(
+          'targetAccountId is required when the account has occupied seats',
+        );
+      }
+
+      try {
+        await this.accounts.migrateLicensesOffAccount(
+          id,
+          account.gameId,
+          dto.targetAccountId,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Failed to unassign account';
+        throw new BadRequestException(message);
+      }
     }
 
     const updated = await this.entitlementCleanup.deactivateAccountWithCleanup(id);
@@ -264,6 +360,19 @@ export class AdminAccountsService {
 
     for (const id of ids) {
       try {
+        const account = await this.gameAccounts.findOne(id);
+        if (!account) {
+          failed.push({ id, reason: 'Account not found' });
+          continue;
+        }
+        if (account.activeUsersCount > 0) {
+          failed.push({
+            id,
+            reason:
+              'Account has occupied seats. Open account edit to move seats, then deactivate.',
+          });
+          continue;
+        }
         await this.deactivate(id);
         succeeded.push(id);
       } catch (error) {
@@ -307,18 +416,26 @@ export class AdminAccountsService {
   }
 
   private mapAdminAccountDto(
-    account: {
-      id: string;
-      gameId: string | null;
-      username: string;
-      platform: string;
-      region: string;
-      activeUsersCount: number;
-      maxActiveUsers: number;
-      isActive: boolean;
-    },
+    account: AccountRowForDto,
     gameTitle: string | null,
   ): AdminAccountDto {
+    const status = resolveAccountPoolStatus({
+      isActive: account.isActive,
+      activeUsersCount: account.activeUsersCount,
+      maxActiveUsers: account.maxActiveUsers,
+      lockedUntil: account.lockedUntil ?? null,
+    });
+
+    const createdAt =
+      account.createdAt instanceof Date
+        ? account.createdAt.toISOString()
+        : account.createdAt
+          ? new Date(account.createdAt).toISOString()
+          : new Date(0).toISOString();
+
+    const lastHealthCheck = toIsoOrNull(account.lastHealthCheck);
+    const guardLockedByLicenseId = account.guardLockedByLicenseId ?? null;
+
     return {
       id: account.id,
       gameId: account.gameId,
@@ -329,6 +446,24 @@ export class AdminAccountsService {
       activeUsersCount: account.activeUsersCount,
       maxActiveUsers: account.maxActiveUsers,
       isActive: account.isActive,
+      lockedUntil: status.lockedUntil,
+      guardLockedByLicenseId,
+      lastHealthCheck,
+      createdAt,
+      openSeats: status.openSeats,
+      isClaimable: status.isClaimable,
+      poolStatus: status.poolStatus,
     };
   }
+}
+
+function toIsoOrNull(value: Date | string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }

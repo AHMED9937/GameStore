@@ -1,6 +1,12 @@
 import { apiDelete, apiGet, apiPost, apiPut } from './api-client';
 import type { BulkActionResult, SetupResponse } from './admin.types';
 
+export type AdminAccountPoolStatus =
+  | 'inactive'
+  | 'locked'
+  | 'full'
+  | 'available';
+
 export type AdminAccountRecord = {
   id: string;
   gameId: string | null;
@@ -11,6 +17,13 @@ export type AdminAccountRecord = {
   activeUsersCount: number;
   maxActiveUsers: number;
   isActive: boolean;
+  lockedUntil: string | null;
+  guardLockedByLicenseId: string | null;
+  lastHealthCheck: string | null;
+  createdAt: string;
+  openSeats: number;
+  isClaimable: boolean;
+  poolStatus: AdminAccountPoolStatus;
 };
 
 export type CreateAdminAccountInput = {
@@ -23,7 +36,6 @@ export type CreateAdminAccountInput = {
 };
 
 export type UpdateAdminAccountInput = {
-  username?: string;
   region?: string;
   password?: string;
   sharedSecret?: string;
@@ -79,15 +91,29 @@ export function assignAdminAccountToGame(accountId: string, gameId: string) {
   );
 }
 
-export function unassignAdminAccount(accountId: string) {
+export function unassignAdminAccount(
+  accountId: string,
+  body: { targetAccountId?: string } = {},
+) {
   return apiPost<SetupResponse | AdminAccountRecord>(
     `/admin/accounts/${accountId}/unassign`,
+    body,
   );
 }
 
-export function deactivateAdminAccount(id: string) {
+export function clearAdminAccountGuardLock(accountId: string) {
+  return apiPost<SetupResponse | AdminAccountRecord>(
+    `/admin/accounts/${accountId}/clear-guard-lock`,
+  );
+}
+
+export function deactivateAdminAccount(
+  id: string,
+  body: { targetAccountId?: string } = {},
+) {
   return apiPost<SetupResponse | AdminAccountRecord>(
     `/admin/accounts/${id}/deactivate`,
+    body,
   );
 }
 

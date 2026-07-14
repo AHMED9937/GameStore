@@ -1,4 +1,4 @@
-import { Button, Heading, Text } from '@gamestore/shared/ui';
+import { Button, Text } from '@gamestore/shared/ui';
 import styles from './accounts.module.css';
 
 export type AdminAccountDeleteSectionProps = {
@@ -14,24 +14,27 @@ export function AdminAccountDeleteSection({
 }: AdminAccountDeleteSectionProps) {
   return (
     <section
-      className={styles.deleteSection}
+      className={styles.dangerPanel}
       aria-labelledby="admin-account-delete-heading"
       data-testid="admin-account-delete-section"
     >
-      <Heading level="h3" id="admin-account-delete-heading" style={{ marginBottom: '0.5rem' }}>
-        Danger zone
-      </Heading>
-      <Text tone="muted" style={{ marginBottom: '0.75rem' }}>
-        Permanently remove this pool account. Only allowed when no licenses are assigned.
-      </Text>
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={disabled || deleting}
-        onClick={onDelete}
-      >
-        {deleting ? 'Deleting…' : 'Delete account'}
-      </Button>
+      <div className={styles.actionPanelHeader}>
+        <Text id="admin-account-delete-heading">Danger zone</Text>
+        <Text tone="dim">
+          Permanently remove this pool account. Only allowed when no seats are
+          occupied.
+        </Text>
+      </div>
+      <div className={styles.actionPanelActions}>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={disabled || deleting}
+          onClick={onDelete}
+        >
+          {deleting ? 'Deleting…' : 'Delete account'}
+        </Button>
+      </div>
     </section>
   );
 }

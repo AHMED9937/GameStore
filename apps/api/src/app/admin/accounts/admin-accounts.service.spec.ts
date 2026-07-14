@@ -39,6 +39,11 @@ describe('AdminAccountsService', () => {
     assignToGame: vi.fn(),
     unassignFromGame: vi.fn(),
     countActivatedLicenses: vi.fn(),
+    getNextAccountId: vi.fn().mockResolvedValue(null),
+    setNextAccountId: vi.fn().mockResolvedValue({ id: 'game-steam', nextAccountId: 'account-1' }),
+    migrateLicensesOffAccount: vi.fn(),
+    advanceNextAccountIfFull: vi.fn().mockResolvedValue(null),
+    clearGuardLock: vi.fn(),
   } satisfies Pick<
     GameAccountsRepository,
     | 'findAll'
@@ -46,6 +51,11 @@ describe('AdminAccountsService', () => {
     | 'assignToGame'
     | 'unassignFromGame'
     | 'countActivatedLicenses'
+    | 'getNextAccountId'
+    | 'setNextAccountId'
+    | 'migrateLicensesOffAccount'
+    | 'advanceNextAccountIfFull'
+    | 'clearGuardLock'
   >;
 
   const entitlementCleanup = {
@@ -103,6 +113,9 @@ describe('AdminAccountsService', () => {
     });
 
     expect(result.gameTitle).toBe('Steam Game');
+    expect(result.poolStatus).toBe('available');
+    expect(result.isClaimable).toBe(true);
+    expect(result.openSeats).toBe(50);
     expect(gameAccounts.create).toHaveBeenCalledWith({
       gameId: steamGame.id,
       platform: 'steam',
@@ -189,36 +202,18 @@ describe('AdminAccountsService', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('rejects unassign when account is still active', async () => {
+  it('unassigns by migrating licenses onto the chosen target', async () => {
     gameAccounts.findOne.mockResolvedValue({
       id: 'account-1',
       gameId: steamGame.id,
       username: 'pool-user',
       platform: 'steam',
       region: 'global',
-      activeUsersCount: 0,
+      activeUsersCount: 2,
       maxActiveUsers: 50,
       isActive: true,
     });
-
-    await expect(service.unassignFromGame('account-1')).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
-  });
-
-  it('unassigns an inactive unused account from a game', async () => {
-    gameAccounts.findOne.mockResolvedValue({
-      id: 'account-1',
-      gameId: steamGame.id,
-      username: 'pool-user',
-      platform: 'steam',
-      region: 'global',
-      activeUsersCount: 0,
-      maxActiveUsers: 50,
-      isActive: false,
-    });
-    accounts.countActivatedLicenses.mockResolvedValue(0);
-    accounts.unassignFromGame.mockResolvedValue({
+    accounts.migrateLicensesOffAccount.mockResolvedValue({
       id: 'account-1',
       gameId: null,
       username: 'pool-user',
@@ -229,13 +224,19 @@ describe('AdminAccountsService', () => {
       isActive: true,
     });
 
-    const result = await service.unassignFromGame('account-1');
+    const result = await service.unassignFromGame('account-1', {
+      targetAccountId: 'account-2',
+    });
 
     expect(result.gameId).toBeNull();
-    expect(accounts.unassignFromGame).toHaveBeenCalledWith('account-1');
+    expect(accounts.migrateLicensesOffAccount).toHaveBeenCalledWith(
+      'account-1',
+      steamGame.id,
+      'account-2',
+    );
   });
 
-  it('rejects unassign when account has active users', async () => {
+  it('rejects unassign when occupied seats lack a target account', async () => {
     gameAccounts.findOne.mockResolvedValue({
       id: 'account-1',
       gameId: steamGame.id,
@@ -247,8 +248,63 @@ describe('AdminAccountsService', () => {
       isActive: true,
     });
 
-    await expect(service.unassignFromGame('account-1')).rejects.toBeInstanceOf(
-      BadRequestException,
+    await expect(service.unassignFromGame('account-1')).rejects.toThrow(
+      /targetAccountId is required/,
+    );
+    expect(accounts.migrateLicensesOffAccount).not.toHaveBeenCalled();
+  });
+
+  it('rejects unassign when migration has no destination capacity', async () => {
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 2,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+    accounts.migrateLicensesOffAccount.mockRejectedValue(
+      new Error(
+        'Cannot unassign: target has 0 open seats but 2 seats must move',
+      ),
+    );
+
+    await expect(
+      service.unassignFromGame('account-1', { targetAccountId: 'account-2' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('assigns and sets nextAccountId when game has none', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: null,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+    accounts.assignToGame.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+    accounts.getNextAccountId.mockResolvedValue(null);
+
+    await service.assignToGame('account-1', { gameId: steamGame.id });
+
+    expect(accounts.setNextAccountId).toHaveBeenCalledWith(
+      steamGame.id,
+      'account-1',
     );
   });
 
@@ -276,7 +332,7 @@ describe('AdminAccountsService', () => {
     });
   });
 
-  it('updates pool accounts for Steam games', async () => {
+  it('updates pool accounts for Steam games without changing username', async () => {
     games.findById.mockResolvedValue(steamGame);
     gameAccounts.findOne.mockResolvedValue({
       id: 'account-1',
@@ -291,7 +347,7 @@ describe('AdminAccountsService', () => {
     gameAccounts.update.mockResolvedValue({
       id: 'account-1',
       gameId: steamGame.id,
-      username: 'pool-user-renamed',
+      username: 'pool-user',
       platform: 'steam',
       region: 'eu',
       activeUsersCount: 0,
@@ -300,22 +356,111 @@ describe('AdminAccountsService', () => {
     });
 
     const result = await service.update('account-1', {
-      username: 'pool-user-renamed',
       region: 'eu',
       maxActiveUsers: 25,
     });
 
-    expect(result.username).toBe('pool-user-renamed');
+    expect(result.username).toBe('pool-user');
     expect(result.maxActiveUsers).toBe(25);
     expect(gameAccounts.update).toHaveBeenCalledWith('account-1', {
-      username: 'pool-user-renamed',
       region: 'eu',
       maxActiveUsers: 25,
     });
   });
 
+  it('rejects maxActiveUsers below occupied seats', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 10,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+
+    await expect(
+      service.update('account-1', { maxActiveUsers: 5 }),
+    ).rejects.toThrow(/cannot be below occupied seats \(10\)/);
+    expect(gameAccounts.update).not.toHaveBeenCalled();
+  });
+
+  it('clears Steam Guard lock via repository', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 1,
+      maxActiveUsers: 50,
+      isActive: true,
+      lockedUntil: new Date('2099-01-01T00:00:00.000Z'),
+      guardLockedByLicenseId: 'license-1',
+    });
+    accounts.clearGuardLock.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 1,
+      maxActiveUsers: 50,
+      isActive: true,
+      lockedUntil: null,
+      guardLockedByLicenseId: null,
+      lastHealthCheck: null,
+      createdAt: new Date('2025-01-01T00:00:00.000Z'),
+    });
+
+    const result = await service.clearGuardLock('account-1');
+
+    expect(accounts.clearGuardLock).toHaveBeenCalledWith('account-1');
+    expect(result.poolStatus).toBe('available');
+    expect(result.lockedUntil).toBeNull();
+    expect(result.guardLockedByLicenseId).toBeNull();
+  });
+
+  it('maps createdAt, lastHealthCheck, and guard lock license on DTO', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 1,
+      maxActiveUsers: 50,
+      isActive: true,
+      lockedUntil: new Date('2099-01-01T00:00:00.000Z'),
+      guardLockedByLicenseId: 'license-guard-1',
+      lastHealthCheck: new Date('2026-06-01T12:00:00.000Z'),
+      createdAt: new Date('2025-01-15T08:30:00.000Z'),
+    });
+
+    const result = await service.findOne('account-1');
+
+    expect(result.createdAt).toBe('2025-01-15T08:30:00.000Z');
+    expect(result.lastHealthCheck).toBe('2026-06-01T12:00:00.000Z');
+    expect(result.guardLockedByLicenseId).toBe('license-guard-1');
+    expect(result.poolStatus).toBe('locked');
+  });
+
   it('reactivates inactive pool accounts', async () => {
     games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: false,
+    });
     gameAccounts.reactivate.mockResolvedValue({
       id: 'account-1',
       gameId: steamGame.id,
@@ -353,11 +498,172 @@ describe('AdminAccountsService', () => {
     expect(gameAccounts.remove).toHaveBeenCalledWith('account-1');
   });
 
-  it('bulkDeactivate deactivates each account with cleanup', async () => {
+  it('bulkDeactivate deactivates empty accounts and skips occupied ones', async () => {
     games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne
+      .mockResolvedValueOnce({
+        id: 'account-1',
+        gameId: steamGame.id,
+        username: 'pool-user',
+        platform: 'steam',
+        region: 'global',
+        activeUsersCount: 0,
+        maxActiveUsers: 50,
+        isActive: true,
+        lockedUntil: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'account-1',
+        gameId: steamGame.id,
+        username: 'pool-user',
+        platform: 'steam',
+        region: 'global',
+        activeUsersCount: 0,
+        maxActiveUsers: 50,
+        isActive: true,
+        lockedUntil: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'account-2',
+        gameId: steamGame.id,
+        username: 'busy-user',
+        platform: 'steam',
+        region: 'global',
+        activeUsersCount: 3,
+        maxActiveUsers: 50,
+        isActive: true,
+        lockedUntil: null,
+      });
+    accounts.migrateLicensesOffAccount.mockResolvedValue({
+      id: 'account-1',
+      gameId: null,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
     entitlementCleanup.deactivateAccountWithCleanup.mockResolvedValue({
       id: 'account-1',
+      gameId: null,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: false,
+      lockedUntil: null,
+    });
+
+    await expect(
+      service.bulkDeactivate(['account-1', 'account-2']),
+    ).resolves.toEqual({
+      succeeded: ['account-1'],
+      failed: [
+        {
+          id: 'account-2',
+          reason:
+            'Account has occupied seats. Open account edit to move seats, then deactivate.',
+        },
+      ],
+    });
+    expect(entitlementCleanup.deactivateAccountWithCleanup).toHaveBeenCalledTimes(1);
+  });
+
+  it('deactivate unassigns first then soft-deactivates', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
       gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: true,
+      lockedUntil: null,
+    });
+    accounts.migrateLicensesOffAccount.mockResolvedValue({
+      id: 'account-1',
+      gameId: null,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+    entitlementCleanup.deactivateAccountWithCleanup.mockResolvedValue({
+      id: 'account-1',
+      gameId: null,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: false,
+      lockedUntil: null,
+    });
+
+    const result = await service.deactivate('account-1');
+
+    expect(accounts.migrateLicensesOffAccount).toHaveBeenCalledWith(
+      'account-1',
+      steamGame.id,
+      undefined,
+    );
+    expect(entitlementCleanup.deactivateAccountWithCleanup).toHaveBeenCalledWith(
+      'account-1',
+    );
+    expect(result.isActive).toBe(false);
+    expect(result.gameId).toBeNull();
+  });
+
+  it('deactivate requires target when seats are occupied', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 2,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+
+    await expect(service.deactivate('account-1')).rejects.toThrow(
+      /targetAccountId is required/,
+    );
+    expect(accounts.migrateLicensesOffAccount).not.toHaveBeenCalled();
+  });
+
+  it('deactivate migrates occupied seats to the chosen target', async () => {
+    games.findById.mockResolvedValue(steamGame);
+    gameAccounts.findOne.mockResolvedValue({
+      id: 'account-1',
+      gameId: steamGame.id,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 2,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+    accounts.migrateLicensesOffAccount.mockResolvedValue({
+      id: 'account-1',
+      gameId: null,
+      username: 'pool-user',
+      platform: 'steam',
+      region: 'global',
+      activeUsersCount: 0,
+      maxActiveUsers: 50,
+      isActive: true,
+    });
+    entitlementCleanup.deactivateAccountWithCleanup.mockResolvedValue({
+      id: 'account-1',
+      gameId: null,
       username: 'pool-user',
       platform: 'steam',
       region: 'global',
@@ -366,13 +672,49 @@ describe('AdminAccountsService', () => {
       isActive: false,
     });
 
-    await expect(
-      service.bulkDeactivate(['account-1', 'account-2']),
-    ).resolves.toEqual({
-      succeeded: ['account-1', 'account-2'],
-      failed: [],
-    });
-    expect(entitlementCleanup.deactivateAccountWithCleanup).toHaveBeenCalledTimes(2);
+    await service.deactivate('account-1', { targetAccountId: 'account-2' });
+
+    expect(accounts.migrateLicensesOffAccount).toHaveBeenCalledWith(
+      'account-1',
+      steamGame.id,
+      'account-2',
+    );
+  });
+
+  it('maps full and locked pool statuses on DTO', async () => {
+    gameAccounts.findOne
+      .mockResolvedValueOnce({
+        id: 'full-1',
+        gameId: steamGame.id,
+        username: 'full-user',
+        platform: 'steam',
+        region: 'global',
+        activeUsersCount: 50,
+        maxActiveUsers: 50,
+        isActive: true,
+        lockedUntil: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'locked-1',
+        gameId: steamGame.id,
+        username: 'locked-user',
+        platform: 'steam',
+        region: 'global',
+        activeUsersCount: 1,
+        maxActiveUsers: 50,
+        isActive: true,
+        lockedUntil: new Date('2099-01-01T00:00:00.000Z'),
+      });
+    games.findById.mockResolvedValue(steamGame);
+
+    const full = await service.findOne('full-1');
+    expect(full.poolStatus).toBe('full');
+    expect(full.isClaimable).toBe(false);
+
+    const locked = await service.findOne('locked-1');
+    expect(locked.poolStatus).toBe('locked');
+    expect(locked.isClaimable).toBe(false);
+    expect(locked.lockedUntil).toBe('2099-01-01T00:00:00.000Z');
   });
 
   it('bulkDelete removes each deletable account', async () => {

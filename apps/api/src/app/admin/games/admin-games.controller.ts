@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   HttpCode,
+  Patch,
   Param,
   Post,
   Put,
@@ -122,6 +123,30 @@ export class AdminGamesController {
   @Get(':id/readiness')
   getReadiness(@Param('id') id: string) {
     return this.adminGames.getReadiness(id);
+  }
+
+  @Patch(':id/next-account')
+  async setNextAccount(
+    @Param('id') id: string,
+    @Body() body: { accountId: string | null },
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const game = await this.adminGames.setNextAccount(
+      id,
+      body?.accountId ?? null,
+    );
+    const audit = auditContextFromRequest(request);
+    recordAudit(this.auditLogService, {
+      userId: user.id,
+      action: 'admin.game.next_account',
+      resource: 'game',
+      resourceId: game.id,
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+      metadata: { nextAccountId: game.nextAccountId },
+    });
+    return game;
   }
 
   @Post(':id/sync-igdb')
