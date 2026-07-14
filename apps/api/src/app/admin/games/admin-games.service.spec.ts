@@ -36,7 +36,7 @@ const sampleGame = {
 function createDiscordNotify(): DiscordNotifyService {
   return {
     publishGameAnnouncement: vi.fn().mockResolvedValue('msg-new'),
-    updateGameAnnouncement: vi.fn().mockResolvedValue(undefined),
+    updateGameAnnouncement: vi.fn().mockResolvedValue(true),
     deleteGameAnnouncement: vi.fn().mockResolvedValue(true),
     isWebhookConfigured: vi.fn().mockReturnValue(true),
   } as unknown as DiscordNotifyService;
@@ -620,14 +620,67 @@ describe('AdminGamesService Discord publish notify', () => {
     });
     vi.mocked(games.findByIdAdmin)
       .mockResolvedValueOnce(published as never)
-      .mockResolvedValueOnce(draft as never)
-      .mockResolvedValueOnce(draft as never);
+      .mockResolvedValue(draft as never);
     vi.mocked(games.update).mockResolvedValue(draft as never);
 
     await service.update('game-1', { published: false });
 
+    expect(games.update).toHaveBeenCalled();
     expect(discordNotify.deleteGameAnnouncement).toHaveBeenCalledWith('msg-existing');
     expect(games.setDiscordPublishMessageId).toHaveBeenCalledWith('game-1', null);
+    const updateOrder = vi.mocked(games.update).mock.invocationCallOrder[0];
+    const deleteOrder = vi.mocked(discordNotify.deleteGameAnnouncement).mock
+      .invocationCallOrder[0];
+    expect(updateOrder).toBeLessThan(deleteOrder);
+  });
+
+  it('keeps discordPublishMessageId when Discord delete fails on unpublish', async () => {
+    const published = {
+      ...sampleGame,
+      publishedAt: new Date('2026-01-01'),
+    };
+    const draft = { ...sampleGame, publishedAt: null };
+    vi.mocked(games.getDiscordAnnouncementState).mockResolvedValue({
+      discordPublishMessageId: 'msg-existing',
+      discordAnnounceDescription: null,
+    });
+    vi.mocked(games.findByIdAdmin)
+      .mockResolvedValueOnce(published as never)
+      .mockResolvedValue(draft as never);
+    vi.mocked(games.update).mockResolvedValue(draft as never);
+    vi.mocked(discordNotify.deleteGameAnnouncement).mockResolvedValue(false);
+
+    await service.update('game-1', { published: false });
+
+    expect(discordNotify.deleteGameAnnouncement).toHaveBeenCalledWith('msg-existing');
+    expect(games.setDiscordPublishMessageId).not.toHaveBeenCalled();
+  });
+
+  it('updates Discord when coverCardImage changes on a published game', async () => {
+    vi.mocked(games.getDiscordAnnouncementState).mockResolvedValue({
+      discordPublishMessageId: 'msg-existing',
+      discordAnnounceDescription: null,
+    });
+    const published = { ...sampleGame, publishedAt: new Date('2026-01-01') };
+    const withCard = {
+      ...published,
+      coverCardImage: 'https://cdn.example/card.jpg',
+    };
+    vi.mocked(games.findByIdAdmin)
+      .mockResolvedValueOnce(published as never)
+      .mockResolvedValue(withCard as never);
+    vi.mocked(games.update).mockResolvedValue(withCard as never);
+
+    await service.update('game-1', {
+      coverCardImage: 'https://cdn.example/card.jpg',
+    });
+
+    expect(discordNotify.updateGameAnnouncement).toHaveBeenCalledWith(
+      'msg-existing',
+      expect.objectContaining({
+        coverUrl: 'https://cdn.example/card.jpg',
+      }),
+    );
   });
 
   it('deletes Discord message before removing a game', async () => {

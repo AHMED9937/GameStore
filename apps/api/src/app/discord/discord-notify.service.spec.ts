@@ -222,6 +222,7 @@ describe('DiscordNotifyService', () => {
 
   it('does not throw when Discord publish returns an error', async () => {
     process.env['DISCORD_NEW_GAMES_WEBHOOK_URL'] = WEBHOOK_URL;
+    process.env['NEXT_PUBLIC_SITE_URL'] = 'https://store.example';
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => 'fail' }),
@@ -237,5 +238,27 @@ describe('DiscordNotifyService', () => {
         price: '1.00',
       }),
     ).resolves.toBeNull();
+  });
+
+  it('returns false from update when SITE_URL resolution throws', async () => {
+    process.env['DISCORD_NEW_GAMES_WEBHOOK_URL'] = WEBHOOK_URL;
+    process.env['NODE_ENV'] = 'production';
+    delete process.env['NEXT_PUBLIC_SITE_URL'];
+    delete process.env['SITE_URL'];
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const service = new DiscordNotifyService();
+    await expect(
+      service.updateGameAnnouncement('msg-1', {
+        title: 'Demo',
+        slug: 'demo',
+        coverUrl: null,
+        platform: 'steam',
+        price: '1.00',
+      }),
+    ).resolves.toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
