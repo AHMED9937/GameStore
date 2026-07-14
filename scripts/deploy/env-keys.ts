@@ -161,6 +161,25 @@ export const LATER_DEPLOY_ENV_KEYS: DeployEnvKey[] = [
     description: 'Sentry browser DSN (D9)',
     d1Required: false,
   },
+  {
+    name: 'DISCORD_NEW_GAMES_WEBHOOK_URL',
+    host: 'railway',
+    description:
+      'Incoming webhook for 🎮 | new-games (publish/update/unpublish sync)',
+    d1Required: false,
+  },
+  {
+    name: 'DISCORD_NEW_GAMES_ROLE_ID',
+    host: 'railway',
+    description: 'Optional NewGames role snowflake pinged on first publish',
+    d1Required: false,
+  },
+  {
+    name: 'NEXT_PUBLIC_DISCORD_INVITE_URL',
+    host: 'vercel',
+    description: 'Public Discord invite for site CTAs',
+    d1Required: false,
+  },
 ];
 
 export const ALL_DOCUMENTED_ENV_KEYS: DeployEnvKey[] = [

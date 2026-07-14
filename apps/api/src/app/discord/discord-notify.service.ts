@@ -100,13 +100,16 @@ export class DiscordNotifyService {
   ): Promise<string | null> {
     const webhook = this.getWebhook();
     if (!webhook) {
+      this.logger.warn(
+        'Discord publish skipped: set DISCORD_NEW_GAMES_WEBHOOK_URL on the API (Railway)',
+      );
       return null;
     }
 
-    const body = buildAnnouncementBody(game, { includeRolePing: true });
-    const url = `${webhook.baseUrl}/webhooks/${webhook.webhookId}/${webhook.token}?wait=true`;
-
     try {
+      const body = buildAnnouncementBody(game, { includeRolePing: true });
+      const url = `${webhook.baseUrl}/webhooks/${webhook.webhookId}/${webhook.token}?wait=true`;
+
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,16 +135,19 @@ export class DiscordNotifyService {
   async updateGameAnnouncement(
     messageId: string,
     game: GamePublishedNotifyPayload,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const webhook = this.getWebhook();
     if (!webhook) {
-      return;
+      this.logger.warn(
+        'Discord update skipped: set DISCORD_NEW_GAMES_WEBHOOK_URL on the API (Railway)',
+      );
+      return false;
     }
 
-    const body = buildAnnouncementBody(game, { includeRolePing: false });
-    const url = `${webhook.baseUrl}/webhooks/${webhook.webhookId}/${webhook.token}/messages/${messageId}`;
-
     try {
+      const body = buildAnnouncementBody(game, { includeRolePing: false });
+      const url = `${webhook.baseUrl}/webhooks/${webhook.webhookId}/${webhook.token}/messages/${messageId}`;
+
       const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -152,17 +158,23 @@ export class DiscordNotifyService {
         this.logger.warn(
           `Discord update failed: ${res.status} ${text.slice(0, 200)}`,
         );
+        return false;
       }
+      return true;
     } catch (err) {
       this.logger.warn(
         `Discord update error: ${err instanceof Error ? err.message : String(err)}`,
       );
+      return false;
     }
   }
 
   async deleteGameAnnouncement(messageId: string): Promise<boolean> {
     const webhook = this.getWebhook();
     if (!webhook) {
+      this.logger.warn(
+        'Discord delete skipped: set DISCORD_NEW_GAMES_WEBHOOK_URL on the API (Railway)',
+      );
       return false;
     }
 

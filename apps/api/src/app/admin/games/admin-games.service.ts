@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -145,6 +146,8 @@ function toMediaDto(
 
 @Injectable()
 export class AdminGamesService {
+  private readonly logger = new Logger(AdminGamesService.name);
+
   constructor(
     private readonly games: GamesRepository,
     private readonly prisma: PrismaService,
@@ -265,13 +268,6 @@ export class AdminGamesService {
       existing.publishedAt !== null && dto.published !== false;
     const discordState = await this.games.getDiscordAnnouncementState(id);
 
-    if (becomingUnpublished && discordState.discordPublishMessageId) {
-      await this.deleteDiscordAnnouncement(
-        id,
-        discordState.discordPublishMessageId,
-      );
-    }
-
     try {
       await this.games.update(id, this.buildUpdateInput(dto, existing));
       if (dto.discordAnnounceDescription !== undefined) {
@@ -284,11 +280,20 @@ export class AdminGamesService {
       if (becomingPublished) {
         await this.syncDiscordForGame(updated, 'publish');
         updated = await this.findOne(id);
+      } else if (becomingUnpublished && discordState.discordPublishMessageId) {
+        // Delete channel message only after DB unpublish succeeds so a failed
+        // save cannot orphan the game as published without a Discord post.
+        await this.deleteDiscordAnnouncement(
+          id,
+          discordState.discordPublishMessageId,
+        );
+        updated = await this.findOne(id);
       } else if (stayingPublished && this.shouldSyncDiscordUpdate(dto)) {
         await this.syncDiscordForGame(
           this.applyDiscordDtoOverrides(updated, dto),
           'update',
         );
+        updated = await this.findOne(id);
       }
       return updated;
     } catch (error) {
@@ -318,9 +323,14 @@ export class AdminGamesService {
 
     const discordState = await this.games.getDiscordAnnouncementState(id);
     if (discordState.discordPublishMessageId) {
-      await this.discordNotify.deleteGameAnnouncement(
+      const removed = await this.discordNotify.deleteGameAnnouncement(
         discordState.discordPublishMessageId,
       );
+      if (!removed) {
+        this.logger.warn(
+          `Discord announcement ${discordState.discordPublishMessageId} may remain after deleting game ${id}`,
+        );
+      }
     }
 
     try {
@@ -658,6 +668,9 @@ export class AdminGamesService {
         ? { priceBase: String(dto.priceBase) }
         : {}),
       ...(dto.coverImage !== undefined ? { coverImage: dto.coverImage } : {}),
+      ...(dto.coverCardImage !== undefined
+        ? { coverCardImage: dto.coverCardImage }
+        : {}),
       ...(dto.soldOut !== undefined
         ? {
             soldOutManual: dto.soldOut,
@@ -677,6 +690,7 @@ export class AdminGamesService {
       dto.slug !== undefined ||
       dto.priceBase !== undefined ||
       dto.coverImage !== undefined ||
+      dto.coverCardImage !== undefined ||
       dto.soldOut !== undefined ||
       dto.discordAnnounceDescription !== undefined
     );
@@ -699,10 +713,18 @@ export class AdminGamesService {
     messageId: string,
   ): Promise<void> {
     try {
-      await this.discordNotify.deleteGameAnnouncement(messageId);
+      const deleted = await this.discordNotify.deleteGameAnnouncement(messageId);
+      if (!deleted) {
+        this.logger.warn(
+          `Discord delete did not confirm for game ${gameId} (message ${messageId}); keeping discordPublishMessageId for retry`,
+        );
+        return;
+      }
       await this.games.setDiscordPublishMessageId(gameId, null);
-    } catch {
-      // Discord errors must not block admin APIs
+    } catch (error) {
+      this.logger.warn(
+        `Discord delete error for game ${gameId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -716,13 +738,25 @@ export class AdminGamesService {
         const messageId = await this.discordNotify.publishGameAnnouncement(payload);
         if (messageId) {
           await this.games.setDiscordPublishMessageId(game.id, messageId);
+        } else {
+          this.logger.warn(
+            `Discord publish returned no message id for game ${game.id} (${game.slug})`,
+          );
         }
         return;
       }
 
       const messageId = game.discord.messageId;
       if (messageId) {
-        await this.discordNotify.updateGameAnnouncement(messageId, payload);
+        const updated = await this.discordNotify.updateGameAnnouncement(
+          messageId,
+          payload,
+        );
+        if (!updated) {
+          this.logger.warn(
+            `Discord update failed for game ${game.id} (message ${messageId})`,
+          );
+        }
         return;
       }
 
@@ -730,10 +764,16 @@ export class AdminGamesService {
         const newMessageId = await this.discordNotify.publishGameAnnouncement(payload);
         if (newMessageId) {
           await this.games.setDiscordPublishMessageId(game.id, newMessageId);
+        } else {
+          this.logger.warn(
+            `Discord re-publish returned no message id for game ${game.id} (${game.slug})`,
+          );
         }
       }
-    } catch {
-      // Discord errors must not block admin APIs
+    } catch (error) {
+      this.logger.warn(
+        `Discord sync (${intent}) failed for game ${game.id}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
