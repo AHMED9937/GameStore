@@ -39,9 +39,10 @@ describe('railway.toml (D2)', () => {
     expect(RAILWAY_RELEASE_COMMAND).toBe('pnpm db:migrate');
   });
 
-  it('starts Nest from webpack output path', () => {
+  it('starts Nest only after migrate deploy succeeds', () => {
     expect(RAILWAY_TOML).toContain(RAILWAY_START_COMMAND);
-    expect(RAILWAY_START_COMMAND).toBe('node dist/apps/api/main.js');
+    expect(RAILWAY_START_COMMAND).toBe('pnpm db:migrate && node dist/apps/api/main.js');
+    expect(RAILWAY_START_COMMAND.startsWith('pnpm db:migrate')).toBe(true);
   });
 
   it('healthchecks the DB endpoint Nest exposes', () => {

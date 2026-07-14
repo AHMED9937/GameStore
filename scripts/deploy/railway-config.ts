@@ -8,7 +8,8 @@ export const RAILWAY_BUILD_COMMAND =
 
 export const RAILWAY_RELEASE_COMMAND = 'pnpm db:migrate';
 
-export const RAILWAY_START_COMMAND = 'node dist/apps/api/main.js';
+/** Migrate must run before Nest listens so schema/code never drift again. */
+export const RAILWAY_START_COMMAND = 'pnpm db:migrate && node dist/apps/api/main.js';
 
 export const RAILWAY_HEALTHCHECK_PATH = '/api/health/db';
 
