@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
 import {
+  GameAccountsRepository,
   generateLicenseKey,
   SubscriptionPlansRepository,
   UserSubscriptionsRepository,
@@ -32,6 +33,7 @@ export class SubscriptionFulfillmentService {
     private readonly prisma: PrismaService,
     private readonly plans: SubscriptionPlansRepository,
     private readonly userSubscriptions: UserSubscriptionsRepository,
+    private readonly gameAccounts: GameAccountsRepository,
     private readonly stripe: StripeService,
   ) {}
 
@@ -270,30 +272,57 @@ export class SubscriptionFulfillmentService {
   }) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await this.prisma.license.upsert({
-          where: {
-            subscription_game_owner: {
-              subscriptionId: params.userSubscriptionId,
-              gameId: params.gameId,
-              ownerId: params.userId,
+        return await this.prisma.$transaction(async (tx) => {
+          const existing = await tx.license.findUnique({
+            where: {
+              subscription_game_owner: {
+                subscriptionId: params.userSubscriptionId,
+                gameId: params.gameId,
+                ownerId: params.userId,
+              },
             },
-          },
-          create: {
-            licenseKey: generateLicenseKey(),
-            status: 'available',
-            source: 'subscription',
-            validFrom: params.validFrom,
-            expiresAt: params.expiresAt,
-            buyerEmail: params.buyerEmail,
-            game: { connect: { id: params.gameId } },
-            owner: { connect: { id: params.userId } },
-            subscription: { connect: { id: params.userSubscriptionId } },
-          },
-          update: {
-            expiresAt: params.expiresAt,
-            validFrom: params.validFrom,
-            buyerEmail: params.buyerEmail,
-          },
+            select: { id: true, accountId: true },
+          });
+
+          if (existing) {
+            return tx.license.update({
+              where: { id: existing.id },
+              data: {
+                expiresAt: params.expiresAt,
+                validFrom: params.validFrom,
+                buyerEmail: params.buyerEmail,
+              },
+            });
+          }
+
+          const claimed = await this.gameAccounts.claimSeatForGame(
+            params.gameId,
+            undefined,
+            tx,
+          );
+          if (!claimed) {
+            throw new Error(
+              `No pool account capacity for subscription game ${params.gameId}`,
+            );
+          }
+
+          const license = await tx.license.create({
+            data: {
+              licenseKey: generateLicenseKey(),
+              status: 'available',
+              source: 'subscription',
+              validFrom: params.validFrom,
+              expiresAt: params.expiresAt,
+              buyerEmail: params.buyerEmail,
+              game: { connect: { id: params.gameId } },
+              account: { connect: { id: claimed.id } },
+              owner: { connect: { id: params.userId } },
+              subscription: { connect: { id: params.userSubscriptionId } },
+            },
+          });
+
+          await this.gameAccounts.advanceNextAccountIfFull(params.gameId, tx);
+          return license;
         });
       } catch (error) {
         if (

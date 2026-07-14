@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
 import {
@@ -16,6 +16,7 @@ export type FulfillmentAction =
   | 'pending_payment'
   | 'order_not_found'
   | 'invalid_game'
+  | 'no_pool_capacity'
   | 'marked_failed'
   | 'ignored';
 
@@ -152,24 +153,32 @@ export class PaymentFulfillmentService {
         ? session.amount_total / 100
         : undefined;
 
-    await this.warnIfNoPoolCapacity(gameId);
-
     const validFrom = new Date();
-    const license = await this.fulfillOrderInTransaction({
-      orderId: order.id,
-      gameId,
-      buyerEmail,
-      ownerId,
-      validFrom,
-      stripePaymentId,
-      amount,
-    });
+    try {
+      const license = await this.fulfillOrderInTransaction({
+        orderId: order.id,
+        gameId,
+        buyerEmail,
+        ownerId,
+        validFrom,
+        stripePaymentId,
+        amount,
+      });
 
-    return {
-      action: 'fulfilled',
-      orderId: order.id,
-      licenseId: license.id,
-    };
+      return {
+        action: 'fulfilled',
+        orderId: order.id,
+        licenseId: license.id,
+      };
+    } catch (error) {
+      if (error instanceof ServiceUnavailableException) {
+        this.logger.error(
+          `Cannot fulfill order ${order.id}: no pool capacity for game ${gameId}`,
+        );
+        return { action: 'no_pool_capacity', orderId: order.id };
+      }
+      throw error;
+    }
   }
 
   async handleCheckoutSessionFailed(sessionId: string): Promise<FulfillmentResult> {
@@ -192,8 +201,20 @@ export class PaymentFulfillmentService {
     amount?: number;
   }) {
     return this.prisma.$transaction(async (tx) => {
+      const claimed = await this.gameAccounts.claimSeatForGame(
+        input.gameId,
+        undefined,
+        tx,
+      );
+      if (!claimed) {
+        throw new ServiceUnavailableException(
+          'No pool account capacity for this game',
+        );
+      }
+
       const license = await this.createLicenseWithRetryInTx(tx, {
         gameId: input.gameId,
+        accountId: claimed.id,
         buyerEmail: input.buyerEmail,
         ownerId: input.ownerId,
         validFrom: input.validFrom,
@@ -211,23 +232,17 @@ export class PaymentFulfillmentService {
         },
       });
 
+      await this.gameAccounts.advanceNextAccountIfFull(input.gameId, tx);
+
       return license;
     });
-  }
-
-  private async warnIfNoPoolCapacity(gameId: string): Promise<void> {
-    const poolAccount = await this.gameAccounts.findAvailableForGame(gameId);
-    if (!poolAccount) {
-      this.logger.warn(
-        `No available pool account for game ${gameId} license will be issued but activation may fail`,
-      );
-    }
   }
 
   private async createLicenseWithRetryInTx(
     tx: Prisma.TransactionClient,
     input: {
       gameId: string;
+      accountId: string;
       buyerEmail?: string;
       ownerId?: string;
       validFrom: Date;
@@ -244,6 +259,7 @@ export class PaymentFulfillmentService {
             expiresAt: defaultLicenseExpiresAt(input.validFrom),
             buyerEmail: input.buyerEmail,
             game: { connect: { id: input.gameId } },
+            account: { connect: { id: input.accountId } },
             ...(input.ownerId ? { owner: { connect: { id: input.ownerId } } } : {}),
           },
         });

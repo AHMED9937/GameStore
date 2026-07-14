@@ -11,7 +11,15 @@ const sampleAccount = {
   platform: 'steam',
   region: 'global',
   activeUsersCount: 0,
+  maxActiveUsers: 50,
   isActive: true,
+  lockedUntil: null,
+  guardLockedByLicenseId: null,
+  lastHealthCheck: null,
+  createdAt: '2025-01-01T00:00:00.000Z',
+  openSeats: 50,
+  isClaimable: true,
+  poolStatus: 'available' as const,
 };
 
 describe('AdminAccountsController', () => {
@@ -22,7 +30,13 @@ describe('AdminAccountsController', () => {
     create: vi.fn().mockResolvedValue(sampleAccount),
     assignToGame: vi.fn().mockResolvedValue(sampleAccount),
     unassignFromGame: vi.fn().mockResolvedValue({ ...sampleAccount, gameId: null, gameTitle: null }),
-    update: vi.fn().mockResolvedValue({ ...sampleAccount, username: 'pool_user_2' }),
+    update: vi.fn().mockResolvedValue({ ...sampleAccount, region: 'eu' }),
+    clearGuardLock: vi.fn().mockResolvedValue({
+      ...sampleAccount,
+      lockedUntil: null,
+      guardLockedByLicenseId: null,
+      poolStatus: 'available' as const,
+    }),
     deactivate: vi.fn().mockResolvedValue({ ...sampleAccount, isActive: false }),
     reactivate: vi.fn().mockResolvedValue(sampleAccount),
     remove: vi.fn().mockResolvedValue({ id: 'account-1', deleted: true as const }),
@@ -62,15 +76,26 @@ describe('AdminAccountsController', () => {
     );
   });
 
-  it('unassign records audit log', async () => {
+  it('unassign records audit log with target metadata', async () => {
     await expect(
-      controller.unassign('account-1', adminUser, request as never),
+      controller.unassign(
+        'account-1',
+        { targetAccountId: 'account-2' },
+        adminUser,
+        request as never,
+      ),
     ).resolves.toEqual({ ...sampleAccount, gameId: null, gameTitle: null });
-    expect(accounts.unassignFromGame).toHaveBeenCalledWith('account-1');
+    expect(accounts.unassignFromGame).toHaveBeenCalledWith('account-1', {
+      targetAccountId: 'account-2',
+    });
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.account.unassign',
         resourceId: 'account-1',
+        metadata: expect.objectContaining({
+          targetAccountId: 'account-2',
+          occupiedSeats: 0,
+        }),
       }),
     );
   });
@@ -100,29 +125,58 @@ describe('AdminAccountsController', () => {
     );
   });
 
-  it('deactivate records audit log', async () => {
+  it('deactivate records audit log with unassign metadata', async () => {
     await expect(
-      controller.deactivate('account-1', adminUser, request as never),
+      controller.deactivate(
+        'account-1',
+        { targetAccountId: 'account-2' },
+        adminUser,
+        request as never,
+      ),
     ).resolves.toEqual({ ...sampleAccount, isActive: false });
-    expect(accounts.deactivate).toHaveBeenCalledWith('account-1');
+    expect(accounts.deactivate).toHaveBeenCalledWith('account-1', {
+      targetAccountId: 'account-2',
+    });
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.account.deactivate',
         resourceId: 'account-1',
+        metadata: expect.objectContaining({
+          targetAccountId: 'account-2',
+          unassigned: true,
+        }),
       }),
     );
   });
 
   it('update records audit log', async () => {
-    const body = { username: 'pool_user_2', region: 'eu' };
+    const body = { region: 'eu' };
 
     await expect(
       controller.update('account-1', body, adminUser, request as never),
-    ).resolves.toEqual({ ...sampleAccount, username: 'pool_user_2' });
+    ).resolves.toEqual({ ...sampleAccount, region: 'eu' });
     expect(accounts.update).toHaveBeenCalledWith('account-1', body);
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.account.update',
+        resourceId: 'account-1',
+      }),
+    );
+  });
+
+  it('clearGuardLock records audit log', async () => {
+    await expect(
+      controller.clearGuardLock('account-1', adminUser, request as never),
+    ).resolves.toEqual({
+      ...sampleAccount,
+      lockedUntil: null,
+      guardLockedByLicenseId: null,
+      poolStatus: 'available',
+    });
+    expect(accounts.clearGuardLock).toHaveBeenCalledWith('account-1');
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.account.clear_guard_lock',
         resourceId: 'account-1',
       }),
     );

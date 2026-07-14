@@ -40,10 +40,29 @@ function renderRowCells(
       <td>{account.region}</td>
       <td>
         {account.activeUsersCount} / {account.maxActiveUsers}
+        {account.poolStatus === 'full'
+          ? ' (full)'
+          : account.poolStatus === 'locked'
+            ? ' (locked)'
+            : ''}
       </td>
       <td>
-        <Badge variant={account.isActive ? 'success' : 'default'}>
-          {account.isActive ? 'Active' : 'Inactive'}
+        <Badge
+          variant={
+            account.poolStatus === 'available'
+              ? 'success'
+              : account.poolStatus === 'inactive'
+                ? 'default'
+                : 'accent'
+          }
+        >
+          {account.poolStatus === 'available'
+            ? 'Available'
+            : account.poolStatus === 'full'
+              ? 'Full'
+              : account.poolStatus === 'locked'
+                ? 'Locked'
+                : 'Inactive'}
         </Badge>
       </td>
       <td>

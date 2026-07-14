@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ServiceUnavailableException } from '@nestjs/common';
 import type {
   GameAccountsRepository,
   OrdersRepository,
@@ -23,7 +24,8 @@ describe('PaymentFulfillmentService', () => {
   } as unknown as OrdersRepository;
 
   const gameAccounts = {
-    findAvailableForGame: vi.fn(),
+    claimSeatForGame: vi.fn(),
+    advanceNextAccountIfFull: vi.fn(),
   } as unknown as GameAccountsRepository;
 
   const tx = {
@@ -58,9 +60,10 @@ describe('PaymentFulfillmentService', () => {
     vi.mocked(orders.findByStripeSessionId).mockResolvedValue(
       pendingOrder as never,
     );
-    vi.mocked(gameAccounts.findAvailableForGame).mockResolvedValue({
+    vi.mocked(gameAccounts.claimSeatForGame).mockResolvedValue({
       id: 'acct-1',
     } as never);
+    vi.mocked(gameAccounts.advanceNextAccountIfFull).mockResolvedValue('acct-1');
     tx.license.create.mockResolvedValue({
       id: 'lic-1',
       licenseKey: 'GS-ABCD-EF01-2345',
@@ -71,7 +74,7 @@ describe('PaymentFulfillmentService', () => {
     });
   });
 
-  it('fulfills a paid checkout session with a purchase license', async () => {
+  it('fulfills a paid checkout session with a reserved purchase license', async () => {
     const result = await service.handleCheckoutSessionCompleted({
       id: 'cs_test_abc',
       mode: 'payment',
@@ -87,7 +90,11 @@ describe('PaymentFulfillmentService', () => {
       orderId: 'order-1',
       licenseId: 'lic-1',
     });
-    expect(gameAccounts.findAvailableForGame).toHaveBeenCalledWith('game-1');
+    expect(gameAccounts.claimSeatForGame).toHaveBeenCalledWith(
+      'game-1',
+      undefined,
+      tx,
+    );
     expect(tx.license.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         licenseKey: expect.stringMatching(/^GS-/),
@@ -97,9 +104,14 @@ describe('PaymentFulfillmentService', () => {
         buyerEmail: 'buyer@example.com',
         validFrom: expect.any(Date),
         game: { connect: { id: 'game-1' } },
+        account: { connect: { id: 'acct-1' } },
         owner: { connect: { id: 'user-1' } },
       }),
     });
+    expect(gameAccounts.advanceNextAccountIfFull).toHaveBeenCalledWith(
+      'game-1',
+      tx,
+    );
     expect(tx.order.update).toHaveBeenCalledWith({
       where: { id: 'order-1' },
       data: expect.objectContaining({
@@ -113,10 +125,8 @@ describe('PaymentFulfillmentService', () => {
     });
   });
 
-  it('still fulfills when no pool account is available', async () => {
-    vi.mocked(gameAccounts.findAvailableForGame).mockResolvedValue(null);
-
-    const warnSpy = vi.spyOn(service['logger'], 'warn');
+  it('returns no_pool_capacity when no seat can be claimed', async () => {
+    vi.mocked(gameAccounts.claimSeatForGame).mockResolvedValue(null);
 
     const result = await service.handleCheckoutSessionCompleted({
       id: 'cs_test_abc',
@@ -125,10 +135,11 @@ describe('PaymentFulfillmentService', () => {
       metadata: { gameId: 'game-1', userId: 'user-1' },
     } as never);
 
-    expect(result.action).toBe('fulfilled');
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No available pool account for game game-1'),
-    );
+    expect(result).toEqual({
+      action: 'no_pool_capacity',
+      orderId: 'order-1',
+    });
+    expect(tx.license.create).not.toHaveBeenCalled();
   });
 
   it('is idempotent when the order is already completed', async () => {
@@ -150,7 +161,7 @@ describe('PaymentFulfillmentService', () => {
       licenseId: 'lic-existing',
     });
     expect(prisma.$transaction).not.toHaveBeenCalled();
-    expect(gameAccounts.findAvailableForGame).not.toHaveBeenCalled();
+    expect(gameAccounts.claimSeatForGame).not.toHaveBeenCalled();
   });
 
   it('returns invalid_game when gameId cannot be resolved', async () => {
@@ -289,5 +300,23 @@ describe('PaymentFulfillmentService', () => {
       orderId: 'order-1',
     });
     expect(orders.markFailed).toHaveBeenCalledWith('cs_test_abc');
+  });
+
+  it('maps ServiceUnavailableException from claim to no_pool_capacity', async () => {
+    vi.mocked(gameAccounts.claimSeatForGame).mockImplementation(async () => {
+      throw new ServiceUnavailableException('No pool account capacity for this game');
+    });
+
+    const result = await service.handleCheckoutSessionCompleted({
+      id: 'cs_test_abc',
+      mode: 'payment',
+      payment_status: 'paid',
+      metadata: { gameId: 'game-1', userId: 'user-1' },
+    } as never);
+
+    expect(result).toEqual({
+      action: 'no_pool_capacity',
+      orderId: 'order-1',
+    });
   });
 });

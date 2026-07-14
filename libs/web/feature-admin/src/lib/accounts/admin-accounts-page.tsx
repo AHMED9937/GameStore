@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Container } from '@gamestore/shared/ui';
 import {
   apiErrorMessage,
@@ -47,6 +48,12 @@ function toListItem(account: AdminAccountRecord): AdminAccountListItem {
     activeUsersCount: account.activeUsersCount,
     maxActiveUsers: account.maxActiveUsers,
     isActive: account.isActive,
+    lockedUntil: account.lockedUntil ?? null,
+    openSeats:
+      account.openSeats ??
+      Math.max(0, account.maxActiveUsers - account.activeUsersCount),
+    isClaimable: account.isClaimable ?? account.isActive,
+    poolStatus: account.poolStatus ?? (account.isActive ? 'available' : 'inactive'),
   };
 }
 
@@ -196,12 +203,21 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
     }
   }, [accountById, actionFeedback, isControlled, refreshList, selection]);
 
+  const router = useRouter();
   const handleDeactivate = useCallback(
     async (accountId: string) => {
       if (isControlled) {
         return;
       }
-      if (!window.confirm('Deactivate this pool account?')) {
+      const row = accountById.get(accountId);
+      if (row && row.activeUsersCount > 0) {
+        actionFeedback.setError(
+          'Open account edit to move occupied seats before deactivating.',
+        );
+        router.push(`/admin/accounts/${encodeURIComponent(accountId)}`);
+        return;
+      }
+      if (!window.confirm('Unassign (if linked) and deactivate this pool account?')) {
         return;
       }
       setDeactivatingId(accountId);
@@ -216,7 +232,7 @@ export function AdminAccountsPage({ listState }: AdminAccountsPageProps) {
         setDeactivatingId(null);
       }
     },
-    [actionFeedback, isControlled, refreshList],
+    [accountById, actionFeedback, isControlled, refreshList, router],
   );
 
   const handleReactivate = useCallback(

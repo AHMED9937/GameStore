@@ -36,6 +36,7 @@ describe('PaymentsService', () => {
 
   const gameAccounts = {
     getActivePoolFlagsByGameIds: vi.fn().mockResolvedValue(new Map([['game-1', true]])),
+    hasOpenPoolCapacity: vi.fn().mockResolvedValue(true),
   } as unknown as GameAccountsRepository;
 
   const orders = {
@@ -62,6 +63,7 @@ describe('PaymentsService', () => {
     vi.mocked(gameAccounts.getActivePoolFlagsByGameIds).mockResolvedValue(
       new Map([['game-1', true]]),
     );
+    vi.mocked(gameAccounts.hasOpenPoolCapacity).mockResolvedValue(true);
     vi.mocked(stripe.createCheckoutSession).mockResolvedValue({
       sessionId: 'cs_test_abc',
       url: 'https://checkout.stripe.com/pay/cs_test_abc',

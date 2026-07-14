@@ -185,7 +185,14 @@ export class PaymentsService {
     const poolFlags = await this.gameAccounts.getActivePoolFlagsByGameIds([
       game.id,
     ]);
-    if (resolveSoldOut(game.soldOut, poolFlags.get(game.id) ?? false)) {
+    const hasOpenCapacity = await this.gameAccounts.hasOpenPoolCapacity(game.id);
+    if (
+      resolveSoldOut(
+        game.soldOut,
+        poolFlags.get(game.id) ?? false,
+        hasOpenCapacity,
+      )
+    ) {
       throw new BadRequestException('This game is currently sold out');
     }
   }

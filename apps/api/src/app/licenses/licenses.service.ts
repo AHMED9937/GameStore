@@ -154,23 +154,48 @@ export class LicensesService {
 
     this.assertActivateOwnership(license.ownerId, user);
 
-    const poolAccount = await this.accounts.findAvailableForGame(license.gameId);
+    const ownerId = license.ownerId ?? user.id;
+    const reservedAccount = license.account;
+    const reservedUsable =
+      reservedAccount &&
+      reservedAccount.isActive &&
+      (!reservedAccount.lockedUntil ||
+        reservedAccount.lockedUntil.getTime() <= Date.now());
+
+    if (reservedUsable && reservedAccount) {
+      const activated = await this.licenses.activateLicense({
+        licenseId: license.id,
+        accountId: reservedAccount.id,
+        ownerId,
+        seatAlreadyReserved: true,
+      });
+
+      if (!activated.account) {
+        throw new ServiceUnavailableException('Failed to assign pool account');
+      }
+
+      return this.toActivationResponse(activated, activated.account);
+    }
+
+    const poolAccount = await this.accounts.claimSeatForGame(license.gameId);
     if (!poolAccount) {
       throw new ServiceUnavailableException(
         'No pool account available for this game',
       );
     }
 
-    const ownerId = license.ownerId ?? user.id;
     const activated = await this.licenses.activateLicense({
       licenseId: license.id,
       accountId: poolAccount.id,
       ownerId,
+      seatAlreadyReserved: true,
     });
 
     if (!activated.account) {
       throw new ServiceUnavailableException('Failed to assign pool account');
     }
+
+    await this.accounts.advanceNextAccountIfFull(license.gameId);
 
     return this.toActivationResponse(activated, activated.account);
   }

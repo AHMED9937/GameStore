@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '@gamestore/api/prisma';
 import type {
   GameAccountsRepository,
@@ -56,12 +56,14 @@ describe('EntitlementCleanupService', () => {
   const accounts = {
     findById: vi.fn().mockResolvedValue({ id: 'account-1' }),
     findActivatedLicensesByAccountId: vi.fn().mockResolvedValue([]),
+    countSeatHoldingLicenses: vi.fn().mockResolvedValue(0),
     deactivate: vi.fn().mockResolvedValue({ id: 'account-1', isActive: false }),
     decrementActiveUsers: vi.fn(),
   } satisfies Pick<
     GameAccountsRepository,
     | 'findById'
     | 'findActivatedLicensesByAccountId'
+    | 'countSeatHoldingLicenses'
     | 'deactivate'
     | 'decrementActiveUsers'
   >;
@@ -172,31 +174,23 @@ describe('EntitlementCleanupService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('deactivateAccountWithCleanup revokes activated licenses first', async () => {
+  it('deactivateAccountWithCleanup soft-deactivates without revoking', async () => {
     accounts.findById.mockResolvedValue({ id: 'account-1' });
-    accounts.findActivatedLicensesByAccountId.mockResolvedValue([
-      { id: 'license-1' },
-    ]);
-    licenses.findByIdForCleanup.mockResolvedValue({
-      id: 'license-1',
-      status: 'activated',
-      accountId: 'account-1',
-      gameId: 'game-1',
-    });
-    tx.license.findUnique.mockResolvedValue({
-      id: 'license-1',
-      accountId: 'account-1',
-    });
-    tx.gameAccount.findUnique.mockResolvedValue({
-      id: 'account-1',
-      activeUsersCount: 1,
-      guardLockedByLicenseId: null,
-    });
-    licenses.setRevoked.mockResolvedValue({ id: 'license-1', status: 'revoked' });
+    accounts.countSeatHoldingLicenses.mockResolvedValue(0);
 
     await service.deactivateAccountWithCleanup('account-1');
 
-    expect(licenses.setRevoked).toHaveBeenCalledWith('license-1');
+    expect(licenses.setRevoked).not.toHaveBeenCalled();
     expect(accounts.deactivate).toHaveBeenCalledWith('account-1');
+  });
+
+  it('deactivateAccountWithCleanup rejects when seat-holding licenses remain', async () => {
+    accounts.findById.mockResolvedValue({ id: 'account-1' });
+    accounts.countSeatHoldingLicenses.mockResolvedValue(2);
+
+    await expect(
+      service.deactivateAccountWithCleanup('account-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(accounts.deactivate).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@gamestore/api/prisma';
 import {
   GameAccountsRepository,
@@ -84,18 +88,21 @@ export class EntitlementCleanupService {
     return revokedCount;
   }
 
+  /**
+   * Soft-deactivates a pool account without revoking buyer licenses.
+   * Callers must migrate/unassign seat-holding licenses first.
+   */
   async deactivateAccountWithCleanup(accountId: string) {
     const existing = await this.accounts.findById(accountId);
     if (!existing) {
       throw new NotFoundException(`No pool account found with id "${accountId}"`);
     }
 
-    const activated = await this.accounts.findActivatedLicensesByAccountId(
-      accountId,
-    );
-
-    for (const license of activated) {
-      await this.revokeLicenseWithCleanup(license.id);
+    const bound = await this.accounts.countSeatHoldingLicenses(accountId);
+    if (bound > 0) {
+      throw new BadRequestException(
+        `Cannot deactivate: ${bound} license(s) still occupy this account. Unassign and migrate seats first.`,
+      );
     }
 
     return this.accounts.deactivate(accountId);

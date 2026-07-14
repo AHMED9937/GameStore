@@ -10,4 +10,5 @@ export * from './lib/subscription-plans.repository';
 export * from './lib/user-subscriptions.repository';
 export * from './lib/store-settings.repository';
 export * from './lib/game-sold-out';
+export * from './lib/account-pool-status';
 export { generateLicenseKey, maskLicenseKey } from './lib/license-key.util';

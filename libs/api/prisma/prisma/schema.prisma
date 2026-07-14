@@ -30,6 +30,8 @@ model Game {
   requirementsRecommended String? @db.Text
   featuredOrder   Int?
   soldOut         Boolean  @default(false)
+  /// Preferred pool account for the next buyer reservation (capacity-aware failover advances this).
+  nextAccountId   String?
   discordPublishMessageId String?
   discordAnnounceDescription String? @db.Text
   createdAt       DateTime @default(now())
@@ -37,6 +39,7 @@ model Game {
 
   pricingRegions       GamePricingRegion[]
   accounts             GameAccount[]
+  nextAccount          GameAccount? @relation("GameNextAccount", fields: [nextAccountId], references: [id], onDelete: SetNull)
   licenses             License[]
   media                GameMedia[]
   orders               Order[]
@@ -44,6 +47,7 @@ model Game {
 
   @@index([featuredOrder])
   @@index([publishedAt])
+  @@index([nextAccountId])
   @@map("games")
 }
 
@@ -94,8 +98,9 @@ model GameAccount {
   lastHealthCheck          DateTime?
   createdAt         DateTime  @default(now())
 
-  game     Game?     @relation(fields: [gameId], references: [id], onDelete: SetNull)
-  licenses License[]
+  game               Game?  @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  preferredForGames  Game[] @relation("GameNextAccount")
+  licenses           License[]
 
   @@index([gameId, isActive])
   @@map("game_accounts")

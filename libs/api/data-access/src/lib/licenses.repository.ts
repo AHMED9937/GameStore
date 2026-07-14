@@ -32,12 +32,16 @@ export class LicensesRepository {
     licenseId: string;
     accountId: string;
     ownerId: string;
+    /** When true, seat was already reserved at purchase — do not increment again. */
+    seatAlreadyReserved?: boolean;
   }) {
     return this.prisma.$transaction(async (tx) => {
-      await tx.gameAccount.update({
-        where: { id: params.accountId },
-        data: { activeUsersCount: { increment: 1 } },
-      });
+      if (!params.seatAlreadyReserved) {
+        await tx.gameAccount.update({
+          where: { id: params.accountId },
+          data: { activeUsersCount: { increment: 1 } },
+        });
+      }
 
       return tx.license.update({
         where: { id: params.licenseId },

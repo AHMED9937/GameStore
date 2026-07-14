@@ -7,6 +7,10 @@ export type AdminAccountListItem = {
   activeUsersCount: number;
   maxActiveUsers: number;
   isActive: boolean;
+  lockedUntil: string | null;
+  openSeats: number;
+  isClaimable: boolean;
+  poolStatus: 'inactive' | 'locked' | 'full' | 'available';
 };
 
 export type AdminAccountFormValues = {

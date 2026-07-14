@@ -57,6 +57,7 @@ const adminGameSelect = {
   requirementsMin: true,
   requirementsRecommended: true,
   featuredOrder: true,
+  nextAccountId: true,
   createdAt: true,
   updatedAt: true,
   media: {

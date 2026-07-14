@@ -19,7 +19,6 @@ export type CreateGameAccountDto = {
 };
 
 export type UpdateGameAccountDto = {
-  username?: string;
   region?: string;
   password?: string;
   sharedSecret?: string;
@@ -68,10 +67,9 @@ export class GameAccountsService {
   }
 
   async update(id: string, dto: UpdateGameAccountDto) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
 
     const data: {
-      username?: string;
       region?: string;
       passwordEncrypted?: string;
       sharedSecret?: string;
@@ -80,9 +78,6 @@ export class GameAccountsService {
       guardLockedByLicenseId?: null;
     } = {};
 
-    if (dto.username?.trim()) {
-      data.username = dto.username.trim();
-    }
     if (dto.region?.trim()) {
       data.region = dto.region.trim();
     }
@@ -105,11 +100,15 @@ export class GameAccountsService {
       if (!Number.isInteger(dto.maxActiveUsers) || dto.maxActiveUsers < 1) {
         throw new BadRequestException('maxActiveUsers must be a positive integer');
       }
+      if (dto.maxActiveUsers < existing.activeUsersCount) {
+        throw new BadRequestException(
+          `maxActiveUsers cannot be below occupied seats (${existing.activeUsersCount})`,
+        );
+      }
       data.maxActiveUsers = dto.maxActiveUsers;
     }
 
     if (
-      !data.username &&
       !data.region &&
       !data.passwordEncrypted &&
       !data.sharedSecret &&
