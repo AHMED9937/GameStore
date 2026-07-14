@@ -7,6 +7,7 @@
     "nx": "nx",
     "db:generate": "prisma generate --schema=libs/api/prisma/prisma/schema.prisma",
     "db:migrate": "prisma migrate deploy --schema=libs/api/prisma/prisma/schema.prisma",
+    "start:api": "pnpm db:migrate && node dist/apps/api/main.js",
     "discord:setup": "tsx scripts/discord-setup.ts",
     "discord:bot": "tsx apps/discord-bot/src/main.ts",
     "deploy:init-staging-env": "tsx scripts/deploy/init-staging-env.ts",

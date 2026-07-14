@@ -12,8 +12,10 @@ builder = "NIXPACKS"
 buildCommand = "pnpm install --frozen-lockfile && pnpm db:generate && NX_DAEMON=false NX_PARALLEL=1 NX_TUI=false NODE_OPTIONS=--max-old-space-size=3072 pnpm nx build api --parallel=1"
 
 [deploy]
+# Always migrate before traffic: release phase (preferred) + start gate (belt-and-suspenders).
+# If releaseCommand is skipped/overridden in the Railway UI, start still applies pending migrations.
 releaseCommand = "pnpm db:migrate"
-startCommand = "node dist/apps/api/main.js"
+startCommand = "pnpm db:migrate && node dist/apps/api/main.js"
 healthcheckPath = "/api/health/db"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
