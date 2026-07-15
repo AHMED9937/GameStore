@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from './api-client';
-import { apiErrorMessage, isSetupResponse, isTransientApiError } from './admin-setup';
+import {
+  apiErrorMessage,
+  isSetupResponse,
+  isTransientApiError,
+  readAdminResult,
+} from './admin-setup';
 
 describe('admin-setup helpers', () => {
   it('isSetupResponse detects setup JSON', () => {
@@ -12,6 +17,18 @@ describe('admin-setup helpers', () => {
       }),
     ).toBe(true);
     expect(isSetupResponse({ status: 'success' })).toBe(false);
+  });
+
+  it('readAdminResult narrows SetupResponse | T into data or message', () => {
+    const setup = readAdminResult<{ id: string }>({
+      status: 'setup',
+      integration: 'admin-accounts',
+      message: 'not ready',
+    });
+    expect(setup).toEqual({ ok: false, message: 'not ready' });
+
+    const data = readAdminResult<{ id: string }>({ id: 'acc_1' });
+    expect(data).toEqual({ ok: true, data: { id: 'acc_1' } });
   });
 
   it('apiErrorMessage maps auth errors', () => {

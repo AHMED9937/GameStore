@@ -84,6 +84,7 @@ vi.mock('@gamestore/web/data-access', () => ({
     clearAdminAccountGuardLock(...args),
   unassignAdminAccount: (...args: unknown[]) => unassignAdminAccount(...args),
   isSetupResponse: () => false,
+  readAdminResult: <T,>(result: T) => ({ ok: true as const, data: result }),
   apiErrorMessage: (error: unknown) =>
     error instanceof Error ? error.message : 'Request failed',
 }));
