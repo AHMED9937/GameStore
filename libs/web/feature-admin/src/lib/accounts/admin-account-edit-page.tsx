@@ -13,10 +13,12 @@ import {
   getAdminAccounts,
   isSetupResponse,
   reactivateAdminAccount,
+  readAdminResult,
   unassignAdminAccount,
   updateAdminAccount,
   type AdminAccountPoolStatus,
   type AdminAccountRecord,
+  type SetupResponse,
 } from '@gamestore/web/data-access';
 import { AdminPageHeader } from '../components/admin-page-header';
 import { AdminPageShell } from '../components/admin-page-shell';
@@ -286,7 +288,7 @@ export function AdminAccountEditPage({ accountId }: AdminAccountEditPageProps) {
   const runAccountAction = useCallback(
     async (
       confirmMessage: string,
-      action: () => Promise<AdminAccountRecord | { message: string }>,
+      action: () => Promise<SetupResponse | AdminAccountRecord>,
       successMessage: string,
     ) => {
       if (!account || !window.confirm(confirmMessage)) {
@@ -296,13 +298,13 @@ export function AdminAccountEditPage({ accountId }: AdminAccountEditPageProps) {
       setError(null);
       setSavedMessage(null);
       try {
-        const result = await action();
-        if (isSetupResponse(result)) {
+        const result = readAdminResult(await action());
+        if (!result.ok) {
           setError(result.message);
           return;
         }
-        setAccount(result);
-        setValues(toFormValues(result));
+        setAccount(result.data);
+        setValues(toFormValues(result.data));
         setSavedMessage(successMessage);
       } catch (actionError: unknown) {
         setError(apiErrorMessage(actionError));

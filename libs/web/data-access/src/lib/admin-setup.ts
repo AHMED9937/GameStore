@@ -3,6 +3,10 @@ import type { SetupResponse } from './admin.types';
 
 const TRANSIENT_HTTP_STATUSES = new Set([502, 503, 504]);
 
+/**
+ * Prefer typing admin API results as `SetupResponse | T` (not `{ message: string }`).
+ * Only then does a failed `isSetupResponse` check narrow the value to `T`.
+ */
 export function isSetupResponse(value: unknown): value is SetupResponse {
   return (
     !!value &&
@@ -11,6 +15,16 @@ export function isSetupResponse(value: unknown): value is SetupResponse {
     (value as SetupResponse).status === 'setup' &&
     typeof (value as SetupResponse).message === 'string'
   );
+}
+
+/** Discriminated unwrap so callers never assign a setup payload into domain state. */
+export function readAdminResult<T>(
+  result: SetupResponse | T,
+): { ok: true; data: T } | { ok: false; message: string } {
+  if (isSetupResponse(result)) {
+    return { ok: false, message: result.message };
+  }
+  return { ok: true, data: result };
 }
 
 export function isTransientApiError(error: unknown): boolean {
