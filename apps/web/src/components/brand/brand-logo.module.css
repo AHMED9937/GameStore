@@ -1,0 +1,130 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+
+.markFrame {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(10, 12, 22, 0.9);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  box-shadow: 0 0 20px var(--color-primary-glow);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.mark {
+  width: 72%;
+  height: 72%;
+  display: block;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-none);
+}
+
+.offline {
+  color: var(--text-muted);
+  font-weight: var(--font-weight-semibold);
+  margin-right: 0.15em;
+}
+
+.game {
+  color: var(--text-main);
+  -webkit-text-fill-color: var(--text-main);
+}
+
+.nia {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 100%;
+  transition: background-position 0.35s ease;
+}
+
+.root:hover .markFrame {
+  box-shadow: 0 0 28px var(--color-primary-glow);
+  border-color: rgba(6, 182, 212, 0.55);
+}
+
+.root:hover .nia {
+  background-position: 100% 0;
+}
+
+/* Variants */
+.nav .wordmark {
+  font-size: var(--font-size-xl);
+}
+
+.footer .wordmark {
+  font-size: var(--font-size-lg);
+}
+
+.footer .offline {
+  display: inline;
+}
+
+.auth {
+  flex-direction: column;
+  gap: 0;
+  margin-inline: auto;
+}
+
+.auth .markFrame {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  animation: brandEntrance 0.55s ease both;
+}
+
+.icon .markFrame {
+  width: 40px;
+  height: 40px;
+}
+
+.iconOnly {
+  gap: 0;
+}
+
+@keyframes brandEntrance {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth .markFrame {
+    animation: none;
+  }
+
+  .root:hover .nia {
+    background-position: 0 0;
+  }
+
+  .markFrame {
+    transition: none;
+  }
+}

@@ -6,7 +6,7 @@ import {
 import { Card, Container, Heading, Text } from '@gamestore/shared/ui';
 
 export const metadata = {
-  title: 'SEO Preview | GameStore',
+  title: 'SEO Preview | OfflineGameNIA',
   robots: { index: false, follow: false },
 };
 

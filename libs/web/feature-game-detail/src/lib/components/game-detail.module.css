@@ -2,6 +2,17 @@
   padding: 2rem 0 3rem;
 }
 
+@media (max-width: 1023px) {
+  .section {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Use more horizontal room so the purchase rail isn’t stranded in empty space */
+.detailContainer {
+  max-width: 1440px;
+}
+
 .layout {
   display: grid;
   gap: 2rem;
@@ -10,7 +21,8 @@
 
 @media (min-width: 1024px) {
   .layout {
-    grid-template-columns: minmax(0, 1fr) 20rem;
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    gap: 1.75rem;
   }
 }
 
@@ -21,6 +33,12 @@
   min-width: 0;
 }
 
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 .sidebar {
   display: none;
 }
@@ -29,7 +47,9 @@
   .sidebar {
     display: block;
     position: sticky;
-    top: 1.5rem;
+    top: 5.25rem;
+    align-self: start;
+    z-index: 5;
   }
 }
 
@@ -40,8 +60,8 @@
 .seoExcerpt {
   margin: 0.75rem 0 0;
   max-width: 48rem;
-  color: var(--color-text-muted, #94a3b8);
-  line-height: 1.6;
+  color: var(--text-dim);
+  line-height: var(--line-height-body);
 }
 
 .coverHero {
@@ -110,7 +130,140 @@
 }
 
 .buyPanel {
-  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  max-height: calc(100vh - 5.75rem);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  background: linear-gradient(
+    165deg,
+    rgba(18, 14, 40, 0.99) 0%,
+    rgba(10, 12, 22, 0.99) 52%,
+    rgba(8, 24, 36, 0.99) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 0 40px rgba(168, 85, 247, 0.22),
+    0 24px 56px rgba(0, 0, 0, 0.5);
+}
+
+.buyDealBanner {
+  flex-shrink: 0;
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  z-index: 2;
+}
+
+.buyBody {
+  display: flex;
+  flex-direction: column;
+  /* Gap under countdown + side inset so cover isn’t flush / black-boxed */
+  padding: 0.7rem 0.7rem 0.7rem;
+  gap: 0.65rem;
+  /* Same cyan–navy language as the deal banner (no flat black gutters) */
+  background: linear-gradient(
+    180deg,
+    rgba(6, 182, 212, 0.2) 0%,
+    rgba(8, 47, 73, 0.88) 22%,
+    rgba(15, 23, 42, 0.96) 55%,
+    rgba(10, 12, 22, 0.98) 100%
+  );
+}
+
+/*
+ * Frame matches box-art (3:4). Soft radius; gutters pick up buyBody (banner) bg.
+ */
+.buyCoverWrap {
+  position: relative;
+  width: min(100%, calc((100vh - 17rem) * 3 / 4));
+  aspect-ratio: 3 / 4;
+  max-height: calc(100vh - 17rem);
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: transparent;
+  line-height: 0;
+  box-shadow:
+    0 0 0 1px rgba(103, 232, 249, 0.12),
+    0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.buyCover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  border-radius: inherit;
+}
+
+.buyDiscountBadge {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 22px rgba(6, 182, 212, 0.35);
+}
+
+.buyOfferBlock {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.15rem 0.2rem 0.25rem;
+  /* Sit on buyBody (no nested black plate) */
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+
+.buyAction {
+  margin-top: 0;
+}
+
+.buyAction :global(.btn-buy-now) {
+  padding: 0.6rem 0.7rem 0.6rem 1rem;
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.05em;
+  box-shadow:
+    0 0 28px rgba(168, 85, 247, 0.35),
+    0 6px 18px rgba(6, 182, 212, 0.25);
+}
+
+.buySecureNote {
+  /* Hug the price line above so price + note read as the button's caption */
+  margin: -0.3rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  text-align: center;
+  opacity: 0.85;
+}
+
+.platformStripCompact {
+  margin-top: 0;
+  padding: 0.4rem 0.55rem;
+  gap: 0.5rem;
+}
+
+.platformStripCompact .platformStripIconWrap {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.buyCtaOfferRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.buyCtaBadge {
+  flex-shrink: 0;
 }
 
 .platformIcon {
@@ -234,11 +387,94 @@
   color: var(--text-dim);
 }
 
-.buyCover {
-  width: 100%;
-  border-radius: var(--radius-sm);
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
+.buyCtaDealBanner {
+  margin: 0 0 0.5rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Fixed mobile / tablet purchase dock */
+.stickyBuyDock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  padding: 0.65rem 0.85rem
+    calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(110%);
+  transition:
+    opacity 0.28s ease,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stickyBuyDockVisible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (min-width: 1024px) {
+  .stickyBuyDock {
+    display: none;
+  }
+}
+
+.stickyBuyInner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    135deg,
+    rgba(12, 14, 28, 0.97) 0%,
+    rgba(24, 16, 48, 0.96) 55%,
+    rgba(8, 28, 40, 0.97) 100%
+  );
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 -8px 40px rgba(6, 7, 13, 0.65),
+    0 12px 36px rgba(168, 85, 247, 0.28);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.stickyBuyOffer {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+}
+
+.stickyBuyBadge {
+  transform: scale(0.88);
+  transform-origin: left center;
+}
+
+.stickyBuyPrice {
+  margin: 0;
+}
+
+.stickyBuyAction {
+  flex-shrink: 0;
+  min-width: 8.5rem;
+  max-width: 42%;
+}
+
+.stickyBuyAction :global(.btn-buy-now) {
+  padding: 0.85rem 1rem;
+  font-size: var(--font-size-sm);
+  box-shadow:
+    0 0 28px var(--color-primary-glow),
+    0 4px 16px rgba(6, 182, 212, 0.28);
 }
 
 .screenshotRow {
@@ -248,10 +484,200 @@
   padding-bottom: 0.25rem;
 }
 
-.screenshot {
+.screenshotButton {
   flex: 0 0 12rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  border-radius: var(--radius-sm);
+  line-height: 0;
+  transition: var(--transition-smooth);
+}
+
+.screenshotButton:hover .screenshot,
+.screenshotButton:focus-visible .screenshot {
+  border-color: rgba(168, 85, 247, 0.55);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.25), 0 8px 24px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+.screenshotButton:focus-visible {
+  outline: none;
+}
+
+.screenshot {
+  display: block;
+  width: 12rem;
   height: 7rem;
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-light);
+  transition: var(--transition-smooth);
+}
+
+.lightboxOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background:
+    radial-gradient(ellipse at top, rgba(168, 85, 247, 0.12), transparent 45%),
+    rgba(4, 6, 12, 0.88);
+  backdrop-filter: blur(6px);
+  animation: lightboxFadeIn 0.2s ease-out;
+}
+
+.lightboxPanel {
+  width: min(100%, 72rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: calc(100vh - 2rem);
+}
+
+.lightboxTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lightboxCaption {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text-main, #f8fafc);
+}
+
+.lightboxCount {
+  color: var(--text-dim, #94a3b8);
+  font-variant-numeric: tabular-nums;
+}
+
+.lightboxClose,
+.lightboxNav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-main, #f8fafc);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  flex-shrink: 0;
+}
+
+.lightboxClose:hover,
+.lightboxNav:hover,
+.lightboxClose:focus-visible,
+.lightboxNav:focus-visible {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.16);
+  outline: none;
+}
+
+.lightboxClose svg,
+.lightboxNav svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.lightboxStage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  flex: 1;
+}
+
+.lightboxImage {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 6.5rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  animation: lightboxImageIn 0.22s ease-out;
+}
+
+.lightboxNav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.lightboxNavPrev {
+  left: 0.5rem;
+}
+
+.lightboxNavNext {
+  right: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .lightboxNavPrev {
+    left: -0.25rem;
+  }
+
+  .lightboxNavNext {
+    right: -0.25rem;
+  }
+}
+
+@keyframes lightboxFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes lightboxImageIn {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screenshotButton,
+  .screenshot,
+  .lightboxClose,
+  .lightboxNav {
+    transition: none;
+  }
+
+  .screenshotButton:hover .screenshot,
+  .screenshotButton:focus-visible .screenshot {
+    transform: none;
+  }
+
+  .lightboxOverlay,
+  .lightboxImage {
+    animation: none;
+  }
 }

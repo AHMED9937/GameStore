@@ -1,0 +1,175 @@
+.priceBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.priceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.dealPriceRow {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.55rem 0.7rem;
+  max-width: 100%;
+}
+
+.salePrice {
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: var(--letter-spacing-tighter);
+  color: var(--color-secondary);
+  text-shadow: 0 0 18px rgba(6, 182, 212, 0.28);
+  line-height: var(--line-height-none);
+}
+
+.priceDivider {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.1em;
+  margin-block: 0.1em;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(103, 232, 249, 0.55) 20%,
+    rgba(103, 232, 249, 0.55) 80%,
+    transparent 100%
+  );
+  opacity: 0.85;
+}
+
+.compareWrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.compareLabel {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: var(--letter-spacing-wider);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  opacity: 0.9;
+}
+
+.compareAt {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(248, 113, 113, 0.75);
+  opacity: 0.72;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.basePrice {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.metaRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.inlineSave {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #022c22;
+  background: linear-gradient(135deg, #34d399 0%, #06b6d4 100%);
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.28);
+}
+
+.saveBadge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 3.4rem;
+  padding: 0.35rem 0.55rem 0.4rem;
+  border-radius: 0.55rem 0.15rem 0.55rem 0.15rem;
+  background: linear-gradient(145deg, #06b6d4 0%, #0891b2 55%, #0e7490 100%);
+  color: #041016;
+  box-shadow:
+    0 8px 20px rgba(6, 182, 212, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  line-height: 1;
+}
+
+.saveEyebrow {
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.saveValue {
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-top: 0.1rem;
+}
+
+.sizeSm .salePrice,
+.sizeSm .basePrice {
+  font-size: 1.15rem;
+}
+
+.sizeSm .compareAt {
+  font-size: 0.8rem;
+}
+
+.sizeSm .compareLabel {
+  font-size: 0.55rem;
+}
+
+.sizeMd .salePrice,
+.sizeMd .basePrice {
+  font-size: 1.35rem;
+}
+
+.sizeMd .compareAt {
+  font-size: 0.9rem;
+}
+
+.sizeLg .salePrice,
+.sizeLg .basePrice {
+  font-size: 2.1rem;
+}
+
+.sizeLg .compareAt {
+  font-size: 1.05rem;
+}
+
+.sizeLg .compareLabel {
+  font-size: 0.6875rem;
+}
+
+.sizeLg .compareWrap {
+  padding: 0.25rem 0.55rem;
+}
+
+.sizeLg .inlineSave {
+  font-size: 0.8125rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.sizeLg .priceDivider {
+  min-height: 1.5em;
+}

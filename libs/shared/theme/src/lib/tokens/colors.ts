@@ -1,4 +1,4 @@
-/** Nexus Pass / GameStore Cybernetic Amethyst & Aqua Neon */
+/** OfflineGameNIA Cybernetic Amethyst & Aqua Neon */
 export const colors = {
   bgDarker: '#06070d',
   bgDark: '#0a0c16',
@@ -63,8 +63,6 @@ export const cssVarMap: Record<string, string> = {
   '--gradient-glow': gradients.glow,
   '--gradient-hero-text': gradients.heroText,
   '--transition-smooth': 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-  '--font-body': "'Plus Jakarta Sans', sans-serif",
-  '--font-display': "'Space Grotesk', sans-serif",
   '--shadow-glow': '0 0 20px var(--color-primary-glow)',
   '--shadow-card-hover': '0 15px 35px var(--color-primary-glow)',
   '--radius-sm': '0.5rem',

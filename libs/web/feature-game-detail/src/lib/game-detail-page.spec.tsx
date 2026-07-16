@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GameDetailPage } from './game-detail-page';
 
 const sampleGame = {
@@ -40,6 +40,16 @@ vi.mock('@gamestore/web/data-access', async (importOriginal) => {
 });
 
 describe('GameDetailPage', () => {
+  beforeEach(() => {
+    class MockIntersectionObserver {
+      observe = vi.fn();
+      disconnect = vi.fn();
+      unobserve = vi.fn();
+      constructor(_callback: IntersectionObserverCallback) {}
+    }
+    vi.stubGlobal('IntersectionObserver', MockIntersectionObserver);
+  });
+
   it('renders server-side SEO excerpt under the title', async () => {
     const ui = await GameDetailPage({ slug: 'demo-game' });
     const { container } = render(ui);
@@ -49,5 +59,17 @@ describe('GameDetailPage', () => {
     expect(excerpt?.textContent).toContain(
       'Explore distant worlds in this epic space adventure',
     );
+  });
+
+  it('renders sticky purchase dock, desktop buy rail, and above-the-fold buy CTA', async () => {
+    const ui = await GameDetailPage({ slug: 'demo-game' });
+    render(ui);
+
+    expect(screen.getByTestId('game-detail-buy-cta-mobile')).toBeTruthy();
+    expect(screen.getByTestId('game-detail-buy-panel')).toBeTruthy();
+    expect(screen.getByTestId('game-detail-sticky-buy')).toBeTruthy();
+    expect(
+      screen.getAllByRole('link', { name: /Buy now/i }).length,
+    ).toBeGreaterThan(0);
   });
 });

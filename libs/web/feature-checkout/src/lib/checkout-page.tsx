@@ -8,7 +8,6 @@ import { CheckoutCancelledBanner } from './components/checkout-cancelled-banner'
 import {
   CheckoutPayment,
   CheckoutSummary,
-  CheckoutTerms,
 } from './components/checkout-sections';
 import styles from './components/section.module.css';
 import { useCheckoutGame } from './hooks/use-checkout-game';
@@ -66,9 +65,6 @@ export function CheckoutPage({
             {gameState.status === 'success' ? (
               <CheckoutPayment game={gameState.data} />
             ) : null}
-            <div style={{ marginTop: '1rem' }}>
-              <CheckoutTerms />
-            </div>
           </div>
         </div>
       </Container>

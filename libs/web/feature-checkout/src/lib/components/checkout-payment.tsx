@@ -2,18 +2,38 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, Heading, SkeletonButton, Text } from '@gamestore/shared/ui';
+import { Button, Card, Heading, Text } from '@gamestore/shared/ui';
 import {
   ApiError,
   apiErrorMessage,
   createCheckout,
+  formatGamePrice,
+  getGameDisplayPrice,
   getPaymentsHealth,
   type GameDetail,
 } from '@gamestore/web/data-access';
 import styles from './section.module.css';
 
 export type CheckoutPaymentProps = {
-  game: Pick<GameDetail, 'id' | 'slug'>;
+  game: Pick<GameDetail, 'id' | 'slug' | 'priceBase' | 'discount'>;
+};
+
+type PolicyKey = 'terms' | 'privacy' | 'refund';
+
+/** Short in-place summaries so buyers can read policies without leaving checkout. */
+const POLICY_SUMMARIES: Record<PolicyKey, { title: string; body: string }> = {
+  terms: {
+    title: 'Terms of Service',
+    body: 'Your purchase grants a personal license to play through a shared offline-activated account. Keep the account credentials unchanged and use it on one device at a time.',
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    body: 'We use your email and order details only to deliver your purchase and provide support. Payments are handled by Stripe — we never see or store your card details, and we never sell your data.',
+  },
+  refund: {
+    title: 'Refund Policy',
+    body: 'If activation fails and our support team cannot fix it, you get a replacement or a full refund. Contact support any time from your account page.',
+  },
 };
 
 function isValidCheckoutUrl(url: string): boolean {
@@ -41,9 +61,16 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
   const [error, setError] = useState<string | null>(null);
   const [signInRequired, setSignInRequired] = useState(false);
   const [webhookNote, setWebhookNote] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState(false);
+  const [openPolicy, setOpenPolicy] = useState<PolicyKey | null>(null);
+
+  const { priceBase, priceSale, percentOff } = getGameDisplayPrice(game);
+  const isFree = priceSale !== null && Number(priceSale) === 0;
+  const finalPrice = priceSale ?? priceBase;
+  const saved = priceSale !== null ? Number(priceBase) - Number(priceSale) : 0;
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
+    if (isFree || process.env.NODE_ENV === 'production') {
       return;
     }
 
@@ -56,7 +83,7 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
         }
       })
       .catch(() => undefined);
-  }, []);
+  }, [isFree]);
 
   async function handlePay() {
     setPaying(true);
@@ -84,28 +111,108 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
 
   return (
     <Card className={styles.panel}>
-      <Heading level="h3">Payment</Heading>
+      <Heading level="h3">
+        {isFree ? 'Claim your game' : 'Complete your order'}
+      </Heading>
       <Text tone="muted" style={{ marginTop: '0.75rem' }}>
-        You will be redirected to Stripe secure checkout.
+        {isFree
+          ? 'This game is free — claim it instantly, no payment required.'
+          : 'You are one click away — pay securely and start playing.'}
       </Text>
+      {saved > 0 ? (
+        <p className={styles.savingsCallout} data-testid="checkout-savings">
+          You&apos;re saving ${saved.toFixed(2)}
+          {percentOff ? ` (${percentOff}% off)` : ''} on this order
+        </p>
+      ) : null}
+      <ul className={styles.valueList}>
+        <li className={styles.valueItem}>
+          <span className={styles.valueCheck} aria-hidden>
+            ✓
+          </span>
+          Instant delivery — play within minutes
+        </li>
+        <li className={styles.valueItem}>
+          <span className={styles.valueCheck} aria-hidden>
+            ✓
+          </span>
+          Warranty-backed support
+        </li>
+        <li className={styles.valueItem}>
+          <span className={styles.valueCheck} aria-hidden>
+            ✓
+          </span>
+          Secure payment powered by Stripe
+        </li>
+      </ul>
       {webhookNote ? (
         <Text tone="muted" style={{ marginTop: '0.75rem' }}>
           {webhookNote}
         </Text>
       ) : null}
-      <Button
-        variant="primary"
+      <label className={styles.termsRow}>
+        <input
+          type="checkbox"
+          className={styles.termsCheckbox}
+          checked={accepted}
+          onChange={(event) => setAccepted(event.target.checked)}
+          data-testid="checkout-terms-checkbox"
+        />
+        <span className={styles.termsText}>
+          I agree to the{' '}
+          {(['terms', 'privacy', 'refund'] as const).map((key, index) => (
+            <span key={key}>
+              {index === 2 ? ' and ' : index === 1 ? ', ' : ''}
+              <button
+                type="button"
+                className={styles.policyLink}
+                onClick={(event) => {
+                  event.preventDefault();
+                  setOpenPolicy((open) => (open === key ? null : key));
+                }}
+              >
+                {POLICY_SUMMARIES[key].title}
+              </button>
+            </span>
+          ))}
+        </span>
+      </label>
+      {openPolicy ? (
+        <div className={styles.policyPeek} data-testid="checkout-policy-peek">
+          <strong>{POLICY_SUMMARIES[openPolicy].title}</strong>
+          <p>{POLICY_SUMMARIES[openPolicy].body}</p>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        className={`btn-buy-now btn-buy-now--split ${styles.payButton}`}
         onClick={handlePay}
-        disabled={paying}
-        style={{ marginTop: '1rem' }}
-        data-testid={paying ? 'checkout-pay-loading' : 'checkout-pay-button'}
+        disabled={paying || !accepted}
+        data-testid={
+          paying
+            ? isFree
+              ? 'checkout-claim-loading'
+              : 'checkout-pay-loading'
+            : isFree
+              ? 'checkout-claim-button'
+              : 'checkout-pay-button'
+        }
       >
-        {paying ? (
-          <SkeletonButton width="100%" height={20} rounded="sm" />
-        ) : (
-          'Pay with card'
-        )}
-      </Button>
+        <span className="btn-buy-now-label">
+          {paying ? 'Redirecting…' : isFree ? 'Claim free game' : 'Pay now'}
+        </span>
+        <span className="btn-buy-now-price-block">
+          <span className="btn-buy-now-price">
+            {formatGamePrice(finalPrice)}
+          </span>
+          {saved > 0 ? (
+            <s className="btn-buy-now-was">was {formatGamePrice(priceBase)}</s>
+          ) : null}
+        </span>
+      </button>
+      <Text tone="dim" className={styles.trustNote}>
+        🔒 Secured by Stripe · Instant delivery after payment
+      </Text>
       {error ? (
         <div
           className={`${styles.banner} ${styles.bannerError}`}

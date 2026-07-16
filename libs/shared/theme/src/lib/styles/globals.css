@@ -26,12 +26,44 @@
   --text-muted: #b8c0cc;
   --text-dim: #94a3b8;
 
+  /*
+   * Font families: --font-body / --font-display are owned by next/font on <html>.
+   * Do not redefine them here or ThemeProvider will break font loading.
+   */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+
+  /* Type scale */
   --font-size-xs: 0.75rem;
-  --font-size-sm: 0.9375rem;
+  --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-md: 1.0625rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.5rem;
+  --font-size-5xl: 3.5rem;
+
+  --line-height-none: 1;
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.3;
+  --line-height-normal: 1.5;
   --line-height-body: 1.65;
-  --line-height-prose: 1.8;
+  --line-height-prose: 1.75;
+
+  --letter-spacing-tighter: -0.03em;
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.04em;
+  --letter-spacing-wider: 0.08em;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   --gradient-brand: linear-gradient(
     135deg,
@@ -44,9 +76,6 @@
     rgba(6, 182, 212, 0.5) 100%
   );
   --gradient-hero-text: linear-gradient(135deg, #fff 40%, #a855f7 100%);
-
-  --font-body: 'Plus Jakarta Sans', sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
 
   --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 
@@ -67,6 +96,9 @@
 
 html {
   color-scheme: dark;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  hanging-punctuation: first last;
 }
 
 body {
@@ -74,9 +106,12 @@ body {
   min-height: 100vh;
   background-color: var(--bg-darker);
   color: var(--text-main);
-  font-family: var(--font-body);
+  font-family: var(--font-body), system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
   font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
   line-height: var(--line-height-body);
+  letter-spacing: var(--letter-spacing-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -98,10 +133,66 @@ h1,
 h2,
 h3,
 h4,
+h5,
+h6,
 .gamestore-display {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--text-main);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(var(--font-size-3xl), 3.5vw + 1rem, var(--font-size-5xl));
+  line-height: var(--line-height-tight);
+}
+
+h2 {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+}
+
+h3 {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-snug);
+}
+
+h4 {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+}
+
+h5 {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-snug);
+}
+
+h6 {
+  font-size: var(--font-size-md);
+  line-height: var(--line-height-normal);
+}
+
+p {
+  text-wrap: pretty;
+}
+
+small {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.925em;
+}
+
+strong,
+b {
+  font-weight: var(--font-weight-semibold);
 }
 
 ::-webkit-scrollbar {
@@ -124,6 +215,7 @@ h4,
 .gamestore-theme {
   min-height: 100vh;
   color: var(--text-main);
+  font-family: inherit;
 }
 
 .glass-panel {
@@ -149,30 +241,31 @@ h4,
   -webkit-text-fill-color: transparent;
 }
 
-/* Readable text utilities use across features */
+/* Readable text utilities used across features */
 .text-body {
   color: var(--text-body);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   line-height: var(--line-height-body);
 }
 
 .text-secondary {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
-  line-height: var(--line-height-body);
+  line-height: var(--line-height-normal);
 }
 
 .text-caption {
   color: var(--text-dim);
   font-size: var(--font-size-xs);
-  line-height: 1.5;
-  letter-spacing: 0.02em;
+  line-height: var(--line-height-normal);
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 .text-prose {
   color: var(--text-body);
   font-size: var(--font-size-md);
   line-height: var(--line-height-prose);
+  max-width: 65ch;
 }
 
 /* Meta chips platform, release date, genre tags */
@@ -194,10 +287,10 @@ h4,
   border: 1px solid var(--border-light);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-main);
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
   transition: var(--transition-smooth);
 }
 
@@ -221,15 +314,15 @@ h4,
 
 .meta-chip-label {
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: var(--font-size-xs);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--letter-spacing-wider);
 }
 
 .meta-chip-value {
   color: var(--text-main);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .meta-chip--platform {
@@ -246,11 +339,11 @@ h4,
   align-items: center;
   padding: 0.125rem 0.45rem;
   border-radius: 999px;
-  font-size: 0.625rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-extrabold);
+  letter-spacing: var(--letter-spacing-wider);
   text-transform: uppercase;
-  line-height: 1;
+  line-height: var(--line-height-none);
 }
 
 .meta-chip-access--offline {
@@ -346,12 +439,12 @@ h4,
 
 .support-cta-title {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   color: var(--text-main);
-  line-height: 1.3;
+  line-height: var(--line-height-snug);
 }
 
 .support-cta-description {
@@ -372,9 +465,9 @@ h4,
   border: 1px solid rgba(88, 101, 242, 0.5);
   background: var(--color-discord);
   color: #fff;
-  font-family: var(--font-body);
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   text-decoration: none;
   white-space: nowrap;
   transition: var(--transition-smooth);
@@ -835,11 +928,11 @@ h4,
 
 .buy-cta-price {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1;
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tighter);
+  line-height: var(--line-height-none);
   background: var(--gradient-brand);
   -webkit-background-clip: text;
   background-clip: text;
@@ -866,16 +959,22 @@ h4,
 }
 
 .btn-buy-now {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   width: 100%;
   padding: 1rem 1.5rem;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-md);
-  background: var(--gradient-brand);
-  color: var(--bg-darker);
+  /* Neon-on-black: near-black body inside a glowing brand-gradient border */
+  background:
+    linear-gradient(160deg, #0c0f1a 0%, #0a0c14 100%) padding-box,
+    var(--gradient-brand) border-box;
+  color: #67e8f9;
+  text-shadow: 0 0 12px rgba(103, 232, 249, 0.35);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 800;
@@ -884,16 +983,17 @@ h4,
   cursor: pointer;
   text-decoration: none;
   box-shadow:
-    0 0 32px var(--color-primary-glow),
-    0 4px 20px rgba(6, 182, 212, 0.3);
+    0 0 28px var(--color-primary-glow),
+    0 4px 18px rgba(6, 182, 212, 0.25);
   transition: var(--transition-smooth);
 }
 
 .btn-buy-now:hover:not(:disabled) {
   transform: translateY(-2px);
+  color: #a5f3fc;
   box-shadow:
-    0 0 48px rgba(168, 85, 247, 0.35),
-    0 8px 28px rgba(6, 182, 212, 0.4);
+    0 0 44px rgba(168, 85, 247, 0.4),
+    0 8px 26px rgba(6, 182, 212, 0.4);
 }
 
 .btn-buy-now:disabled {
@@ -901,7 +1001,95 @@ h4,
   cursor: not-allowed;
 }
 
+/* Marketing shine: a light streak sweeps the button every few seconds */
+.btn-buy-now::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -75%;
+  width: 50%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(103, 232, 249, 0.07) 30%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(103, 232, 249, 0.07) 70%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  animation: btn-buy-now-shine 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.btn-buy-now:disabled::after {
+  display: none;
+}
+
+@keyframes btn-buy-now-shine {
+  0% {
+    left: -75%;
+  }
+  38% {
+    left: 125%;
+  }
+  100% {
+    left: 125%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-buy-now::after {
+    display: none;
+  }
+}
+
 .btn-buy-now-icon {
   width: 1.125rem;
   height: 1.125rem;
+}
+
+.btn-buy-now--split {
+  justify-content: space-between;
+  /* Price pill carries its own padding — tighten the shell so the button stays compact */
+  padding: 0.6rem 0.7rem 0.6rem 1.25rem;
+}
+
+.btn-buy-now-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-buy-now-price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  line-height: 1;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.5rem;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(103, 232, 249, 0.25);
+}
+
+.btn-buy-now-price {
+  font-size: 1.1em;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: #ecfeff;
+  text-shadow: 0 0 14px rgba(103, 232, 249, 0.45);
+}
+
+.btn-buy-now-was {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(226, 232, 240, 0.65);
+  text-shadow: none;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(248, 113, 113, 0.85);
+  white-space: nowrap;
+  text-transform: none;
 }

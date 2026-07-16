@@ -3,6 +3,7 @@ import { PrismaModule } from '@gamestore/api/prisma';
 import { GameAccountsRepository } from './game-accounts.repository';
 import { AuditLogsRepository } from './audit-logs.repository';
 import { GamesRepository } from './games.repository';
+import { GameDiscountsRepository } from './game-discounts.repository';
 import { LicensesRepository } from './licenses.repository';
 import { OrdersRepository } from './orders.repository';
 import { SubscriptionPlansRepository } from './subscription-plans.repository';
@@ -13,6 +14,7 @@ import { StoreSettingsRepository } from './store-settings.repository';
   imports: [PrismaModule],
   providers: [
     GamesRepository,
+    GameDiscountsRepository,
     LicensesRepository,
     GameAccountsRepository,
     AuditLogsRepository,
@@ -23,6 +25,7 @@ import { StoreSettingsRepository } from './store-settings.repository';
   ],
   exports: [
     GamesRepository,
+    GameDiscountsRepository,
     LicensesRepository,
     GameAccountsRepository,
     AuditLogsRepository,

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="OfflineGameNIA">
+  <defs>
+    <linearGradient id="ogn-facet" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a855f7"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="ogn-core" x1="24" y1="22" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <!-- Offline seal ring (incomplete) -->
+  <path
+    d="M52.5 32a20.5 20.5 0 1 1-8.2-16.3"
+    stroke="url(#ogn-facet)"
+    stroke-width="2.25"
+    stroke-linecap="round"
+    opacity="0.85"
+  />
+  <circle cx="52.5" cy="32" r="2.25" fill="#06b6d4"/>
+  <!-- Outer prism facets -->
+  <path d="M32 10 L48 24 L32 38 L16 24 Z" fill="url(#ogn-facet)" opacity="0.95"/>
+  <path d="M32 38 L48 24 L48 40 L32 54 Z" fill="#7c3aed" opacity="0.9"/>
+  <path d="M32 38 L16 24 L16 40 L32 54 Z" fill="#0891b2" opacity="0.85"/>
+  <!-- Inner cyan core -->
+  <path d="M32 20 L40 27 L32 34 L24 27 Z" fill="url(#ogn-core)"/>
+  <path d="M32 34 L40 27 L40 35 L32 42 Z" fill="#a5f3fc" opacity="0.55"/>
+  <path d="M32 34 L24 27 L24 35 L32 42 Z" fill="#06b6d4" opacity="0.7"/>
+</svg>

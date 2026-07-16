@@ -10,6 +10,7 @@ import {
   isSetupResponse,
   updateAdminGame,
   type AdminGameDiscord,
+  type AdminGameDiscount,
 } from '@gamestore/web/data-access';
 import { AdminAsyncView } from '../components/admin-async-view';
 import { AdminPageHeader } from '../components/admin-page-header';
@@ -45,6 +46,9 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
   const [hasActivePool, setHasActivePool] = useState(false);
   const [nextAccountId, setNextAccountId] = useState<string | null>(null);
   const [discordMeta, setDiscordMeta] = useState<AdminGameDiscord | null>(null);
+  const [discountMeta, setDiscountMeta] = useState<AdminGameDiscount | null>(
+    null,
+  );
 
   const loadGame = useCallback(async () => {
     const result = await getAdminGame(gameId);
@@ -58,6 +62,7 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
       setHasActivePool(result.accountSummary.hasActivePool);
       setNextAccountId(result.nextAccountId ?? null);
       setDiscordMeta(result.discord ?? null);
+      setDiscountMeta(result.discount ?? null);
     }
     return result;
   }, [gameId]);
@@ -107,6 +112,7 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
         setCoverCardImage(result.coverCardImage ?? null);
         setHasActivePool(result.accountSummary.hasActivePool);
         setDiscordMeta(result.discord ?? null);
+        setDiscountMeta(result.discount ?? null);
         setSavedMessage('Game saved.');
       } catch (submitError: unknown) {
         setError(apiErrorMessage(submitError));
@@ -200,6 +206,9 @@ export function AdminGameEditPage({ gameId, formState }: AdminGameEditPageProps)
               }
               marketingSection={
                 <AdminGameMarketingSection
+                  gameId={gameId}
+                  discount={discountMeta}
+                  onDiscountChange={setDiscountMeta}
                   discord={
                     discordMeta ?? {
                       configured: false,

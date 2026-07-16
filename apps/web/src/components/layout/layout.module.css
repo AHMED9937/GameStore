@@ -30,39 +30,6 @@
   gap: 1rem;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-  color: var(--text-main);
-  flex-shrink: 0;
-}
-
-.logoIcon {
-  background: var(--gradient-brand);
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  color: var(--bg-darker);
-  box-shadow: 0 0 20px var(--color-primary-glow);
-}
-
-.logoText {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  background: var(--gradient-brand);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
 .nav {
   display: none;
   gap: 32px;
@@ -78,8 +45,10 @@
 .navLink {
   color: var(--text-muted);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-normal);
   transition: var(--transition-smooth);
 }
 
@@ -109,8 +78,8 @@
   color: var(--text-main);
   padding: 10px 20px;
   border-radius: 10px;
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
   text-decoration: none;
   transition: var(--transition-smooth);
   white-space: nowrap;
@@ -136,8 +105,8 @@
   border: 1px solid var(--border-light);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-main);
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
   text-decoration: none;
   transition: var(--transition-smooth);
   white-space: nowrap;
@@ -162,8 +131,8 @@
   border: 1px solid rgba(168, 85, 247, 0.35);
   background: rgba(168, 85, 247, 0.1);
   color: var(--color-primary);
-  font-weight: 700;
-  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
   text-decoration: none;
   transition: var(--transition-smooth);
 }
@@ -246,8 +215,8 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   transition: var(--transition-smooth);
 }
 
@@ -258,8 +227,10 @@
 }
 
 .footerLinks h4 {
-  font-family: var(--font-display);
-  font-size: 16px;
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   margin: 0 0 20px;
   color: var(--text-main);
 }
@@ -277,7 +248,8 @@
 .footerLinks a {
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
   transition: var(--transition-smooth);
 }
 
@@ -287,17 +259,19 @@
 }
 
 .footerNewsletter h4 {
-  font-family: var(--font-display);
-  font-size: 16px;
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
   margin: 0 0 20px;
   color: var(--text-main);
 }
 
 .newsletterNote {
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   margin: 0 0 16px;
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .newsletterForm {
@@ -331,8 +305,9 @@
 
 .footerBottom p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   color: var(--text-dim);
+  line-height: var(--line-height-normal);
 }
 
 .footerBottomLinks {
@@ -343,7 +318,7 @@
 .footerBottomLinks a {
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   transition: var(--transition-smooth);
 }
 

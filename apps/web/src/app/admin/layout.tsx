@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
+import { BrandLogo } from '../../components/brand/brand-logo';
 import styles from './admin.module.css';
 
 const NAV_ITEMS: Array<{ href: string; label: string; exact?: boolean }> = [
@@ -56,11 +57,9 @@ export default function AdminLayout({
     <div className={styles.adminLayout}>
       <aside className={styles.sidebar}>
         <div className={styles.brand}>
-          <div className={styles.brandIcon} aria-hidden>
-            ◆
-          </div>
+          <BrandLogo variant="icon" href="/admin" ariaLabel="OfflineGameNIA admin" />
           <div className={styles.brandText}>
-            <span className={styles.brandTitle}>GameStore</span>
+            <span className={styles.brandTitle}>GameNIA</span>
             <span className={styles.brandSubtitle}>Admin</span>
           </div>
         </div>

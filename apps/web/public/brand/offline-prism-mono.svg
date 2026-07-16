@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="OfflineGameNIA">
+  <path
+    d="M52.5 32a20.5 20.5 0 1 1-8.2-16.3"
+    stroke="currentColor"
+    stroke-width="2.25"
+    stroke-linecap="round"
+    opacity="0.85"
+  />
+  <circle cx="52.5" cy="32" r="2.25" fill="currentColor"/>
+  <path d="M32 10 L48 24 L32 38 L16 24 Z" fill="currentColor" opacity="0.95"/>
+  <path d="M32 38 L48 24 L48 40 L32 54 Z" fill="currentColor" opacity="0.55"/>
+  <path d="M32 38 L16 24 L16 40 L32 54 Z" fill="currentColor" opacity="0.7"/>
+  <path d="M32 20 L40 27 L32 34 L24 27 Z" fill="currentColor" opacity="0.35"/>
+  <path d="M32 34 L40 27 L40 35 L32 42 Z" fill="currentColor" opacity="0.2"/>
+  <path d="M32 34 L24 27 L24 35 L32 42 Z" fill="currentColor" opacity="0.25"/>
+</svg>

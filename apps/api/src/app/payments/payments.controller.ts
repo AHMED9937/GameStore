@@ -57,6 +57,7 @@ export class PaymentsController {
         gameId: body.gameId,
         gameSlug: body.slug,
         sessionIdHint: result.sessionId.slice(0, 12),
+        free: result.sessionId.startsWith('free_'),
       },
     });
 

@@ -1,5 +1,18 @@
-import { formatGamePrice, getGameCardCover, type Game } from '@gamestore/web/data-access';
-import { Badge, Card, Heading, Text } from '@gamestore/shared/ui';
+import {
+  formatGamePrice,
+  getGameCardCover,
+  resolveActiveGameDiscount,
+  type Game,
+} from '@gamestore/web/data-access';
+import {
+  Badge,
+  Card,
+  GameDealUrgency,
+  GameDiscountBadge,
+  GamePriceDisplay,
+  Heading,
+  Text,
+} from '@gamestore/shared/ui';
 import Link from 'next/link';
 import { normalizeCatalogPlatform } from '../catalog.utils';
 import { CatalogCardPlatformIcon } from './catalog-platform-icon';
@@ -27,10 +40,20 @@ export type CatalogCardProps = {
 
 export function CatalogCard({ game, priority = false }: CatalogCardProps) {
   const coverSrc = getGameCardCover(game);
+  const discount = resolveActiveGameDiscount(game);
 
   return (
     <Link href={`/games/${game.slug}`} className={styles.cardLink}>
       <Card hover className={styles.panel}>
+        {discount?.showCountdown ? (
+          <div className={styles.cardDealBanner}>
+            <GameDealUrgency
+              variant="banner"
+              endsAt={discount.endsAt}
+              showCountdown
+            />
+          </div>
+        ) : null}
         <div className={styles.cardCoverWrap}>
           <img
             src={coverSrc}
@@ -45,6 +68,12 @@ export function CatalogCard({ game, priority = false }: CatalogCardProps) {
               Sold out
             </Badge>
           ) : null}
+          {discount ? (
+            <GameDiscountBadge
+              percentOff={discount.percentOff}
+              className={styles.cardDiscountBadge}
+            />
+          ) : null}
         </div>
         <Heading level="h3" className={styles.cardTitle}>
           {game.title}
@@ -53,9 +82,15 @@ export function CatalogCard({ game, priority = false }: CatalogCardProps) {
           <CatalogCardPlatformIcon platform={game.platform} />
           <Text tone="dim">{formatPlatformLabel(game.platform)}</Text>
         </div>
-        <Text tone="muted" className={styles.cardPrice}>
-          {formatGamePrice(game.priceBase)}
-        </Text>
+        <GamePriceDisplay
+          className={styles.cardPrice}
+          size="sm"
+          priceBaseLabel={formatGamePrice(game.priceBase)}
+          priceSaleLabel={
+            discount ? formatGamePrice(discount.priceSale) : null
+          }
+          percentOff={discount?.percentOff ?? null}
+        />
       </Card>
     </Link>
   );

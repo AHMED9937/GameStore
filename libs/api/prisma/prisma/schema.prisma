@@ -44,11 +44,30 @@ model Game {
   media                GameMedia[]
   orders               Order[]
   subscriptionPlanGames SubscriptionPlanGame[]
+  discount             GameDiscount?
 
   @@index([featuredOrder])
   @@index([publishedAt])
   @@index([nextAccountId])
   @@map("games")
+}
+
+/// Limited-time percentage-off promo for a game.
+model GameDiscount {
+  id            String   @id @default(cuid())
+  gameId        String   @unique
+  percentOff    Int
+  startsAt      DateTime
+  endsAt        DateTime
+  showCountdown Boolean  @default(true)
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([endsAt])
+  @@map("game_discounts")
 }
 
 /// IGDB-synced gallery media (screenshots + trailer videos) for game detail pages.

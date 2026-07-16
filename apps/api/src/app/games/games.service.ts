@@ -20,6 +20,11 @@ import {
   STORE_DEFAULT_ACTIVATION_MEDIA_ID,
   STORE_DEFAULT_ACTIVATION_TITLE,
 } from './activation-video.constants';
+import {
+  toPublicGameDiscountDto,
+  type GameDiscountLike,
+  type PublicGameDiscountDto,
+} from './game-discount.mapper';
 
 export type GameDto = {
   id: string;
@@ -31,6 +36,7 @@ export type GameDto = {
   coverImage: string | null;
   coverCardImage: string | null;
   soldOut: boolean;
+  discount: PublicGameDiscountDto | null;
 };
 
 export type GameMediaDto = {
@@ -79,6 +85,7 @@ type GameForDto = {
   coverImage: string | null;
   coverCardImage: string | null;
   soldOut?: boolean;
+  discount?: GameDiscountLike | null;
 };
 
 type GameForDetailDto = GameForDto & {
@@ -99,16 +106,18 @@ type GameForDetailDto = GameForDto & {
 };
 
 function toDto(game: GameForDto): GameDto {
+  const priceBase = game.priceBase.toString();
   return {
     id: game.id,
     slug: game.slug,
     title: game.title,
     description: game.description ?? null,
     platform: game.platform,
-    priceBase: game.priceBase.toString(),
+    priceBase,
     coverImage: game.coverImage,
     coverCardImage: game.coverCardImage,
     soldOut: game.soldOut ?? false,
+    discount: toPublicGameDiscountDto(game.discount, priceBase),
   };
 }
 

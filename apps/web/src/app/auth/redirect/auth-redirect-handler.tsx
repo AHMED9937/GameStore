@@ -4,6 +4,7 @@ import { useAuth, useUser } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { SkeletonButton } from '@gamestore/shared/ui';
+import { BrandLogo } from '../../../components/brand/brand-logo';
 import { isAdminPublicMetadata, resolvePostAuthPathForRole, resolveSignInPath } from '../../../lib/auth-role';
 import styles from '../../../components/auth/auth.module.css';
 
@@ -71,9 +72,7 @@ export function AuthRedirectHandler() {
       <div className={styles.authGlowSecondary} aria-hidden />
       <div className={styles.authInner}>
         <div className={styles.authBrand}>
-          <div className={styles.authLogo} aria-hidden>
-            ◆
-          </div>
+          <BrandLogo variant="auth" href={null} ariaLabel="OfflineGameNIA" />
           <h1 className={styles.authTitle}>One moment</h1>
           <p className={styles.authSubtitle}>Finishing sign-in…</p>
           <SkeletonButton

@@ -188,4 +188,36 @@ describe('GamesService soldOut', () => {
 
     expect(result.soldOut).toBe(false);
   });
+
+  it('includes active public discount on catalog and detail', async () => {
+    const discount = {
+      percentOff: 20,
+      startsAt: new Date('2026-01-01'),
+      endsAt: new Date('2099-01-01'),
+      showCountdown: true,
+      enabled: true,
+    };
+    vi.mocked(games.findPublished).mockResolvedValue([
+      { ...baseGame, discount },
+    ] as never);
+    vi.mocked(gameAccounts.getActivePoolFlagsByGameIds).mockResolvedValue(
+      new Map([['game-1', true]]),
+    );
+
+    const catalog = await service.findAll();
+    expect(catalog[0].discount).toEqual({
+      percentOff: 20,
+      priceSale: '7.99',
+      endsAt: discount.endsAt.toISOString(),
+      showCountdown: true,
+    });
+
+    vi.mocked(games.findBySlug).mockResolvedValue({
+      ...baseGame,
+      discount,
+    } as never);
+
+    const detail = await service.findBySlug('demo-game');
+    expect(detail.discount?.priceSale).toBe('7.99');
+  });
 });

@@ -2,8 +2,17 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { Game } from '@gamestore/web/data-access';
-import { formatGamePrice, getGameCardCover } from '@gamestore/web/data-access';
-import { Text } from '@gamestore/shared/ui';
+import {
+  formatGamePrice,
+  getGameCardCover,
+  resolveActiveGameDiscount,
+} from '@gamestore/web/data-access';
+import {
+  GameDealUrgency,
+  GameDiscountBadge,
+  GamePriceDisplay,
+  Text,
+} from '@gamestore/shared/ui';
 import Link from 'next/link';
 import { HomeHeroShowcaseSkeleton } from './home-hero-showcase-skeleton';
 import styles from './section.module.css';
@@ -28,18 +37,16 @@ export function HomeHeroShowcaseClient({ games }: HomeHeroShowcaseClientProps) {
   const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
   const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
 
-  if (count === 0) {
-    return null;
-  }
-
-  const activeGame = games[activeIndex];
-  const activeCover = getGameCardCover(activeGame);
+  const activeGame = count > 0 ? games[activeIndex] : null;
+  const activeCover = activeGame ? getGameCardCover(activeGame) : '';
   const prevGame = count > 1 ? games[(activeIndex - 1 + count) % count] : null;
   const nextGame = count > 1 ? games[(activeIndex + 1) % count] : null;
-  const isActiveCoverLoaded = loadedCovers[activeCover] === true;
+  const isActiveCoverLoaded = activeCover
+    ? loadedCovers[activeCover] === true
+    : false;
 
   useEffect(() => {
-    if (loadedCovers[activeCover]) {
+    if (!activeCover || loadedCovers[activeCover]) {
       return;
     }
 
@@ -61,9 +68,15 @@ export function HomeHeroShowcaseClient({ games }: HomeHeroShowcaseClientProps) {
     };
   }, [activeCover, loadedCovers]);
 
+  if (count === 0 || !activeGame) {
+    return null;
+  }
+
   if (!isActiveCoverLoaded) {
     return <HomeHeroShowcaseSkeleton />;
   }
+
+  const discount = resolveActiveGameDiscount(activeGame);
 
   return (
     <div className={styles.showcaseCarousel} aria-label="Featured game showcase">
@@ -83,26 +96,49 @@ export function HomeHeroShowcaseClient({ games }: HomeHeroShowcaseClientProps) {
           </button>
         ) : null}
 
-        <Link
-          href={`/games/${activeGame.slug}`}
-          className={styles.showcaseMainCard}
-          aria-label={`View ${activeGame.title}`}
-        >
-          <img
-            src={activeCover}
-            alt={activeGame.title}
-            className={styles.showcaseMainImage}
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-          />
-          <div className={styles.showcaseMainOverlay}>
-            <Text className={styles.showcaseMainTitle}>{activeGame.title}</Text>
-            <Text tone="muted" className={styles.showcaseMainPrice}>
-              {formatGamePrice(activeGame.priceBase)}
-            </Text>
-          </div>
-        </Link>
+        <div className={styles.showcaseMainStack}>
+          {discount?.showCountdown ? (
+            <div className={styles.showcaseDealBanner}>
+              <GameDealUrgency
+                variant="bannerLg"
+                endsAt={discount.endsAt}
+                showCountdown
+              />
+            </div>
+          ) : null}
+          <Link
+            href={`/games/${activeGame.slug}`}
+            className={styles.showcaseMainCard}
+            aria-label={`View ${activeGame.title}`}
+          >
+            <img
+              src={activeCover}
+              alt={activeGame.title}
+              className={styles.showcaseMainImage}
+              loading="eager"
+              decoding="async"
+              fetchPriority="high"
+            />
+            {discount ? (
+              <GameDiscountBadge
+                percentOff={discount.percentOff}
+                className={styles.showcaseDiscountBadge}
+              />
+            ) : null}
+            <div className={styles.showcaseMainOverlay}>
+              <Text className={styles.showcaseMainTitle}>{activeGame.title}</Text>
+              <GamePriceDisplay
+                className={styles.showcaseMainPrice}
+                size="md"
+                priceBaseLabel={formatGamePrice(activeGame.priceBase)}
+                priceSaleLabel={
+                  discount ? formatGamePrice(discount.priceSale) : null
+                }
+                percentOff={discount?.percentOff ?? null}
+              />
+            </div>
+          </Link>
+        </div>
 
         {nextGame ? (
           <button

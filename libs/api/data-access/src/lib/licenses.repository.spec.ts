@@ -6,6 +6,7 @@ function createPrismaMock() {
   return {
     license: {
       findUnique: vi.fn().mockResolvedValue(null),
+      findFirst: vi.fn().mockResolvedValue(null),
       findMany: vi.fn().mockResolvedValue([]),
       create: vi.fn().mockResolvedValue({ id: 'new' }),
       update: vi.fn().mockResolvedValue({ id: 'updated' }),
@@ -26,6 +27,21 @@ describe('LicensesRepository', () => {
       include: {
         game: { select: { id: true, title: true, slug: true, coverImage: true, coverCardImage: true } },
         account: true,
+      },
+    });
+  });
+
+  it('findActiveByOwnerAndGame filters by owner, game, and non-revoked status', async () => {
+    const prisma = createPrismaMock();
+    const repo = new LicensesRepository(prisma as unknown as PrismaService);
+
+    await repo.findActiveByOwnerAndGame('user-a', 'game-1');
+
+    expect(prisma.license.findFirst).toHaveBeenCalledWith({
+      where: { ownerId: 'user-a', gameId: 'game-1', status: { not: 'revoked' } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        order: { select: { id: true, stripeSessionId: true } },
       },
     });
   });

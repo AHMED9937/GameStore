@@ -4,6 +4,10 @@ html {
   scroll-behavior: smooth;
 }
 
+body {
+  font-synthesis: none;
+}
+
 a {
   color: inherit;
   text-decoration: inherit;
@@ -11,6 +15,13 @@ a {
 
 svg {
   display: block;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
 .sr-only {

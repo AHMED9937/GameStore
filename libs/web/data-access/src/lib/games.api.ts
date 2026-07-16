@@ -9,6 +9,13 @@ const PUBLIC_GAME_CACHE: ApiPublicCacheOptions = {
 
 export type { GameSystemRequirements } from '@gamestore/shared/game-requirements';
 
+export type GameDiscount = {
+  percentOff: number;
+  priceSale: string;
+  endsAt: string;
+  showCountdown: boolean;
+};
+
 export type Game = {
   id: string;
   slug: string;
@@ -20,6 +27,7 @@ export type Game = {
   coverImage: string | null;
   coverCardImage?: string | null;
   soldOut?: boolean;
+  discount?: GameDiscount | null;
 };
 
 export type GameMedia = {
@@ -46,11 +54,51 @@ export function formatGamePrice(priceBase: string): string {
   if (Number.isNaN(value)) {
     return priceBase;
   }
+  if (value === 0) {
+    return 'Free';
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
   }).format(value);
 }
+
+/** Client-side guard against stale ISR cache after endsAt. */
+export function resolveActiveGameDiscount(
+  game: { discount?: GameDiscount | null },
+  now: Date | number = Date.now(),
+): GameDiscount | null {
+  const discount = game.discount;
+  if (!discount) {
+    return null;
+  }
+  const endsAtMs = new Date(discount.endsAt).getTime();
+  if (!Number.isFinite(endsAtMs) || endsAtMs <= Number(now)) {
+    return null;
+  }
+  return discount;
+}
+
+export function getGameDisplayPrice(game: {
+  priceBase: string;
+  discount?: GameDiscount | null;
+}): { priceBase: string; priceSale: string | null; percentOff: number | null } {
+  const active = resolveActiveGameDiscount(game);
+  if (!active) {
+    return { priceBase: game.priceBase, priceSale: null, percentOff: null };
+  }
+  return {
+    priceBase: game.priceBase,
+    priceSale: active.priceSale,
+    percentOff: active.percentOff,
+  };
+}
+
+export {
+  formatDiscountCountdown,
+  getDiscountCountdownUnits,
+  type DiscountCountdownUnits,
+} from '@gamestore/shared/pricing';
 
 export const getGames = cache(async (): Promise<Game[]> => {
   return apiGetPublic<Game[]>('/games', PUBLIC_GAME_CACHE);

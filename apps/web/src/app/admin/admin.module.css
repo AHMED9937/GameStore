@@ -21,17 +21,6 @@
   padding: 0 0.5rem;
 }
 
-.brandIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: var(--gradient-brand);
-  color: var(--bg-darker);
-  font-weight: 800;
-}
-
 .brandText {
   display: flex;
   flex-direction: column;

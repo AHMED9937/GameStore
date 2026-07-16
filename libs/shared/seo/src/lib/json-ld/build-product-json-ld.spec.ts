@@ -25,4 +25,12 @@ describe('buildProductJsonLd', () => {
     const jsonLd = buildProductJsonLd({ ...baseGame, soldOut: true });
     expect(jsonLd.offers.availability).toBe('https://schema.org/OutOfStock');
   });
+
+  it('uses priceOffer for discounted games', () => {
+    const jsonLd = buildProductJsonLd({
+      ...baseGame,
+      priceOffer: '14.99',
+    });
+    expect(jsonLd.offers.price).toBe('14.99');
+  });
 });

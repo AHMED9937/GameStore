@@ -7,6 +7,7 @@ import {
   normalizeEnumFilter,
   normalizeSearchTerm,
 } from './admin-list-filters';
+import { gameDiscountSelect } from './game-discounts.repository';
 
 export type AdminGameListFilters = {
   q?: string;
@@ -33,6 +34,7 @@ export const catalogGameSelect = {
   coverCardImage: true,
   soldOut: true,
   genres: true,
+  discount: { select: gameDiscountSelect },
 } satisfies Prisma.GameSelect;
 
 const adminGameSelect = {
@@ -64,6 +66,7 @@ const adminGameSelect = {
     orderBy: { sortOrder: 'asc' as const },
     select: gameMediaSelect,
   },
+  discount: { select: gameDiscountSelect },
 } satisfies Prisma.GameSelect;
 
 @Injectable()
@@ -196,12 +199,18 @@ export class GamesRepository {
           orderBy: { sortOrder: 'asc' },
           where: { type: { in: ['screenshot', 'video', 'activation'] } },
         },
+        discount: { select: gameDiscountSelect },
       },
     });
   }
 
   findById(id: string) {
-    return this.prisma.game.findUnique({ where: { id } });
+    return this.prisma.game.findUnique({
+      where: { id },
+      include: {
+        discount: { select: gameDiscountSelect },
+      },
+    });
   }
 
   create(data: Prisma.GameCreateInput) {
