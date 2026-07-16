@@ -53,6 +53,7 @@
       ],
       "@gamestore/shared/seo": ["./libs/shared/seo/src/index.ts"],
       "@gamestore/shared/marketing": ["./libs/shared/marketing/src/index.ts"],
+      "@gamestore/shared/pricing": ["./libs/shared/pricing/src/index.ts"],
       "@gamestore/shared/game-requirements": [
         "./libs/shared/game-requirements/src/index.ts"
       ],

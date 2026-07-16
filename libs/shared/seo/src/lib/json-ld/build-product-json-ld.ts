@@ -35,7 +35,7 @@ export function buildProductJsonLd(game: SeoGameInput): ProductJsonLd {
     image: [resolveAbsoluteUrl(image)],
     offers: {
       '@type': 'Offer',
-      price: game.priceBase,
+      price: game.priceOffer?.trim() || game.priceBase,
       priceCurrency: 'USD',
       availability,
       url: resolveAbsoluteUrl(`/games/${game.slug}`),

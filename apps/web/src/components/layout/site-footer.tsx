@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Button, Container, Input } from '@gamestore/shared/ui';
+import { BrandLogo } from '../brand/brand-logo';
 import styles from './layout.module.css';
 
 const EXPLORE_LINKS = [
@@ -24,12 +25,7 @@ export function SiteFooter() {
     <footer className={styles.footer}>
       <Container className={styles.footerGrid}>
         <div className={styles.footerBrand}>
-          <Link href="/" className={styles.logo}>
-            <span className={styles.logoIcon} aria-hidden>
-              ◆
-            </span>
-            <span className={styles.logoText}>GameStore</span>
-          </Link>
+          <BrandLogo variant="footer" />
           <p>
             Premium offline game activation service. Get instant access to the biggest PC
             game releases safely, affordably, and automatically.
@@ -93,7 +89,7 @@ export function SiteFooter() {
       </Container>
 
       <Container className={styles.footerBottom}>
-        <p>&copy; {new Date().getFullYear()} GameStore. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} OfflineGameNIA. All rights reserved.</p>
         <div className={styles.footerBottomLinks}>
           <a href="#">Terms of Service</a>
           <a href="#">Privacy Policy</a>

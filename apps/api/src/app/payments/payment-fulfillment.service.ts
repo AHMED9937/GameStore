@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type Stripe from 'stripe';
@@ -5,6 +6,7 @@ import {
   GameAccountsRepository,
   defaultLicenseExpiresAt,
   generateLicenseKey,
+  LicensesRepository,
   OrdersRepository,
 } from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
@@ -35,6 +37,7 @@ export class PaymentFulfillmentService {
     private readonly orders: OrdersRepository,
     private readonly gameAccounts: GameAccountsRepository,
     private readonly stripe: StripeService,
+    private readonly licenses: LicensesRepository,
   ) {}
 
   async syncFulfillmentFromStripe(sessionId: string): Promise<FulfillmentResult> {
@@ -181,6 +184,88 @@ export class PaymentFulfillmentService {
     }
   }
 
+  /**
+   * Grants a free (100%-off) game directly, with no Stripe round-trip.
+   * Idempotent: a repeat claim by the same owner returns their existing
+   * license/order instead of consuming another pool seat.
+   */
+  async fulfillFreeOrder(input: {
+    gameId: string;
+    gameTitleSnapshot?: string;
+    gameSlugSnapshot?: string;
+    ownerId: string;
+    buyerEmail?: string;
+  }): Promise<FulfillmentResult & { sessionId: string }> {
+    const existing = await this.licenses.findActiveByOwnerAndGame(
+      input.ownerId,
+      input.gameId,
+    );
+    if (existing) {
+      return {
+        action: 'already_fulfilled',
+        orderId: existing.order?.id,
+        licenseId: existing.id,
+        sessionId: existing.order?.stripeSessionId ?? `free_${existing.id}`,
+      };
+    }
+
+    const sessionId = `free_${randomUUID()}`;
+    const validFrom = new Date();
+
+    return this.prisma.$transaction(async (tx) => {
+      const claimed = await this.gameAccounts.claimSeatForGame(
+        input.gameId,
+        undefined,
+        tx,
+      );
+      if (!claimed) {
+        throw new ServiceUnavailableException(
+          'No pool account capacity for this game',
+        );
+      }
+
+      const license = await this.createLicenseWithRetryInTx(tx, {
+        gameId: input.gameId,
+        accountId: claimed.id,
+        buyerEmail: input.buyerEmail,
+        ownerId: input.ownerId,
+        validFrom,
+        source: 'free',
+      });
+
+      const order = await tx.order.create({
+        data: {
+          gameId: input.gameId,
+          gameTitleSnapshot: input.gameTitleSnapshot,
+          gameSlugSnapshot: input.gameSlugSnapshot,
+          stripeSessionId: sessionId,
+          amount: 0,
+          status: 'completed',
+          licenseId: license.id,
+          ownerId: input.ownerId,
+          buyerEmail: input.buyerEmail,
+        },
+      });
+
+      await this.gameAccounts.advanceNextAccountIfFull(input.gameId, tx);
+
+      return {
+        action: 'fulfilled' as const,
+        orderId: order.id,
+        licenseId: license.id,
+        sessionId,
+      };
+    }).catch((error) => {
+      if (error instanceof ServiceUnavailableException) {
+        this.logger.error(
+          `Cannot fulfill free order: no pool capacity for game ${input.gameId}`,
+        );
+        return { action: 'no_pool_capacity' as const, sessionId };
+      }
+      throw error;
+    });
+  }
+
   async handleCheckoutSessionFailed(sessionId: string): Promise<FulfillmentResult> {
     const order = await this.orders.findByStripeSessionId(sessionId);
     if (!order || order.status !== 'pending') {
@@ -246,6 +331,7 @@ export class PaymentFulfillmentService {
       buyerEmail?: string;
       ownerId?: string;
       validFrom: Date;
+      source?: string;
     },
   ) {
     for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -254,7 +340,7 @@ export class PaymentFulfillmentService {
           data: {
             licenseKey: generateLicenseKey(),
             status: 'available',
-            source: 'purchase',
+            source: input.source ?? 'purchase',
             validFrom: input.validFrom,
             expiresAt: defaultLicenseExpiresAt(input.validFrom),
             buyerEmail: input.buyerEmail,

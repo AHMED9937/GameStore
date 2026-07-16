@@ -107,7 +107,9 @@ describe('AdminGameEditPage', () => {
         messageId: 'msg-1',
         announceDescription: 'Discord launch copy',
       },
-    });
+      discount: null,
+      nextAccountId: null,
+    } as never);
     vi.mocked(getAdminGameReadiness).mockResolvedValue({
       ready: true,
       canPublish: true,

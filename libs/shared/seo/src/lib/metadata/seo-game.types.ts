@@ -4,6 +4,8 @@ export type SeoGameInput = {
   description?: string | null;
   platform: string;
   priceBase: string;
+  /** When set (active sale), used as the Schema.org Offer price customers pay. */
+  priceOffer?: string | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
   ogImage?: string | null;

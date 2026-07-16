@@ -2,10 +2,15 @@
 
 import { useState } from 'react';
 import { Button, EmptyState, Text } from '@gamestore/shared/ui';
-import { AdminGameDiscordPanel, type AdminGameDiscordPanelProps } from './admin-game-discord-panel';
+import type { AdminGameDiscount } from '@gamestore/web/data-access';
+import {
+  AdminGameDiscordPanel,
+  type AdminGameDiscordPanelProps,
+} from './admin-game-discord-panel';
+import { AdminGameDiscountPanel } from './admin-game-discount-panel';
 import styles from './games.module.css';
 
-export type MarketingPlatformId = 'discord' | 'reddit';
+export type MarketingPlatformId = 'discord' | 'discount' | 'reddit';
 
 const MARKETING_PLATFORMS: {
   id: MarketingPlatformId;
@@ -13,13 +18,24 @@ const MARKETING_PLATFORMS: {
   enabled: boolean;
 }[] = [
   { id: 'discord', label: 'Discord', enabled: true },
+  { id: 'discount', label: 'Discount', enabled: true },
   { id: 'reddit', label: 'Reddit', enabled: false },
 ];
 
-export type AdminGameMarketingSectionProps = AdminGameDiscordPanelProps;
+export type AdminGameMarketingSectionProps = AdminGameDiscordPanelProps & {
+  gameId: string;
+  discount: AdminGameDiscount | null;
+  onDiscountChange?: (discount: AdminGameDiscount | null) => void;
+};
 
-export function AdminGameMarketingSection(props: AdminGameMarketingSectionProps) {
-  const [activePlatform, setActivePlatform] = useState<MarketingPlatformId>('discord');
+export function AdminGameMarketingSection({
+  gameId,
+  discount,
+  onDiscountChange,
+  ...discordProps
+}: AdminGameMarketingSectionProps) {
+  const [activePlatform, setActivePlatform] =
+    useState<MarketingPlatformId>('discord');
 
   return (
     <section
@@ -31,8 +47,8 @@ export function AdminGameMarketingSection(props: AdminGameMarketingSectionProps)
         Marketing
       </h3>
       <Text tone="muted">
-        Manage channel-specific announcement copy. Saving while published syncs Discord
-        automatically.
+        Manage Discord announcements and limited-time discounts. Saving Discord
+        while published syncs automatically; discounts save from their own panel.
       </Text>
       <div
         className={styles.marketingPlatformBar}
@@ -57,9 +73,23 @@ export function AdminGameMarketingSection(props: AdminGameMarketingSectionProps)
           </Button>
         ))}
       </div>
-      {activePlatform === 'discord' ? <AdminGameDiscordPanel {...props} /> : null}
+      {activePlatform === 'discord' ? (
+        <AdminGameDiscordPanel {...discordProps} />
+      ) : null}
+      {activePlatform === 'discount' ? (
+        <AdminGameDiscountPanel
+          gameId={gameId}
+          priceBase={discordProps.preview.priceBase}
+          discount={discount}
+          disabled={discordProps.disabled}
+          onDiscountChange={onDiscountChange}
+        />
+      ) : null}
       {activePlatform === 'reddit' ? (
-        <div className={styles.marketingPlatformComingSoon} data-testid="admin-game-marketing-reddit">
+        <div
+          className={styles.marketingPlatformComingSoon}
+          data-testid="admin-game-marketing-reddit"
+        >
           <EmptyState
             title="Reddit"
             message="Reddit announcements are not available yet. Check back in a future release."

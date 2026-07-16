@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { BrandLogo } from '../brand/brand-logo';
 import styles from './auth.module.css';
 
 type AuthShellProps = {
@@ -24,9 +25,7 @@ export function AuthShell({
 
       <div className={styles.authInner}>
         <div className={styles.authBrand}>
-          <div className={styles.authLogo} aria-hidden>
-            ◆
-          </div>
+          <BrandLogo variant="auth" href={null} ariaLabel="OfflineGameNIA" />
           <h1 className={styles.authTitle}>{title}</h1>
           <p className={styles.authSubtitle}>{subtitle}</p>
           {variant === 'admin' ? (

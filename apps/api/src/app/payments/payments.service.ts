@@ -15,11 +15,14 @@ import {
   resolveSoldOut,
 } from '@gamestore/api/data-access';
 import {
+  buildCheckoutUrls,
   StripeConfig,
   StripeMisconfiguredError,
   StripeService,
   type CreateCheckoutSessionResult,
 } from '@gamestore/api/stripe';
+import { resolveEffectivePrice } from '@gamestore/shared/pricing';
+import { PaymentFulfillmentService } from './payment-fulfillment.service';
 
 export type CreateCheckoutDto = {
   gameId?: string;
@@ -42,6 +45,7 @@ export class PaymentsService {
     private readonly orders: OrdersRepository,
     private readonly plans: SubscriptionPlansRepository,
     private readonly stripe: StripeService,
+    private readonly fulfillment: PaymentFulfillmentService,
   ) {}
 
   async createCheckout(
@@ -55,10 +59,27 @@ export class PaymentsService {
     }
 
     const game = await this.resolvePurchasableGame(dto);
-    const priceBase = Number(game.priceBase);
+    const effective = resolveEffectivePrice(
+      game.priceBase.toString(),
+      game.discount
+        ? {
+            enabled: game.discount.enabled,
+            percentOff: game.discount.percentOff,
+            startsAt: game.discount.startsAt,
+            endsAt: game.discount.endsAt,
+          }
+        : null,
+    );
+    const chargeAmount = effective.isDiscounted
+      ? effective.priceSale
+      : effective.priceBase;
 
-    if (!Number.isFinite(priceBase) || priceBase <= 0) {
+    if (!Number.isFinite(chargeAmount) || chargeAmount < 0) {
       throw new BadRequestException('Invalid price for this game');
+    }
+
+    if (chargeAmount === 0) {
+      return this.claimFreeGame(game, user);
     }
 
     let session: CreateCheckoutSessionResult;
@@ -67,7 +88,7 @@ export class PaymentsService {
         gameId: game.id,
         gameSlug: game.slug,
         title: game.title,
-        priceBase,
+        priceBase: chargeAmount,
         coverImage: game.coverImage,
         userId: user?.id,
         customerEmail: user?.email,
@@ -85,7 +106,7 @@ export class PaymentsService {
         gameTitleSnapshot: game.title,
         gameSlugSnapshot: game.slug,
         stripeSessionId: session.sessionId,
-        amount: priceBase,
+        amount: chargeAmount,
         ownerId: user?.id,
       });
     } catch (error) {
@@ -97,6 +118,38 @@ export class PaymentsService {
     }
 
     return session;
+  }
+
+  /**
+   * 100%-off games skip Stripe entirely: grant the license immediately and
+   * point the caller at the same success URL a paid checkout would use, so
+   * the frontend needs no separate code path.
+   */
+  private async claimFreeGame(
+    game: PurchasableGame,
+    user?: AuthUser,
+  ): Promise<CreateCheckoutSessionResult> {
+    if (!user) {
+      throw new UnauthorizedException('Sign in to claim this free game');
+    }
+
+    const result = await this.fulfillment.fulfillFreeOrder({
+      gameId: game.id,
+      gameTitleSnapshot: game.title,
+      gameSlugSnapshot: game.slug,
+      ownerId: user.id,
+      buyerEmail: user.email,
+    });
+
+    if (result.action === 'no_pool_capacity') {
+      throw new BadRequestException('This game is currently sold out');
+    }
+
+    const { successUrl } = buildCheckoutUrls(game.slug);
+    return {
+      sessionId: result.sessionId,
+      url: successUrl.replace('{CHECKOUT_SESSION_ID}', result.sessionId),
+    };
   }
 
   async createSubscriptionCheckout(

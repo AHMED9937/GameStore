@@ -34,7 +34,7 @@ export function ThemePreviewShowcase() {
             Theme Preview
           </Heading>
           <Text tone="muted">
-            GameStore design system Amethyst &amp; Aqua Neon (from mockup)
+            OfflineGameNIA design system Amethyst &amp; Aqua Neon (from mockup)
           </Text>
         </header>
 

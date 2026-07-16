@@ -5,7 +5,9 @@ import { GameDetailBuyCta } from './components/game-detail-buy-cta';
 import { GameDetailBuyPanel } from './components/game-detail-buy-panel';
 import { GameDetailHeroMeta } from './components/game-detail-hero-meta';
 import { GameDetailJsonLd } from './components/game-detail-json-ld';
+import { GameDetailStickyBuyBar } from './components/game-detail-sticky-buy-bar';
 import { GameDetailTabs } from './components/game-detail-tabs';
+import { GameDetailScreenshotGallery } from './components/game-detail-screenshot-gallery';
 import { GameDetailVideoGallery } from './components/game-detail-video-gallery';
 import { splitMedia } from './game-detail.utils';
 import styles from './components/game-detail.module.css';
@@ -43,26 +45,30 @@ export async function GameDetailPage({ slug }: GameDetailPageProps) {
   return (
     <section className={styles.section}>
       <GameDetailJsonLd game={game} />
-      <Container>
-        <header>
-          <Heading level="h1" className={styles.heroTitle}>
-            {game.title}
-          </Heading>
-          {seoExcerpt ? (
-            <Text tone="muted" className={styles.seoExcerpt}>
-              {seoExcerpt}
-            </Text>
-          ) : null}
-          <GameDetailHeroMeta
-            platform={game.platform}
-            releaseDate={game.releaseDate}
-            genres={game.genres}
-          />
-          <GameDetailBuyCta game={game} />
-        </header>
-
-        <div className={styles.layout} style={{ marginTop: '1.5rem' }}>
+      <Container className={styles.detailContainer}>
+        {/*
+          Buy card shares the first row with the hero so it fills the
+          top-right from first paint, then sticks while the left column scrolls.
+        */}
+        <div className={styles.layout}>
           <div className={styles.mainColumn}>
+            <header className={styles.hero}>
+              <Heading level="h1" className={styles.heroTitle}>
+                {game.title}
+              </Heading>
+              {seoExcerpt ? (
+                <Text tone="muted" className={styles.seoExcerpt}>
+                  {seoExcerpt}
+                </Text>
+              ) : null}
+              <GameDetailHeroMeta
+                platform={game.platform}
+                releaseDate={game.releaseDate}
+                genres={game.genres}
+              />
+              <GameDetailBuyCta game={game} />
+            </header>
+
             {videos.length > 0 ? (
               <GameDetailVideoGallery videos={videos} title={game.title} />
             ) : game.coverImage ? (
@@ -75,27 +81,21 @@ export async function GameDetailPage({ slug }: GameDetailPageProps) {
             ) : null}
 
             {screenshots.length > 0 ? (
-              <div className={styles.screenshotRow} aria-label="Screenshots">
-                {screenshots.map((shot) => (
-                  <img
-                    key={shot.id}
-                    src={shot.url}
-                    alt={shot.title?.trim() || `${game.title} screenshot`}
-                    className={styles.screenshot}
-                    loading="lazy"
-                  />
-                ))}
-              </div>
+              <GameDetailScreenshotGallery
+                screenshots={screenshots}
+                title={game.title}
+              />
             ) : null}
 
             <GameDetailTabs game={game} />
           </div>
 
-          <aside className={styles.sidebar}>
+          <aside className={styles.sidebar} aria-label="Purchase">
             <GameDetailBuyPanel game={game} />
           </aside>
         </div>
       </Container>
+      <GameDetailStickyBuyBar game={game} />
     </section>
   );
 }

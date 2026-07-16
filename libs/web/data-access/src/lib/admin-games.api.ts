@@ -26,6 +26,33 @@ export type AdminGameDiscord = {
   announceDescription: string | null;
 };
 
+export type AdminGameDiscountStatus =
+  | 'none'
+  | 'scheduled'
+  | 'active'
+  | 'expired'
+  | 'disabled';
+
+export type AdminGameDiscount = {
+  percentOff: number;
+  startsAt: string;
+  endsAt: string;
+  showCountdown: boolean;
+  enabled: boolean;
+  status: AdminGameDiscountStatus;
+  priceSale: string;
+  durationDays: number;
+  durationHours: number;
+};
+
+export type AdminGameDiscountInput = {
+  percentOff: number;
+  durationDays: number;
+  durationHours: number;
+  showCountdown?: boolean;
+  enabled?: boolean;
+};
+
 export type AdminGameRecord = {
   id: string;
   title: string;
@@ -54,6 +81,7 @@ export type AdminGameRecord = {
   media: AdminGameMediaRecord[];
   accountSummary: AdminGameAccountSummary;
   discord: AdminGameDiscord;
+  discount: AdminGameDiscount | null;
 };
 
 export type AdminGameInput = {
@@ -186,5 +214,21 @@ export function updateAdminFeaturedGames(gameIds: string[]) {
   return apiPut<SetupResponse | AdminFeaturedGamesResponse>(
     '/admin/games/featured',
     { gameIds },
+  );
+}
+
+export function upsertAdminGameDiscount(
+  gameId: string,
+  body: AdminGameDiscountInput,
+) {
+  return apiPut<SetupResponse | AdminGameDiscount>(
+    `/admin/games/${gameId}/discount`,
+    body,
+  );
+}
+
+export function endAdminGameDiscount(gameId: string) {
+  return apiDelete<SetupResponse | { id: string; discount: null }>(
+    `/admin/games/${gameId}/discount`,
   );
 }

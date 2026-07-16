@@ -2,6 +2,7 @@ export * from './lib/data-access.module';
 export * from './lib/admin-list-filters';
 export * from './lib/audit-logs.repository';
 export * from './lib/games.repository';
+export * from './lib/game-discounts.repository';
 export * from './lib/licenses.repository';
 export * from './lib/license-validity.util';
 export * from './lib/game-accounts.repository';

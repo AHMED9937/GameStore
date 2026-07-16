@@ -27,6 +27,7 @@ const sampleGame = {
   requirementsRecommended: null,
   media: [],
   accountSummary: { total: 0, active: 0, hasActivePool: false },
+  discount: null,
 };
 
 describe('AdminGamesController', () => {
@@ -51,6 +52,23 @@ describe('AdminGamesController', () => {
     }),
   } satisfies AdminGamesService;
 
+  const gameDiscounts = {
+    getDiscount: vi.fn(),
+    upsertDiscount: vi.fn().mockResolvedValue({
+      percentOff: 20,
+      startsAt: '2026-07-15T00:00:00.000Z',
+      endsAt: '2026-07-16T00:00:00.000Z',
+      showCountdown: true,
+      enabled: true,
+      status: 'active',
+      priceSale: '7.99',
+      durationDays: 1,
+      durationHours: 0,
+    }),
+    endDiscount: vi.fn().mockResolvedValue({ id: 'game-1', discount: null }),
+    previewSalePrice: vi.fn(),
+  };
+
   const igdbImport = {
     syncGame: vi.fn().mockResolvedValue({ game: sampleGame }),
   };
@@ -63,6 +81,7 @@ describe('AdminGamesController', () => {
     adminGames,
     auditLogService,
     igdbImport as never,
+    gameDiscounts as never,
   );
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
   const request = { headers: {}, ip: '127.0.0.1' };
@@ -151,6 +170,31 @@ describe('AdminGamesController', () => {
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'admin.game.featured_update',
+      }),
+    );
+  });
+
+  it('upsertDiscount records discount audit', async () => {
+    const body = { percentOff: 20, durationDays: 1, durationHours: 0 };
+    await controller.upsertDiscount('game-1', body, adminUser, request as never);
+
+    expect(gameDiscounts.upsertDiscount).toHaveBeenCalledWith('game-1', body);
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.game.discount_upsert',
+        resourceId: 'game-1',
+      }),
+    );
+  });
+
+  it('endDiscount records discount end audit', async () => {
+    await controller.endDiscount('game-1', adminUser, request as never);
+
+    expect(gameDiscounts.endDiscount).toHaveBeenCalledWith('game-1');
+    expect(auditLogService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'admin.game.discount_end',
+        resourceId: 'game-1',
       }),
     );
   });

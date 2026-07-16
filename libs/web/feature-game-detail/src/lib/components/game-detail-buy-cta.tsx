@@ -1,16 +1,21 @@
 import Link from 'next/link';
 import type { GameDetail } from '@gamestore/web/data-access';
-import { formatGamePrice } from '@gamestore/web/data-access';
 import {
-  formatPlatformLabel,
-  getPlatformAccessBadgeLabel,
-  getPlatformAccessMode,
-} from '../game-detail.utils';
-import { GameDetailPlatformIcon } from './game-detail-platform-icon';
+  formatGamePrice,
+  resolveActiveGameDiscount,
+} from '@gamestore/web/data-access';
+import {
+  GameDealUrgency,
+  GameDiscountBadge,
+  GamePriceDisplay,
+} from '@gamestore/shared/ui';
 import styles from './game-detail.module.css';
 
 export type GameDetailBuyCtaProps = {
-  game: Pick<GameDetail, 'priceBase' | 'platform' | 'slug' | 'soldOut'>;
+  game: Pick<
+    GameDetail,
+    'priceBase' | 'platform' | 'slug' | 'soldOut' | 'discount'
+  >;
 };
 
 function IconCart() {
@@ -35,9 +40,21 @@ function IconCart() {
 export type GameDetailBuyButtonProps = {
   slug: string;
   soldOut?: boolean;
+  /** Final price shown inside the CTA so the buyer sees exactly what they pay. */
+  priceLabel?: string | null;
+  /** Original price rendered struck-through under the final price. */
+  wasPriceLabel?: string | null;
+  /** Free games say "Get now"; paid games say "Buy now". Derived from priceLabel when omitted. */
+  free?: boolean;
 };
 
-export function GameDetailBuyButton({ slug, soldOut = false }: GameDetailBuyButtonProps) {
+export function GameDetailBuyButton({
+  slug,
+  soldOut = false,
+  priceLabel = null,
+  wasPriceLabel = null,
+  free = priceLabel === 'Free',
+}: GameDetailBuyButtonProps) {
   if (soldOut) {
     return (
       <button type="button" className="btn-buy-now" disabled>
@@ -49,46 +66,81 @@ export function GameDetailBuyButton({ slug, soldOut = false }: GameDetailBuyButt
   return (
     <Link
       href={`/checkout?game=${encodeURIComponent(slug)}`}
-      className="btn-buy-now"
+      className={priceLabel ? 'btn-buy-now btn-buy-now--split' : 'btn-buy-now'}
     >
-      <IconCart />
-      Buy now
+      <span className="btn-buy-now-label">
+        <IconCart />
+        {free ? 'Get now' : 'Buy now'}
+      </span>
+      {priceLabel ? (
+        <span className="btn-buy-now-price-block">
+          <span className="btn-buy-now-price">{priceLabel}</span>
+          {wasPriceLabel ? (
+            <s className="btn-buy-now-was">was {wasPriceLabel}</s>
+          ) : null}
+        </span>
+      ) : null}
     </Link>
   );
 }
 
+/** Above-the-fold mobile purchase card (sticky dock takes over when scrolled). */
 export function GameDetailBuyCta({ game }: GameDetailBuyCtaProps) {
-  const mode = getPlatformAccessMode(game.platform);
+  const discount = resolveActiveGameDiscount(game);
 
   return (
-    <div className="buy-cta-mobile-only" data-testid="game-detail-buy-cta-mobile">
+    <div
+      className="buy-cta-mobile-only"
+      data-testid="game-detail-buy-cta-mobile"
+    >
+      {discount?.showCountdown ? (
+        <div className={styles.buyCtaDealBanner}>
+          <GameDealUrgency
+            variant="banner"
+            endsAt={discount.endsAt}
+            showCountdown
+          />
+        </div>
+      ) : null}
       <div className="buy-cta-bar">
         <div className="buy-cta-info">
-          <p className="buy-cta-price">{formatGamePrice(game.priceBase)}</p>
-          <div className={styles.buyCtaPlatformRow}>
-            <span className={styles.buyCtaPlatformIcon} aria-hidden>
-              <GameDetailPlatformIcon platform={game.platform} size="sm" />
-            </span>
-            <p className="buy-cta-sub">
-              <strong>{formatPlatformLabel(game.platform)}</strong>
-              <span
-                className={
-                  mode === 'offline'
-                    ? `${styles.platformAccessBadge} ${styles.platformAccessBadgeOffline} ${styles.platformAccessBadgeInline}`
-                    : `${styles.platformAccessBadge} ${styles.platformAccessBadgeOnline} ${styles.platformAccessBadgeInline}`
+          <div className={styles.buyCtaOfferRow}>
+            {discount ? (
+              <GameDiscountBadge
+                percentOff={discount.percentOff}
+                className={styles.buyCtaBadge}
+              />
+            ) : null}
+            <div className="buy-cta-price">
+              <GamePriceDisplay
+                size="md"
+                priceBaseLabel={formatGamePrice(game.priceBase)}
+                priceSaleLabel={
+                  discount ? formatGamePrice(discount.priceSale) : null
                 }
-              >
-                {getPlatformAccessBadgeLabel(game.platform)}
-              </span>
-              <span className={styles.buyCtaSubDivider}>·</span>
-              {game.soldOut
-                ? 'Currently unavailable for purchase'
-                : 'Instant access after purchase'}
-            </p>
+                percentOff={discount?.percentOff ?? null}
+                showPercentInline={false}
+              />
+            </div>
           </div>
+          <p className="buy-cta-sub">
+            {game.soldOut
+              ? 'Currently unavailable for purchase'
+              : discount
+                ? 'Deal price locked at checkout'
+                : 'Instant access after purchase'}
+          </p>
         </div>
         <div className="buy-cta-action">
-          <GameDetailBuyButton slug={game.slug} soldOut={game.soldOut} />
+          <GameDetailBuyButton
+            slug={game.slug}
+            soldOut={game.soldOut}
+            free={
+              formatGamePrice(
+                discount ? discount.priceSale : game.priceBase,
+              ) === 'Free'
+            }
+          />
         </div>
       </div>
     </div>

@@ -10,8 +10,9 @@ export const clerkAppearance = {
     colorSuccess: '#10b981',
     colorNeutral: '#94a3b8',
     borderRadius: '0.625rem',
-    fontFamily: "'Plus Jakarta Sans', sans-serif",
-    fontFamilyButtons: "'Plus Jakarta Sans', sans-serif",
+    // Inherit the next/font body face from the document (do not hardcode a CDN name).
+    fontFamily: 'var(--font-body)',
+    fontFamilyButtons: 'var(--font-body)',
   },
   elements: {
     rootBox: 'authClerkRoot',

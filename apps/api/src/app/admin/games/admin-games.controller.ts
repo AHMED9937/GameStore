@@ -26,6 +26,7 @@ import {
   type AdminCreateGameDto,
   type AdminUpdateGameDto,
 } from './admin-games.service';
+import { AdminGameDiscountService } from './admin-game-discount.service';
 import { FeaturedGameIdsDto } from './featured-game-ids.dto';
 import type { AdminGameListFiltersDto } from './admin-game-list-filters.dto';
 
@@ -38,6 +39,7 @@ export class AdminGamesController {
     private readonly adminGames: AdminGamesService,
     private readonly auditLogService: AuditLogService,
     private readonly igdbImport: AdminIgdbImportService,
+    private readonly gameDiscounts: AdminGameDiscountService,
   ) {}
 
   @Get()
@@ -123,6 +125,50 @@ export class AdminGamesController {
   @Get(':id/readiness')
   getReadiness(@Param('id') id: string) {
     return this.adminGames.getReadiness(id);
+  }
+
+  @Put(':id/discount')
+  async upsertDiscount(
+    @Param('id') id: string,
+    @Body() body: Record<string, unknown>,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const discount = await this.gameDiscounts.upsertDiscount(id, body ?? {});
+    const audit = auditContextFromRequest(request);
+    recordAudit(this.auditLogService, {
+      userId: user.id,
+      action: 'admin.game.discount_upsert',
+      resource: 'game',
+      resourceId: id,
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+      metadata: {
+        percentOff: discount.percentOff,
+        endsAt: discount.endsAt,
+        enabled: discount.enabled,
+      },
+    });
+    return discount;
+  }
+
+  @Delete(':id/discount')
+  async endDiscount(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthUser,
+    @Req() request: AuditRequest,
+  ) {
+    const result = await this.gameDiscounts.endDiscount(id);
+    const audit = auditContextFromRequest(request);
+    recordAudit(this.auditLogService, {
+      userId: user.id,
+      action: 'admin.game.discount_end',
+      resource: 'game',
+      resourceId: id,
+      ip: audit.ip,
+      userAgent: audit.userAgent,
+    });
+    return result;
   }
 
   @Patch(':id/next-account')

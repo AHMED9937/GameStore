@@ -59,6 +59,17 @@ export class LicensesRepository {
     });
   }
 
+  /** Used to detect a duplicate free-game claim before minting a new license. */
+  findActiveByOwnerAndGame(ownerId: string, gameId: string) {
+    return this.prisma.license.findFirst({
+      where: { ownerId, gameId, status: { not: 'revoked' } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        order: { select: { id: true, stripeSessionId: true } },
+      },
+    });
+  }
+
   findByOwnerId(ownerId: string) {
     return this.prisma.license.findMany({
       where: { ownerId },

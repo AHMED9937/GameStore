@@ -7,7 +7,7 @@ export default function SignUpPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Join GameStore to track purchases and activate your games."
+      subtitle="Join OfflineGameNIA to track purchases and activate your games."
       variant="user"
       footer={
         <p className={styles.authFooterNote}>

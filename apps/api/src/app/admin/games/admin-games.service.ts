@@ -43,6 +43,10 @@ import {
   normalizeEnumFilter,
   normalizeSearchTerm,
 } from '@gamestore/api/data-access';
+import {
+  toAdminGameDiscountDto,
+  type AdminGameDiscountDto,
+} from '../../games/game-discount.mapper';
 
 export type AdminGameDiscordDto = {
   configured: boolean;
@@ -79,6 +83,7 @@ export type AdminGameDto = {
   media: AdminGameMediaDto[];
   accountSummary: AdminGameAccountSummary;
   discord: AdminGameDiscordDto;
+  discount: AdminGameDiscountDto | null;
 };
 
 export type AdminCreateGameDto = CreateGameDto & {
@@ -642,6 +647,9 @@ export class AdminGamesService {
         messageId: null,
         announceDescription: null,
       },
+      discount: game.discount
+        ? toAdminGameDiscountDto(game.discount, game.priceBase.toString())
+        : null,
     };
   }
 
@@ -749,12 +757,17 @@ export class AdminGamesService {
   }
 
   private buildDiscordPayload(game: AdminGameDto) {
+    const activeDiscount =
+      game.discount && game.discount.status === 'active' ? game.discount : null;
+    const price = activeDiscount
+      ? `${activeDiscount.priceSale} (${activeDiscount.percentOff}% off)`
+      : game.priceBase;
     return {
       title: game.title,
       slug: game.slug,
       coverUrl: game.coverImage ?? game.coverCardImage ?? game.igdbCoverUrl,
       platform: game.platform,
-      price: game.priceBase,
+      price,
       soldOut: game.soldOut,
       announceDescription: game.discord.announceDescription,
     };

@@ -1,7 +1,7 @@
 import { ThemePreviewShowcase } from '@gamestore/shared/ui';
 
 export const metadata = {
-  title: 'Theme Preview | GameStore',
+  title: 'Theme Preview | OfflineGameNIA',
   robots: { index: false, follow: false },
 };
 

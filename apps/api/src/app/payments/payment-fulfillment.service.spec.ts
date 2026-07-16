@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ServiceUnavailableException } from '@nestjs/common';
 import type {
   GameAccountsRepository,
+  LicensesRepository,
   OrdersRepository,
 } from '@gamestore/api/data-access';
 import type { PrismaService } from '@gamestore/api/prisma';
@@ -28,12 +29,17 @@ describe('PaymentFulfillmentService', () => {
     advanceNextAccountIfFull: vi.fn(),
   } as unknown as GameAccountsRepository;
 
+  const licenses = {
+    findActiveByOwnerAndGame: vi.fn(),
+  } as unknown as LicensesRepository;
+
   const tx = {
     license: {
       create: vi.fn(),
     },
     order: {
       update: vi.fn(),
+      create: vi.fn(),
     },
   };
 
@@ -56,10 +62,12 @@ describe('PaymentFulfillmentService', () => {
       orders,
       gameAccounts,
       stripe,
+      licenses,
     );
     vi.mocked(orders.findByStripeSessionId).mockResolvedValue(
       pendingOrder as never,
     );
+    vi.mocked(licenses.findActiveByOwnerAndGame).mockResolvedValue(null);
     vi.mocked(gameAccounts.claimSeatForGame).mockResolvedValue({
       id: 'acct-1',
     } as never);
@@ -70,6 +78,10 @@ describe('PaymentFulfillmentService', () => {
     });
     tx.order.update.mockResolvedValue({
       id: 'order-1',
+      status: 'completed',
+    });
+    tx.order.create.mockResolvedValue({
+      id: 'free-order-1',
       status: 'completed',
     });
   });
@@ -317,6 +329,94 @@ describe('PaymentFulfillmentService', () => {
     expect(result).toEqual({
       action: 'no_pool_capacity',
       orderId: 'order-1',
+    });
+  });
+
+  describe('fulfillFreeOrder', () => {
+    it('grants a free license and completed order with no Stripe call', async () => {
+      const result = await service.fulfillFreeOrder({
+        gameId: 'game-1',
+        gameTitleSnapshot: 'Demo Game',
+        gameSlugSnapshot: 'demo-game',
+        ownerId: 'user-1',
+        buyerEmail: 'buyer@example.com',
+      });
+
+      expect(result).toEqual({
+        action: 'fulfilled',
+        orderId: 'free-order-1',
+        licenseId: 'lic-1',
+        sessionId: expect.stringMatching(/^free_/),
+      });
+      expect(stripe.retrieveCheckoutSession).not.toHaveBeenCalled();
+      expect(gameAccounts.claimSeatForGame).toHaveBeenCalledWith(
+        'game-1',
+        undefined,
+        tx,
+      );
+      expect(tx.license.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          source: 'free',
+          buyerEmail: 'buyer@example.com',
+          game: { connect: { id: 'game-1' } },
+          account: { connect: { id: 'acct-1' } },
+          owner: { connect: { id: 'user-1' } },
+        }),
+      });
+      expect(tx.order.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          gameId: 'game-1',
+          gameTitleSnapshot: 'Demo Game',
+          gameSlugSnapshot: 'demo-game',
+          stripeSessionId: expect.stringMatching(/^free_/),
+          amount: 0,
+          status: 'completed',
+          licenseId: 'lic-1',
+          ownerId: 'user-1',
+          buyerEmail: 'buyer@example.com',
+        }),
+      });
+      expect(gameAccounts.advanceNextAccountIfFull).toHaveBeenCalledWith(
+        'game-1',
+        tx,
+      );
+    });
+
+    it('is idempotent: returns the existing license without claiming a new seat', async () => {
+      vi.mocked(licenses.findActiveByOwnerAndGame).mockResolvedValue({
+        id: 'lic-existing',
+        order: { id: 'order-existing', stripeSessionId: 'free_existing' },
+      } as never);
+
+      const result = await service.fulfillFreeOrder({
+        gameId: 'game-1',
+        ownerId: 'user-1',
+      });
+
+      expect(result).toEqual({
+        action: 'already_fulfilled',
+        orderId: 'order-existing',
+        licenseId: 'lic-existing',
+        sessionId: 'free_existing',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(gameAccounts.claimSeatForGame).not.toHaveBeenCalled();
+    });
+
+    it('returns no_pool_capacity when the pool has no open seats', async () => {
+      vi.mocked(gameAccounts.claimSeatForGame).mockResolvedValue(null);
+
+      const result = await service.fulfillFreeOrder({
+        gameId: 'game-1',
+        ownerId: 'user-1',
+      });
+
+      expect(result).toEqual({
+        action: 'no_pool_capacity',
+        sessionId: expect.stringMatching(/^free_/),
+      });
+      expect(tx.license.create).not.toHaveBeenCalled();
+      expect(tx.order.create).not.toHaveBeenCalled();
     });
   });
 });

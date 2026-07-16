@@ -2,11 +2,13 @@ import {
   BadRequestException,
   NotFoundException,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@gamestore/api/auth';
 import type { GamesRepository, GameAccountsRepository, OrdersRepository, SubscriptionPlansRepository } from '@gamestore/api/data-access';
 import { StripeConfig, type StripeService } from '@gamestore/api/stripe';
+import type { PaymentFulfillmentService } from './payment-fulfillment.service';
 import { PaymentsService } from './payments.service';
 
 const user: AuthUser = {
@@ -52,11 +54,22 @@ describe('PaymentsService', () => {
     createSubscriptionCheckoutSession: vi.fn(),
   } as unknown as StripeService;
 
+  const fulfillment = {
+    fulfillFreeOrder: vi.fn(),
+  } as unknown as PaymentFulfillmentService;
+
   let service: PaymentsService;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    service = new PaymentsService(games, gameAccounts, orders, plans, stripe);
+    service = new PaymentsService(
+      games,
+      gameAccounts,
+      orders,
+      plans,
+      stripe,
+      fulfillment,
+    );
 
     vi.spyOn(StripeConfig, 'isCheckoutConfigured').mockReturnValue(true);
     vi.mocked(games.findBySlug).mockResolvedValue(publishedGame as never);
@@ -69,6 +82,12 @@ describe('PaymentsService', () => {
       url: 'https://checkout.stripe.com/pay/cs_test_abc',
     });
     vi.mocked(orders.createPending).mockResolvedValue({ id: 'order-1' } as never);
+    vi.mocked(fulfillment.fulfillFreeOrder).mockResolvedValue({
+      action: 'fulfilled',
+      orderId: 'free-order-1',
+      licenseId: 'lic-1',
+      sessionId: 'free_abc123',
+    });
   });
 
   it('creates a checkout session and pending order for a published game slug', async () => {
@@ -168,6 +187,32 @@ describe('PaymentsService', () => {
     );
   });
 
+  it('creates a checkout session at the discounted sale price when active', async () => {
+    vi.mocked(games.findBySlug).mockResolvedValue({
+      ...publishedGame,
+      discount: {
+        enabled: true,
+        percentOff: 20,
+        startsAt: new Date(Date.now() - 60_000),
+        endsAt: new Date(Date.now() + 86_400_000),
+        showCountdown: true,
+      },
+    } as never);
+
+    await service.createCheckout({ slug: 'demo-game-1' }, user);
+
+    expect(stripe.createCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        priceBase: 15.99,
+      }),
+    );
+    expect(orders.createPending).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 15.99,
+      }),
+    );
+  });
+
   it('creates a subscription checkout session for an active plan', async () => {
     vi.mocked(plans.findBySlug).mockResolvedValue({
       id: 'plan-1',
@@ -196,5 +241,81 @@ describe('PaymentsService', () => {
       customerEmail: 'buyer@example.com',
     });
     expect(result.sessionId).toBe('cs_sub_test');
+  });
+
+  describe('free games (100% discount)', () => {
+    const freeDiscount = {
+      enabled: true,
+      percentOff: 100,
+      startsAt: new Date(Date.now() - 60_000),
+      endsAt: new Date(Date.now() + 86_400_000),
+      showCountdown: true,
+    };
+
+    it('skips Stripe and grants a license for a signed-in user', async () => {
+      vi.mocked(games.findBySlug).mockResolvedValue({
+        ...publishedGame,
+        discount: freeDiscount,
+      } as never);
+
+      const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
+
+      expect(stripe.createCheckoutSession).not.toHaveBeenCalled();
+      expect(orders.createPending).not.toHaveBeenCalled();
+      expect(fulfillment.fulfillFreeOrder).toHaveBeenCalledWith({
+        gameId: 'game-1',
+        gameTitleSnapshot: 'Demo Game',
+        gameSlugSnapshot: 'demo-game-1',
+        ownerId: 'user-a',
+        buyerEmail: 'buyer@example.com',
+      });
+      expect(result.sessionId).toBe('free_abc123');
+      expect(result.url).toContain('/checkout/success?session_id=free_abc123');
+    });
+
+    it('rejects anonymous claims of a free game', async () => {
+      vi.mocked(games.findBySlug).mockResolvedValue({
+        ...publishedGame,
+        discount: freeDiscount,
+      } as never);
+
+      await expect(
+        service.createCheckout({ slug: 'demo-game-1' }),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+      expect(fulfillment.fulfillFreeOrder).not.toHaveBeenCalled();
+    });
+
+    it('surfaces no_pool_capacity as a sold-out error', async () => {
+      vi.mocked(games.findBySlug).mockResolvedValue({
+        ...publishedGame,
+        discount: freeDiscount,
+      } as never);
+      vi.mocked(fulfillment.fulfillFreeOrder).mockResolvedValue({
+        action: 'no_pool_capacity',
+        sessionId: 'free_abc123',
+      });
+
+      await expect(
+        service.createCheckout({ slug: 'demo-game-1' }, user),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('is idempotent on repeat claims by the same owner', async () => {
+      vi.mocked(games.findBySlug).mockResolvedValue({
+        ...publishedGame,
+        discount: freeDiscount,
+      } as never);
+      vi.mocked(fulfillment.fulfillFreeOrder).mockResolvedValue({
+        action: 'already_fulfilled',
+        orderId: 'free-order-1',
+        licenseId: 'lic-1',
+        sessionId: 'free_abc123',
+      });
+
+      const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
+
+      expect(fulfillment.fulfillFreeOrder).toHaveBeenCalledTimes(1);
+      expect(result.sessionId).toBe('free_abc123');
+    });
   });
 });

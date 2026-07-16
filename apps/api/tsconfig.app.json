@@ -16,6 +16,9 @@
       "path": "../../libs/shared/marketing"
     },
     {
+      "path": "../../libs/shared/pricing"
+    },
+    {
       "path": "../../libs/api/stripe"
     },
     {

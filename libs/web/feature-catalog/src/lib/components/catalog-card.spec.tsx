@@ -30,4 +30,26 @@ describe('CatalogCard', () => {
 
     expect(image?.getAttribute('alt')).toBe('Demo Game cover');
   });
+
+  it('renders SAVE badge, sale price, and top countdown', () => {
+    render(
+      <CatalogCard
+        game={{
+          ...baseGame,
+          discount: {
+            percentOff: 25,
+            priceSale: '7.49',
+            endsAt: '2099-01-01T00:00:00.000Z',
+            showCountdown: true,
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByTestId('game-discount-badge').textContent).toMatch(/Save/i);
+    expect(screen.getByTestId('game-price-display').textContent).toContain('$7.49');
+    expect(screen.getByTestId('game-deal-countdown').textContent).toMatch(
+      /Ends in|Ending soon/i,
+    );
+  });
 });

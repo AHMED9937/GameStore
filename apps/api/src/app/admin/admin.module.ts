@@ -14,6 +14,7 @@ import { AdminGamesController } from './games/admin-games.controller';
 import { AdminGameMediaController } from './games/admin-game-media.controller';
 import { AdminGameMediaService } from './games/admin-game-media.service';
 import { AdminGamesService } from './games/admin-games.service';
+import { AdminGameDiscountService } from './games/admin-game-discount.service';
 import { AdminLicensesController } from './licenses/admin-licenses.controller';
 import { AdminLicensesService } from './licenses/admin-licenses.service';
 import { AdminAccountsController } from './accounts/admin-accounts.controller';
@@ -47,6 +48,7 @@ import { DiscordNotifyService } from '../discord/discord-notify.service';
   providers: [
     AdminDashboardService,
     AdminGamesService,
+    AdminGameDiscountService,
     AdminGameMediaService,
     AdminAccountsService,
     AdminLicensesService,

@@ -45,6 +45,21 @@ describe('GamesRepository', () => {
           orderBy: { sortOrder: 'asc' },
           where: { type: { in: ['screenshot', 'video', 'activation'] } },
         },
+        discount: { select: expect.any(Object) },
+      },
+    });
+  });
+
+  it('findById includes discount relation', async () => {
+    const prisma = createPrismaMock();
+    const repo = new GamesRepository(prisma as unknown as PrismaService);
+
+    await repo.findById('game-1');
+
+    expect(prisma.game.findUnique).toHaveBeenCalledWith({
+      where: { id: 'game-1' },
+      include: {
+        discount: { select: expect.any(Object) },
       },
     });
   });

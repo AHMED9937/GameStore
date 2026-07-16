@@ -231,6 +231,24 @@
   font-size: 0.8125rem;
 }
 
+.discountGrid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 720px) {
+  .discountGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.discountPreview {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-input);
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

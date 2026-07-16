@@ -45,20 +45,6 @@
   text-align: center;
 }
 
-.authLogo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: var(--gradient-brand);
-  color: var(--bg-darker);
-  font-size: 1.5rem;
-  box-shadow: 0 0 30px var(--color-primary-glow);
-  margin-bottom: 1rem;
-}
-
 .authTitle {
   margin: 0;
   font-family: var(--font-display);

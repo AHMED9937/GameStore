@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Show, SignInButton, UserButton, useUser } from '@clerk/nextjs';
 import { Container } from '@gamestore/shared/ui';
+import { BrandLogo } from '../brand/brand-logo';
 import { isAdminPublicMetadata } from '../../lib/auth-role';
 import styles from './layout.module.css';
 
@@ -20,12 +21,7 @@ export function SiteHeader() {
   return (
     <header className={styles.header}>
       <Container className={styles.headerInner}>
-        <Link href="/" className={styles.logo}>
-          <span className={styles.logoIcon} aria-hidden>
-            ◆
-          </span>
-          <span className={styles.logoText}>GameStore</span>
-        </Link>
+        <BrandLogo variant="nav" />
 
         <nav className={styles.nav} aria-label="Main">
           {NAV_LINKS.map(({ href, label }) => (

@@ -14,3 +14,5 @@ export * from './lib/loading-state';
 export * from './lib/loading-surface';
 export * from './lib/navigation-progress';
 export * from './lib/theme-preview-sections';
+export * from './lib/game-price-display';
+export * from './lib/game-deal-urgency';

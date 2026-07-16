@@ -8,6 +8,7 @@
 
 .panel {
   padding: 1.5rem;
+  overflow: hidden;
 }
 
 .filterBar {
@@ -115,12 +116,29 @@
 
 .cardCoverWrap {
   position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.cardDealBanner {
+  margin: -1.5rem -1.5rem 0.85rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .cardSoldOutBadge {
   position: absolute;
   top: 0.65rem;
   left: 0.65rem;
+  z-index: 2;
+}
+
+.cardDiscountBadge {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 2;
+  transform: rotate(2deg);
 }
 
 .cardCover {

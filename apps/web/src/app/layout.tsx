@@ -10,13 +10,15 @@ import './global.css';
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-body',
+  display: 'swap',
   weight: ['300', '400', '500', '600', '700', '800'],
 });
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-display',
-  weight: ['500', '700'],
+  display: 'swap',
+  weight: ['500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -30,8 +32,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`dark ${plusJakarta.variable} ${spaceGrotesk.variable}`}>
-      <body>
+    <html
+      lang="en"
+      className={`dark ${plusJakarta.variable} ${spaceGrotesk.variable}`}
+    >
+      <body className={plusJakarta.className}>
         <ClerkProvider
           appearance={clerkAppearance}
           signInFallbackRedirectUrl="/auth/redirect"
