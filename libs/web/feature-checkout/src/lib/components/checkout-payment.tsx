@@ -151,13 +151,20 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
         </Text>
       ) : null}
       <label className={styles.termsRow}>
-        <input
-          type="checkbox"
-          className={styles.termsCheckbox}
-          checked={accepted}
-          onChange={(event) => setAccepted(event.target.checked)}
-          data-testid="checkout-terms-checkbox"
-        />
+        <span
+          className={`${styles.termsCheckboxShell}${
+            accepted ? ` ${styles.termsCheckboxShellChecked}` : ''
+          }`}
+          aria-hidden
+        >
+          <input
+            type="checkbox"
+            className={styles.termsCheckbox}
+            checked={accepted}
+            onChange={(event) => setAccepted(event.target.checked)}
+            data-testid="checkout-terms-checkbox"
+          />
+        </span>
         <span className={styles.termsText}>
           I agree to the{' '}
           {(['terms', 'privacy', 'refund'] as const).map((key, index) => (

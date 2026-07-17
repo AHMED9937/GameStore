@@ -218,6 +218,15 @@ b {
   font-family: inherit;
 }
 
+/* Form controls don't inherit fonts by default — keep them on the app font */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
 .glass-panel {
   background: var(--bg-card);
   backdrop-filter: blur(12px);

@@ -32,6 +32,8 @@ export type GamePriceDisplayProps = {
   meta?: ReactNode;
   className?: string;
   showPercentInline?: boolean;
+  /** 'pill' fuses −% + deal price + was-price into one compact deal ticket. */
+  variant?: 'default' | 'pill';
 };
 
 export function GamePriceDisplay({
@@ -42,10 +44,33 @@ export function GamePriceDisplay({
   meta,
   className,
   showPercentInline = false,
+  variant = 'default',
 }: GamePriceDisplayProps) {
   const discounted = Boolean(priceSaleLabel);
   const sizeClass =
     size === 'lg' ? styles.sizeLg : size === 'sm' ? styles.sizeSm : styles.sizeMd;
+
+  if (variant === 'pill' && discounted) {
+    return (
+      <div
+        className={[styles.priceBlock, sizeClass, className]
+          .filter(Boolean)
+          .join(' ')}
+        data-testid="game-price-display"
+      >
+        <span className={styles.dealPill}>
+          {percentOff != null ? (
+            <span className={styles.dealPillSave} data-testid="game-inline-save">
+              −{percentOff}%
+            </span>
+          ) : null}
+          <span className={styles.dealPillPrice}>{priceSaleLabel}</span>
+          <s className={styles.dealPillWas}>was {priceBaseLabel}</s>
+        </span>
+        {meta ? <div className={styles.metaRow}>{meta}</div> : null}
+      </div>
+    );
+  }
 
   return (
     <div
