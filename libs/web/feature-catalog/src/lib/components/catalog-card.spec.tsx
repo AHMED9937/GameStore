@@ -31,7 +31,7 @@ describe('CatalogCard', () => {
     expect(image?.getAttribute('alt')).toBe('Demo Game cover');
   });
 
-  it('renders SAVE badge, sale price, and top countdown', () => {
+  it('renders deal pill with save %, sale price, and top countdown', () => {
     render(
       <CatalogCard
         game={{
@@ -46,8 +46,9 @@ describe('CatalogCard', () => {
       />,
     );
 
-    expect(screen.getByTestId('game-discount-badge').textContent).toMatch(/Save/i);
+    expect(screen.getByTestId('game-inline-save').textContent).toContain('25%');
     expect(screen.getByTestId('game-price-display').textContent).toContain('$7.49');
+    expect(screen.getByTestId('game-price-display').textContent).toContain('$9.99');
     expect(screen.getByTestId('game-deal-countdown').textContent).toMatch(
       /Ends in|Ending soon/i,
     );
