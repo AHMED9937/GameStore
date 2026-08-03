@@ -1,4 +1,12 @@
-export type SeoPageId = 'home' | 'shop' | 'faq' | 'contact' | 'subscriptions';
+export type SeoPageId =
+  | 'home'
+  | 'shop'
+  | 'faq'
+  | 'contact'
+  | 'subscriptions'
+  | 'terms'
+  | 'privacy'
+  | 'refund';
 
 export type SeoPageDefinition = {
   path: string;
@@ -34,5 +42,23 @@ export const SEO_PAGE_DEFINITIONS: Record<SeoPageId, SeoPageDefinition> = {
     path: '/subscriptions',
     title: 'Subscriptions',
     description: 'Browse subscription plans and included published games.',
+  },
+  terms: {
+    path: '/terms-of-service',
+    title: 'Terms of Service',
+    description:
+      'Read the terms and conditions for using OfflineGameNia and purchasing digital game licenses.',
+  },
+  privacy: {
+    path: '/privacy-policy',
+    title: 'Privacy Policy',
+    description:
+      'Learn how OfflineGameNia collects, uses, and protects your personal information.',
+  },
+  refund: {
+    path: '/refund-policy',
+    title: 'Refund Policy',
+    description:
+      'Understand refund eligibility, replacements, and statutory withdrawal rights.',
   },
 };

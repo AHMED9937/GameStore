@@ -20,6 +20,12 @@ export type CheckoutPaymentProps = {
 
 type PolicyKey = 'terms' | 'privacy' | 'refund';
 
+const POLICY_ROUTES: Record<PolicyKey, string> = {
+  terms: '/terms-of-service',
+  privacy: '/privacy-policy',
+  refund: '/refund-policy',
+};
+
 /** Short in-place summaries so buyers can read policies without leaving checkout. */
 const POLICY_SUMMARIES: Record<PolicyKey, { title: string; body: string }> = {
   terms: {
@@ -188,6 +194,13 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
         <div className={styles.policyPeek} data-testid="checkout-policy-peek">
           <strong>{POLICY_SUMMARIES[openPolicy].title}</strong>
           <p>{POLICY_SUMMARIES[openPolicy].body}</p>
+          <Link
+            href={POLICY_ROUTES[openPolicy]}
+            className={styles.policyFullLink}
+            data-testid="checkout-policy-full-link"
+          >
+            Read full {POLICY_SUMMARIES[openPolicy].title}
+          </Link>
         </div>
       ) : null}
       <button

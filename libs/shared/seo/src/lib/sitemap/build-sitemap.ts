@@ -21,6 +21,9 @@ const STATIC_PAGE_IDS: SeoPageId[] = [
   'faq',
   'contact',
   'subscriptions',
+  'terms',
+  'privacy',
+  'refund',
 ];
 
 export function buildSitemapEntries(
