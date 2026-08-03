@@ -91,8 +91,9 @@ export function SiteFooter() {
       <Container className={styles.footerBottom}>
         <p>&copy; {new Date().getFullYear()} OfflineGameNIA. All rights reserved.</p>
         <div className={styles.footerBottomLinks}>
-          <a href="#">Terms of Service</a>
-          <a href="#">Privacy Policy</a>
+          <Link href="/terms-of-service">Terms of Service</Link>
+          <Link href="/privacy-policy">Privacy Policy</Link>
+          <Link href="/refund-policy">Refund Policy</Link>
         </div>
       </Container>
     </footer>

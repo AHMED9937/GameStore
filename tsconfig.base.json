@@ -48,6 +48,9 @@
       "@gamestore/web/feature-contact": [
         "./libs/web/feature-contact/src/index.ts"
       ],
+      "@gamestore/web/feature-legal": [
+        "./libs/web/feature-legal/src/index.ts"
+      ],
       "@gamestore/web/feature-admin": [
         "./libs/web/feature-admin/src/index.ts"
       ],

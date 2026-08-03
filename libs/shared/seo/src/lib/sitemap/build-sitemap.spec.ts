@@ -14,6 +14,9 @@ describe('buildSitemapEntries', () => {
     expect(urls).toContain('https://store.example.com/');
     expect(urls).toContain('https://store.example.com/shop');
     expect(urls).toContain('https://store.example.com/faq');
+    expect(urls).toContain('https://store.example.com/terms-of-service');
+    expect(urls).toContain('https://store.example.com/privacy-policy');
+    expect(urls).toContain('https://store.example.com/refund-policy');
     expect(urls).toContain('https://store.example.com/games/demo-game-1');
     expect(urls).toContain('https://store.example.com/games/demo-game-2');
   });
@@ -31,7 +34,7 @@ describe('buildSitemapEntries', () => {
     });
     const elapsed = performance.now() - started;
 
-    expect(entries.length).toBe(505);
+    expect(entries.length).toBe(508);
     expect(elapsed).toBeLessThan(50);
   });
 });

@@ -106,6 +106,19 @@ describe('CheckoutPayment', () => {
     );
   });
 
+  it('links each opened policy summary to its full legal page', () => {
+    getPaymentsHealth.mockResolvedValue({
+      status: 'ok',
+      integration: 'stripe',
+      env: { secretKey: 'valid', webhookSecret: 'valid', publishableKey: 'valid' },
+    });
+    render(<CheckoutPayment game={paidGame} />);
+
+    fireEvent.click(screen.getByText('Privacy Policy'));
+    const link = screen.getByTestId('checkout-policy-full-link');
+    expect(link.getAttribute('href')).toBe('/privacy-policy');
+  });
+
   it('shows a loading state while claiming a free game', async () => {
     createCheckout.mockReturnValue(new Promise(() => undefined));
 
