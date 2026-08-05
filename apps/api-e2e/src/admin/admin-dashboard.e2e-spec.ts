@@ -69,7 +69,7 @@ describe.skipIf(!hasDatabase)('Admin dashboard API', () => {
     const order = await prisma.order.create({
       data: {
         gameId: game.id,
-        stripeSessionId: `cs_test_dashboard_${ts}`,
+        providerCheckoutId: `txn_test_dashboard_${ts}`,
         amount: 9.99,
         currency: 'USD',
         status: 'completed',

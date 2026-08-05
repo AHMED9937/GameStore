@@ -10,7 +10,7 @@ function isLocalhostUrl(url: string): boolean {
 }
 
 /**
- * Public storefront origin for Stripe redirects, Discord links, etc.
+ * Public storefront origin for Paddle redirects, Discord links, etc.
  * Order: explicit arg → SITE_URL → NEXT_PUBLIC_SITE_URL → localhost (non-production only).
  * Production never falls back to localhost.
  */
@@ -51,7 +51,7 @@ export function buildSubscriptionCheckoutUrls(planSlug: string, siteUrl?: string
   const base = resolveSiteUrl(siteUrl);
 
   return {
-    successUrl: `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    successUrl: `${base}/checkout/success?session_id={CHECKOUT_TRANSACTION_ID}`,
     cancelUrl: `${base}/subscriptions?plan=${encodeURIComponent(planSlug)}&cancelled=1`,
   };
 }
@@ -60,8 +60,8 @@ export function buildCheckoutUrls(gameSlug: string, siteUrl?: string) {
   const base = resolveSiteUrl(siteUrl);
 
   return {
-    successUrl: `${base}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${base}/checkout?game=${encodeURIComponent(gameSlug)}&cancelled=1&session_id={CHECKOUT_SESSION_ID}`,
+    successUrl: `${base}/checkout/success?session_id={CHECKOUT_TRANSACTION_ID}`,
+    cancelUrl: `${base}/checkout?game=${encodeURIComponent(gameSlug)}&cancelled=1&session_id={CHECKOUT_TRANSACTION_ID}`,
   };
 }
 
@@ -72,8 +72,8 @@ export function priceToUnitAmount(priceBase: number): number {
   return Math.round(priceBase * 100);
 }
 
-/** Stripe requires absolute http(s) URLs for product images; relative paths are omitted. */
-export function resolveStripeProductImage(
+/** Paddle product images must be absolute https URLs; relative paths are omitted. */
+export function resolvePaddleProductImage(
   coverImage?: string | null,
 ): string | undefined {
   const trimmed = coverImage?.trim();
@@ -83,11 +83,11 @@ export function resolveStripeProductImage(
 
   try {
     const parsed = new URL(trimmed);
-    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+    if (parsed.protocol === 'https:') {
       return trimmed;
     }
   } catch {
-    // Relative path (e.g. /og/default.png) omit for Stripe.
+    // Relative path or invalid URL — omit for Paddle.
   }
 
   return undefined;

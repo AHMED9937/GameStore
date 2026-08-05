@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { resolveSiteUrl } from '@gamestore/api/stripe';
+import { resolveSiteUrl } from '@gamestore/api/paddle';
 import {
   buildDiscordAnnouncementEmbed,
   discordEmbedToApiFormat,

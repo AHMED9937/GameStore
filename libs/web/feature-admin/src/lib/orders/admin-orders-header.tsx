@@ -4,7 +4,7 @@ export function AdminOrdersHeader() {
   return (
     <AdminPageHeader
       title="Orders"
-      description="Review purchases and fulfillment status across Stripe checkout."
+      description="Review purchases and fulfillment status across Paddle checkout."
     />
   );
 }

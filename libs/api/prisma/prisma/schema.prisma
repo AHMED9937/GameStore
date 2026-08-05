@@ -15,6 +15,7 @@ model Game {
   description     String?
   platform        String
   priceBase       Decimal  @db.Decimal(10, 2)
+  paddleProductId String?
   coverImage      String?
   coverCardImage  String?
   metaTitle       String?
@@ -199,8 +200,8 @@ model Order {
   gameSlugSnapshot  String?
   ownerId           String?
   licenseId         String?  @unique
-  stripeSessionId   String   @unique
-  stripePaymentId   String?
+  providerCheckoutId String   @unique
+  providerPaymentId  String?
   orderType         String   @default("one_time")
   amount            Decimal  @db.Decimal(10, 2)
   currency          String   @default("USD") @db.VarChar(3)
@@ -219,10 +220,10 @@ model Order {
 }
 
 model SubscriptionPlan {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  stripePriceId String   @unique
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  providerPriceId String   @unique
   interval      String
   intervalCount Int      @default(1)
   isActive      Boolean  @default(true)
@@ -247,11 +248,11 @@ model SubscriptionPlanGame {
 }
 
 model UserSubscription {
-  id                   String   @id @default(cuid())
-  userId               String
-  planId               String
-  stripeSubscriptionId String   @unique
-  stripeCustomerId     String?
+  id                     String   @id @default(cuid())
+  userId                 String
+  planId                 String
+  providerSubscriptionId String   @unique
+  providerCustomerId     String?
   status               String
   currentPeriodStart   DateTime
   currentPeriodEnd     DateTime

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type Stripe from 'stripe';
+import type { Transaction, TransactionNotification } from '@paddle/paddle-node-sdk';
 import {
   GameAccountsRepository,
   defaultLicenseExpiresAt,
@@ -10,7 +10,7 @@ import {
   OrdersRepository,
 } from '@gamestore/api/data-access';
 import { PrismaService } from '@gamestore/api/prisma';
-import { StripeService } from '@gamestore/api/stripe';
+import { PaddleService } from '@gamestore/api/paddle';
 
 export type FulfillmentAction =
   | 'fulfilled'
@@ -28,6 +28,45 @@ export type FulfillmentResult = {
   licenseId?: string;
 };
 
+type TransactionLike =
+  | Transaction
+  | TransactionNotification
+  | { id: string; status: string };
+
+function isPaddleTransactionCompleted(
+  transaction: TransactionLike,
+): boolean {
+  return (
+    transaction.status === 'completed' ||
+    transaction.status === 'paid'
+  );
+}
+
+function isPaddleTransactionFailed(transaction: TransactionLike): boolean {
+  return (
+    transaction.status === 'canceled' ||
+    transaction.status === 'past_due'
+  );
+}
+
+function readCustomDataString(
+  customData: Record<string, unknown> | null,
+  key: string,
+): string | undefined {
+  const value = customData?.[key];
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+  return undefined;
+}
+
+function minorToDecimal(amount: string | null | undefined): number | undefined {
+  if (!amount) return undefined;
+  const numeric = Number(amount);
+  if (!Number.isFinite(numeric)) return undefined;
+  return numeric / 100;
+}
+
 @Injectable()
 export class PaymentFulfillmentService {
   private readonly logger = new Logger(PaymentFulfillmentService.name);
@@ -36,92 +75,89 @@ export class PaymentFulfillmentService {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersRepository,
     private readonly gameAccounts: GameAccountsRepository,
-    private readonly stripe: StripeService,
+    private readonly paddle: PaddleService,
     private readonly licenses: LicensesRepository,
   ) {}
 
-  async syncFulfillmentFromStripe(sessionId: string): Promise<FulfillmentResult> {
-    try {
-      const session = await this.stripe.retrieveCheckoutSession(sessionId);
-      return this.syncCheckoutSession(session);
-    } catch (error) {
-      this.logger.warn(
-        `Could not sync fulfillment from Stripe for session ${sessionId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      return { action: 'ignored' };
-    }
-  }
-
-  async cancelCheckoutSession(sessionId: string): Promise<FulfillmentResult> {
-    try {
-      const session = await this.stripe.retrieveCheckoutSession(sessionId);
-      if (session.mode === 'subscription') {
-        return { action: 'ignored' };
-      }
-
-      if (!session.id) {
-        return { action: 'ignored' };
-      }
-
-      if (session.payment_status === 'paid') {
-        return this.handleCheckoutSessionCompleted(session);
-      }
-
-      return this.handleCheckoutSessionFailed(sessionId);
-    } catch (error) {
-      this.logger.warn(
-        `Could not cancel checkout session ${sessionId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      return { action: 'ignored' };
-    }
-  }
-
-  private async syncCheckoutSession(
-    session: Stripe.Checkout.Session,
+  async syncFulfillmentFromPaddle(
+    checkoutId: string,
   ): Promise<FulfillmentResult> {
-    if (session.mode === 'subscription') {
+    try {
+      const transaction = await this.paddle.retrieveTransaction(checkoutId);
+      return this.syncTransaction(transaction);
+    } catch (error) {
+      this.logger.warn(
+        `Could not sync fulfillment from Paddle for transaction ${checkoutId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return { action: 'ignored' };
+    }
+  }
+
+  async cancelPaddleTransaction(
+    checkoutId: string,
+  ): Promise<FulfillmentResult> {
+    try {
+      const transaction = await this.paddle.retrieveTransaction(checkoutId);
+
+      if (isPaddleTransactionCompleted(transaction)) {
+        return this.handleTransactionCompleted(transaction);
+      }
+
+      return this.handleTransactionFailed(checkoutId);
+    } catch (error) {
+      this.logger.warn(
+        `Could not cancel Paddle transaction ${checkoutId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return { action: 'ignored' };
+    }
+  }
+
+  private async syncTransaction(
+    transaction: Transaction,
+  ): Promise<FulfillmentResult> {
+    if (transaction.subscriptionId) {
       return { action: 'ignored' };
     }
 
-    const sessionId = session.id;
-    if (!sessionId) {
+    const checkoutId = transaction.id;
+    if (!checkoutId) {
       return { action: 'ignored' };
     }
 
-    if (session.status === 'expired') {
-      return this.handleCheckoutSessionFailed(sessionId);
+    if (isPaddleTransactionFailed(transaction)) {
+      return this.handleTransactionFailed(checkoutId);
     }
 
-    if (session.payment_status === 'paid') {
-      return this.handleCheckoutSessionCompleted(session);
+    if (isPaddleTransactionCompleted(transaction)) {
+      return this.handleTransactionCompleted(transaction);
     }
 
     return { action: 'pending_payment' };
   }
 
-  async handleCheckoutSessionCompleted(
-    session: Stripe.Checkout.Session,
+  async handleTransactionCompleted(
+    transaction: Transaction | TransactionNotification,
   ): Promise<FulfillmentResult> {
-    if (session.mode === 'subscription') {
+    if (transaction.subscriptionId) {
       return { action: 'ignored' };
     }
 
-    if (session.payment_status !== 'paid') {
+    if (!isPaddleTransactionCompleted(transaction)) {
       return { action: 'pending_payment' };
     }
 
-    const sessionId = session.id;
-    if (!sessionId) {
+    const checkoutId = transaction.id;
+    if (!checkoutId) {
       return { action: 'ignored' };
     }
 
-    const order = await this.orders.findByStripeSessionId(sessionId);
+    const order = await this.orders.findByProviderCheckoutId(checkoutId);
     if (!order) {
-      this.logger.warn(`No order found for Stripe session ${sessionId}`);
+      this.logger.warn(`No order found for Paddle transaction ${checkoutId}`);
       return { action: 'order_not_found' };
     }
 
@@ -133,27 +169,23 @@ export class PaymentFulfillmentService {
       };
     }
 
-    const gameId = session.metadata?.gameId ?? order.gameId;
+    const customData =
+      'customData' in transaction ? transaction.customData : null;
+    const gameId = readCustomDataString(customData, 'gameId') ?? order.gameId;
     if (!gameId) {
       this.logger.error(
-        `Cannot fulfill order ${order.id}: missing gameId for session ${sessionId}`,
+        `Cannot fulfill order ${order.id}: missing gameId for transaction ${checkoutId}`,
       );
       return { action: 'invalid_game', orderId: order.id };
     }
 
     const ownerId =
-      session.metadata?.userId?.trim() || order.ownerId || undefined;
-    const buyerEmail =
-      session.customer_details?.email ??
-      session.customer_email ??
-      undefined;
-    const stripePaymentId =
-      typeof session.payment_intent === 'string'
-        ? session.payment_intent
-        : session.payment_intent?.id;
+      readCustomDataString(customData, 'userId') || order.ownerId || undefined;
+    const buyerEmail = readCustomDataString(customData, 'customerEmail');
+    const providerPaymentId = checkoutId;
     const amount =
-      session.amount_total !== null && session.amount_total !== undefined
-        ? session.amount_total / 100
+      'details' in transaction && transaction.details?.totals?.grandTotal
+        ? minorToDecimal(transaction.details.totals.grandTotal)
         : undefined;
 
     const validFrom = new Date();
@@ -164,7 +196,7 @@ export class PaymentFulfillmentService {
         buyerEmail,
         ownerId,
         validFrom,
-        stripePaymentId,
+        providerPaymentId,
         amount,
       });
 
@@ -185,7 +217,7 @@ export class PaymentFulfillmentService {
   }
 
   /**
-   * Grants a free (100%-off) game directly, with no Stripe round-trip.
+   * Grants a free (100%-off) game directly, with no Paddle round-trip.
    * Idempotent: a repeat claim by the same owner returns their existing
    * license/order instead of consuming another pool seat.
    */
@@ -205,7 +237,7 @@ export class PaymentFulfillmentService {
         action: 'already_fulfilled',
         orderId: existing.order?.id,
         licenseId: existing.id,
-        sessionId: existing.order?.stripeSessionId ?? `free_${existing.id}`,
+        sessionId: existing.order?.providerCheckoutId ?? `free_${existing.id}`,
       };
     }
 
@@ -238,7 +270,7 @@ export class PaymentFulfillmentService {
           gameId: input.gameId,
           gameTitleSnapshot: input.gameTitleSnapshot,
           gameSlugSnapshot: input.gameSlugSnapshot,
-          stripeSessionId: sessionId,
+          providerCheckoutId: sessionId,
           amount: 0,
           status: 'completed',
           licenseId: license.id,
@@ -266,13 +298,15 @@ export class PaymentFulfillmentService {
     });
   }
 
-  async handleCheckoutSessionFailed(sessionId: string): Promise<FulfillmentResult> {
-    const order = await this.orders.findByStripeSessionId(sessionId);
+  async handleTransactionFailed(
+    checkoutId: string,
+  ): Promise<FulfillmentResult> {
+    const order = await this.orders.findByProviderCheckoutId(checkoutId);
     if (!order || order.status !== 'pending') {
       return { action: 'ignored' };
     }
 
-    await this.orders.markFailed(sessionId);
+    await this.orders.markFailed(checkoutId);
     return { action: 'marked_failed', orderId: order.id };
   }
 
@@ -282,7 +316,7 @@ export class PaymentFulfillmentService {
     buyerEmail?: string;
     ownerId?: string;
     validFrom: Date;
-    stripePaymentId?: string;
+    providerPaymentId?: string;
     amount?: number;
   }) {
     return this.prisma.$transaction(async (tx) => {
@@ -310,7 +344,7 @@ export class PaymentFulfillmentService {
         data: {
           status: 'completed',
           licenseId: license.id,
-          stripePaymentId: input.stripePaymentId,
+          providerPaymentId: input.providerPaymentId,
           buyerEmail: input.buyerEmail,
           ...(input.amount !== undefined ? { amount: input.amount } : {}),
           ...(input.ownerId !== undefined ? { ownerId: input.ownerId } : {}),

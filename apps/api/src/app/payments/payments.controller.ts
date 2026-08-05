@@ -8,7 +8,7 @@ import {
   recordAudit,
   type AuthUser,
 } from '@gamestore/api/auth';
-import { StripeService } from '@gamestore/api/stripe';
+import { PaddleService } from '@gamestore/api/paddle';
 import {
   buildDefaultRouteThrottle,
   throttleLimitCheckout,
@@ -24,7 +24,7 @@ type AuditRequest = Parameters<typeof auditContextFromRequest>[0];
 @Controller('payments')
 export class PaymentsController {
   constructor(
-    private readonly stripe: StripeService,
+    private readonly paddle: PaddleService,
     private readonly payments: PaymentsService,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -33,7 +33,7 @@ export class PaymentsController {
   @SkipThrottle()
   @Get('health')
   health() {
-    return this.stripe.health();
+    return this.paddle.health();
   }
 
   @Public()

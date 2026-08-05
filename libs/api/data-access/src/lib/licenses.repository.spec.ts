@@ -41,7 +41,7 @@ describe('LicensesRepository', () => {
       where: { ownerId: 'user-a', gameId: 'game-1', status: { not: 'revoked' } },
       orderBy: { createdAt: 'desc' },
       include: {
-        order: { select: { id: true, stripeSessionId: true } },
+        order: { select: { id: true, providerCheckoutId: true } },
       },
     });
   });

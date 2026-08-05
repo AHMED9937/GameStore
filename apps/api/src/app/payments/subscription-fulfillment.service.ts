@@ -1,14 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import type Stripe from 'stripe';
+import type {
+  Subscription,
+  SubscriptionNotification,
+  Transaction,
+  TransactionNotification,
+} from '@paddle/paddle-node-sdk';
 import {
   GameAccountsRepository,
   generateLicenseKey,
   SubscriptionPlansRepository,
   UserSubscriptionsRepository,
 } from '@gamestore/api/data-access';
+import { PaddleService } from '@gamestore/api/paddle';
 import { PrismaService } from '@gamestore/api/prisma';
-import { StripeService } from '@gamestore/api/stripe';
 
 export type SubscriptionFulfillmentAction =
   | 'subscription_fulfilled'
@@ -25,6 +30,43 @@ export type SubscriptionFulfillmentResult = {
   licenseIds?: string[];
 };
 
+type SubscriptionLike = Subscription | SubscriptionNotification;
+type TransactionLike = Transaction | TransactionNotification;
+
+function readCustomDataString(
+  customData: Record<string, unknown> | null,
+  key: string,
+): string | undefined {
+  const value = customData?.[key];
+  if (typeof value === 'string') {
+    return value.trim() || undefined;
+  }
+  return undefined;
+}
+
+function parseBillingPeriod(period: {
+  startsAt: string;
+  endsAt: string;
+}): { currentPeriodStart: Date; currentPeriodEnd: Date } {
+  return {
+    currentPeriodStart: new Date(period.startsAt),
+    currentPeriodEnd: new Date(period.endsAt),
+  };
+}
+
+function isCancelAtPeriodEnd(subscription: SubscriptionLike): boolean {
+  if (subscription.status === 'canceled') {
+    return true;
+  }
+  if (
+    'scheduledChange' in subscription &&
+    subscription.scheduledChange?.action === 'cancel'
+  ) {
+    return true;
+  }
+  return false;
+}
+
 @Injectable()
 export class SubscriptionFulfillmentService {
   private readonly logger = new Logger(SubscriptionFulfillmentService.name);
@@ -34,27 +76,29 @@ export class SubscriptionFulfillmentService {
     private readonly plans: SubscriptionPlansRepository,
     private readonly userSubscriptions: UserSubscriptionsRepository,
     private readonly gameAccounts: GameAccountsRepository,
-    private readonly stripe: StripeService,
+    private readonly paddle: PaddleService,
   ) {}
 
-  async handleCheckoutSessionCompleted(
-    session: Stripe.Checkout.Session,
+  async handleSubscriptionActivated(
+    subscription: SubscriptionLike,
   ): Promise<SubscriptionFulfillmentResult> {
-    if (session.mode !== 'subscription') {
+    const providerSubscriptionId = subscription.id;
+    if (!providerSubscriptionId) {
       return { action: 'ignored' };
     }
 
-    if (session.payment_status !== 'paid') {
-      return { action: 'pending_payment' };
-    }
-
-    const stripeSubscriptionId = this.readStripeSubscriptionId(session);
-    if (!stripeSubscriptionId) {
+    const customData = subscription.customData;
+    const planId = readCustomDataString(customData, 'planId');
+    const userId = readCustomDataString(customData, 'userId');
+    if (!planId || !userId) {
+      this.logger.warn(
+        `Paddle subscription ${providerSubscriptionId} missing planId or userId in customData`,
+      );
       return { action: 'ignored' };
     }
 
     const existing =
-      await this.userSubscriptions.findByStripeSubscriptionId(stripeSubscriptionId);
+      await this.userSubscriptions.findByProviderSubscriptionId(providerSubscriptionId);
     if (existing) {
       return {
         action: 'subscription_already_fulfilled',
@@ -63,40 +107,26 @@ export class SubscriptionFulfillmentService {
       };
     }
 
-    const planId = session.metadata?.planId?.trim();
-    const userId = session.metadata?.userId?.trim();
-    if (!planId || !userId) {
-      this.logger.warn(
-        `Subscription checkout session ${session.id} missing planId or userId metadata`,
-      );
-      return { action: 'ignored' };
-    }
-
     const plan = await this.plans.findById(planId);
     if (!plan || !plan.isActive) {
       this.logger.warn(`Subscription plan ${planId} not found or inactive`);
       return { action: 'ignored' };
     }
 
-    const stripeSubscription =
-      await this.stripe.retrieveSubscription(stripeSubscriptionId);
-    const period = this.readSubscriptionPeriod(stripeSubscription);
+    const period = this.readSubscriptionPeriod(subscription);
+    const providerCustomerId = subscription.customerId;
     const buyerEmail =
-      session.customer_details?.email ?? session.customer_email ?? undefined;
-    const stripeCustomerId =
-      typeof session.customer === 'string'
-        ? session.customer
-        : session.customer?.id;
+      readCustomDataString(customData, 'customerEmail') ?? undefined;
 
     const userSubscription = await this.userSubscriptions.create({
       user: { connect: { id: userId } },
       plan: { connect: { id: plan.id } },
-      stripeSubscriptionId,
-      stripeCustomerId,
-      status: stripeSubscription.status,
+      providerSubscriptionId,
+      providerCustomerId,
+      status: subscription.status,
       currentPeriodStart: period.currentPeriodStart,
       currentPeriodEnd: period.currentPeriodEnd,
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+      cancelAtPeriodEnd: isCancelAtPeriodEnd(subscription),
     });
 
     const licenseIds = await this.mintOrExtendLicenses({
@@ -115,105 +145,69 @@ export class SubscriptionFulfillmentService {
     };
   }
 
-  async handleInvoicePaid(
-    invoice: Stripe.Invoice,
+  async handleSubscriptionUpdated(
+    subscription: SubscriptionLike,
   ): Promise<SubscriptionFulfillmentResult> {
-    const stripeSubscriptionId = this.readInvoiceSubscriptionId(invoice);
-    if (!stripeSubscriptionId) {
+    const providerSubscriptionId = subscription.id;
+    const userSubscription =
+      await this.userSubscriptions.findByProviderSubscriptionId(providerSubscriptionId);
+    if (!userSubscription) {
       return { action: 'ignored' };
     }
 
-    const userSubscription =
-      await this.userSubscriptions.findByStripeSubscriptionId(stripeSubscriptionId);
-    if (!userSubscription) {
+    const period = this.readSubscriptionPeriod(subscription);
+
+    await this.userSubscriptions.update(userSubscription.id, {
+      status: subscription.status,
+      currentPeriodStart: period.currentPeriodStart,
+      currentPeriodEnd: period.currentPeriodEnd,
+      cancelAtPeriodEnd: isCancelAtPeriodEnd(subscription),
+    });
+
+    const licenseIds = await this.extendSubscriptionLicenses(
+      userSubscription.id,
+      period.currentPeriodEnd,
+    );
+
+    return {
+      action: subscription.status === 'canceled' ? 'subscription_ended' : 'subscription_synced',
+      subscriptionId: userSubscription.id,
+      licenseIds,
+    };
+  }
+
+  async handleSubscriptionCanceled(
+    subscription: SubscriptionLike,
+  ): Promise<SubscriptionFulfillmentResult> {
+    return this.handleSubscriptionUpdated(subscription);
+  }
+
+  async handleTransactionCompletedForSubscription(
+    transaction: TransactionLike,
+  ): Promise<SubscriptionFulfillmentResult> {
+    const providerSubscriptionId = transaction.subscriptionId;
+    if (!providerSubscriptionId) {
+      return { action: 'ignored' };
+    }
+
+    try {
+      const subscription = await this.paddle.retrieveSubscription(providerSubscriptionId);
+
+      const userSubscription =
+        await this.userSubscriptions.findByProviderSubscriptionId(providerSubscriptionId);
+      if (userSubscription) {
+        return this.handleSubscriptionUpdated(subscription);
+      }
+
+      return this.handleSubscriptionActivated(subscription);
+    } catch (error) {
       this.logger.warn(
-        `No user subscription found for Stripe subscription ${stripeSubscriptionId}`,
+        `Could not fetch Paddle subscription ${providerSubscriptionId} for transaction ${transaction.id}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
       );
       return { action: 'ignored' };
     }
-
-    const stripeSubscription =
-      await this.stripe.retrieveSubscription(stripeSubscriptionId);
-    const period = this.readSubscriptionPeriod(stripeSubscription);
-
-    await this.userSubscriptions.update(userSubscription.id, {
-      status: stripeSubscription.status,
-      currentPeriodStart: period.currentPeriodStart,
-      currentPeriodEnd: period.currentPeriodEnd,
-      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-    });
-
-    const licenseIds = await this.extendSubscriptionLicenses(
-      userSubscription.id,
-      period.currentPeriodEnd,
-    );
-
-    return {
-      action: 'subscription_renewed',
-      subscriptionId: userSubscription.id,
-      licenseIds,
-    };
-  }
-
-  async handleSubscriptionUpdated(
-    subscription: Stripe.Subscription,
-  ): Promise<SubscriptionFulfillmentResult> {
-    const stripeSubscriptionId = subscription.id;
-    const userSubscription =
-      await this.userSubscriptions.findByStripeSubscriptionId(stripeSubscriptionId);
-    if (!userSubscription) {
-      return { action: 'ignored' };
-    }
-
-    const period = this.readSubscriptionPeriod(subscription);
-
-    await this.userSubscriptions.update(userSubscription.id, {
-      status: subscription.status,
-      currentPeriodStart: period.currentPeriodStart,
-      currentPeriodEnd: period.currentPeriodEnd,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    });
-
-    const licenseIds = await this.extendSubscriptionLicenses(
-      userSubscription.id,
-      period.currentPeriodEnd,
-    );
-
-    return {
-      action: 'subscription_synced',
-      subscriptionId: userSubscription.id,
-      licenseIds,
-    };
-  }
-
-  async handleSubscriptionDeleted(
-    subscription: Stripe.Subscription,
-  ): Promise<SubscriptionFulfillmentResult> {
-    const userSubscription =
-      await this.userSubscriptions.findByStripeSubscriptionId(subscription.id);
-    if (!userSubscription) {
-      return { action: 'ignored' };
-    }
-
-    const period = this.readSubscriptionPeriod(subscription);
-
-    await this.userSubscriptions.update(userSubscription.id, {
-      status: subscription.status,
-      currentPeriodStart: period.currentPeriodStart,
-      currentPeriodEnd: period.currentPeriodEnd,
-      cancelAtPeriodEnd: true,
-    });
-
-    const licenseIds = await this.extendSubscriptionLicenses(
-      userSubscription.id,
-      period.currentPeriodEnd,
-    );
-
-    return {
-      action: 'subscription_ended',
-      subscriptionId: userSubscription.id,
-      licenseIds,
-    };
   }
 
   private async mintOrExtendLicenses(params: {
@@ -339,55 +333,21 @@ export class SubscriptionFulfillmentService {
     throw new Error('Failed to mint subscription license');
   }
 
-  private readStripeSubscriptionId(
-    session: Stripe.Checkout.Session,
-  ): string | undefined {
-    if (typeof session.subscription === 'string') {
-      return session.subscription;
-    }
-    return session.subscription?.id;
-  }
-
-  private readInvoiceSubscriptionId(
-    invoice: Stripe.Invoice,
-  ): string | undefined {
-    const legacy = invoice as Stripe.Invoice & {
-      subscription?: string | Stripe.Subscription | null;
-    };
-    if (typeof legacy.subscription === 'string') {
-      return legacy.subscription;
-    }
-    if (legacy.subscription && typeof legacy.subscription === 'object') {
-      return legacy.subscription.id;
-    }
-
-    const parentSub = invoice.parent?.subscription_details?.subscription;
-    if (typeof parentSub === 'string') {
-      return parentSub;
-    }
-    return parentSub?.id;
-  }
-
-  private readSubscriptionPeriod(subscription: Stripe.Subscription): {
+  private readSubscriptionPeriod(subscription: SubscriptionLike): {
     currentPeriodStart: Date;
     currentPeriodEnd: Date;
   } {
-    const item = subscription.items.data[0];
-    const extended = subscription as Stripe.Subscription & {
-      current_period_start?: number;
-      current_period_end?: number;
-    };
-    const startSeconds =
-      extended.current_period_start ?? item?.current_period_start;
-    const endSeconds = extended.current_period_end ?? item?.current_period_end;
+    const period =
+      'currentBillingPeriod' in subscription
+        ? subscription.currentBillingPeriod
+        : null;
 
-    if (!startSeconds || !endSeconds) {
-      throw new Error(`Stripe subscription ${subscription.id} has no billing period`);
+    if (!period) {
+      throw new Error(
+        `Paddle subscription ${subscription.id} has no current billing period`,
+      );
     }
 
-    return {
-      currentPeriodStart: new Date(startSeconds * 1000),
-      currentPeriodEnd: new Date(endSeconds * 1000),
-    };
+    return parseBillingPeriod(period);
   }
 }
