@@ -12,7 +12,7 @@ export type AdminSubscriptionPlanRecord = {
   id: string;
   name: string;
   slug: string;
-  stripePriceId: string;
+  providerPriceId: string;
   interval: string;
   intervalCount: number;
   isActive: boolean;
@@ -25,7 +25,7 @@ export type AdminSubscriptionPlanListRecord = {
   id: string;
   name: string;
   slug: string;
-  stripePriceId: string;
+  providerPriceId: string;
   interval: string;
   intervalCount: number;
   isActive: boolean;
@@ -35,7 +35,7 @@ export type AdminSubscriptionPlanListRecord = {
 export type CreateAdminSubscriptionPlanInput = {
   name: string;
   slug?: string;
-  stripePriceId: string;
+  providerPriceId: string;
   interval: string;
   intervalCount?: number;
   isActive?: boolean;
@@ -45,7 +45,7 @@ export type CreateAdminSubscriptionPlanInput = {
 export type UpdateAdminSubscriptionPlanInput = {
   name?: string;
   slug?: string;
-  stripePriceId?: string;
+  providerPriceId?: string;
   interval?: string;
   intervalCount?: number;
   isActive?: boolean;

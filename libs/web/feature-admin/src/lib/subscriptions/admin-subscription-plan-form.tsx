@@ -48,12 +48,12 @@ export function AdminSubscriptionPlanForm({
         />
       </div>
       <div className={styles.formField}>
-        <Text tone="muted">Stripe price ID</Text>
+        <Text tone="muted">Paddle price ID</Text>
         <Input
-          name="stripePriceId"
-          value={values.stripePriceId}
+          name="providerPriceId"
+          value={values.providerPriceId}
           disabled={disabled}
-          onChange={(event) => updateField('stripePriceId', event.target.value)}
+          onChange={(event) => updateField('providerPriceId', event.target.value)}
         />
       </div>
       <div className={styles.formField}>

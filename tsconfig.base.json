@@ -61,7 +61,8 @@
         "./libs/shared/game-requirements/src/index.ts"
       ],
       "@gamestore/api/prisma": ["./libs/api/prisma/src/index.ts"],
-      "@gamestore/api/stripe": ["./libs/api/stripe/src/index.ts"],
+      "@gamestore/api/paddle": ["./libs/api/paddle/src/index.ts"],
+      "@gamestore/api/paddle": ["./libs/api/paddle/src/index.ts"],
       "@gamestore/api/steam": ["./libs/api/steam/src/index.ts"],
       "@gamestore/api/data-access": ["./libs/api/data-access/src/index.ts"],
       "@gamestore/api/auth": ["./libs/api/auth/src/index.ts"],

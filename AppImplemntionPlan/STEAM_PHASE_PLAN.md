@@ -116,7 +116,7 @@ flowchart TB
 | `buyerEmail` on order/license | Admin audit; optional future email |
 | Buyer lists licenses in My Games | ST.6 validate → activate UX |
 
-**Local dev (paid path):** set `STRIPE_WEBHOOK_SECRET` from `stripe listen --forward-to localhost:3333/api/payments/webhook` (see [`.env.example`](../.env.example), [`scripts/stripe-webhook-dev.ps1`](../scripts/stripe-webhook-dev.ps1)). Restart API after updating `.env`.
+**Local dev (paid path):** set `PADDLE_NOTIFICATION_WEBHOOK_SECRET` from a Paddle notification destination pointing to `https://<your-tunnel>/api/payments/webhook` (see [`.env.example`](../.env.example), [`scripts/paddle-webhook-dev.ps1`](../scripts/paddle-webhook-dev.ps1)). Restart API after updating `.env`.
 
 ---
 

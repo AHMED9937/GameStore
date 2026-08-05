@@ -18,7 +18,9 @@ const PLACEHOLDER_PATTERNS = [
   /postgresql:\/\/USER:PASSWORD@HOST/i,
   /^pk_test_\.\.\.$/,
   /^sk_test_\.\.\.$/,
-  /^whsec_\.\.\.$/,
+  /^pdl_sdbx_\.\.\.$/,
+  /^pdl_live_\.\.\.$/,
+  /^pdl_ntfset_\.\.\.$/,
 ];
 
 function isPlaceholder(value: string): boolean {
@@ -114,67 +116,59 @@ export function checkClerkSecretKey(value: string | undefined): EnvCheck {
   };
 }
 
-export function checkStripeSecretKey(
+export function checkPaddleApiKey(
   value: string | undefined,
   target: DeployTarget = 'staging',
 ): EnvCheck {
-  const base = requireNonEmpty('STRIPE_SECRET_KEY', value, 'Stripe secret key');
+  const base = requireNonEmpty('PADDLE_API_KEY', value, 'Paddle API key');
   if (!base.ok) {
     return base;
   }
   const key = value!.trim();
-  if (target === 'staging' && key.startsWith('sk_live_')) {
+  if (target === 'staging' && key.startsWith('pdl_live_')) {
     return {
-      key: 'STRIPE_SECRET_KEY',
+      key: 'PADDLE_API_KEY',
       ok: false,
-      message: 'Staging must use Stripe Test mode (sk_test_…), not sk_live_',
+      message: 'Staging must use Paddle sandbox (pdl_sdbx_…), not pdl_live_',
     };
   }
-  if (!/^sk_(test|live)_/.test(key)) {
+  if (!/^pdl_(sdbx|live)_/.test(key)) {
     return {
-      key: 'STRIPE_SECRET_KEY',
+      key: 'PADDLE_API_KEY',
       ok: false,
-      message: 'Stripe secret key should start with sk_test_ or sk_live_',
+      message: 'Paddle API key should start with pdl_sdbx_ or pdl_live_',
     };
   }
   return {
-    key: 'STRIPE_SECRET_KEY',
+    key: 'PADDLE_API_KEY',
     ok: true,
-    message: `Stripe secret key present (${key.startsWith('sk_test_') ? 'test' : 'live'})`,
+    message: `Paddle API key present (${key.startsWith('pdl_sdbx_') ? 'sandbox' : 'live'})`,
   };
 }
 
-export function checkStripePublishableKey(
+export function checkPaddleEnv(
   value: string | undefined,
-  target: DeployTarget = 'staging',
 ): EnvCheck {
   const base = requireNonEmpty(
-    'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
+    'NEXT_PUBLIC_PADDLE_ENV',
     value,
-    'Stripe publishable key',
+    'Paddle environment',
   );
   if (!base.ok) {
     return base;
   }
-  const key = value!.trim();
-  if (target === 'staging' && key.startsWith('pk_live_')) {
+  const env = value!.trim().toLowerCase();
+  if (env !== 'sandbox' && env !== 'production') {
     return {
-      key: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
+      key: 'NEXT_PUBLIC_PADDLE_ENV',
       ok: false,
-      message: 'Staging must use Stripe Test mode (pk_test_…), not pk_live_',
-    };
-  }
-  if (!/^pk_(test|live)_/.test(key)) {
-    return {
-      key: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
-      ok: false,
-      message: 'Stripe publishable key should start with pk_test_ or pk_live_',
+      message: 'NEXT_PUBLIC_PADDLE_ENV must be sandbox or production',
     };
   }
   return {
-    key: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
+    key: 'NEXT_PUBLIC_PADDLE_ENV',
     ok: true,
-    message: `Stripe publishable key present (${key.startsWith('pk_test_') ? 'test' : 'live'})`,
+    message: `Paddle environment is ${env}`,
   };
 }
 
@@ -247,10 +241,10 @@ const D1_CHECKERS: Record<
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: (env) =>
     checkClerkPublishableKey(env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY),
   CLERK_SECRET_KEY: (env) => checkClerkSecretKey(env.CLERK_SECRET_KEY),
-  STRIPE_SECRET_KEY: (env, opts) =>
-    checkStripeSecretKey(env.STRIPE_SECRET_KEY, opts.target ?? 'staging'),
-  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: (env, opts) =>
-    checkStripePublishableKey(env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, opts.target ?? 'staging'),
+  PADDLE_API_KEY: (env, opts) =>
+    checkPaddleApiKey(env.PADDLE_API_KEY, opts.target ?? 'staging'),
+  NEXT_PUBLIC_PADDLE_ENV: (env) =>
+    checkPaddleEnv(env.NEXT_PUBLIC_PADDLE_ENV),
   IGDB_CLIENT_ID: (env) => checkIgdbClientId(env.IGDB_CLIENT_ID),
   IGDB_CLIENT_SECRET: (env) => checkIgdbClientSecret(env.IGDB_CLIENT_SECRET),
   STEAM_ENCRYPTION_KEY: (env, opts) =>

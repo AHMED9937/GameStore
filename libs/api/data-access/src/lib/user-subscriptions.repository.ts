@@ -6,9 +6,9 @@ import type { Prisma } from '@prisma/client';
 export class UserSubscriptionsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findByStripeSubscriptionId(stripeSubscriptionId: string) {
+  findByProviderSubscriptionId(providerSubscriptionId: string) {
     return this.prisma.userSubscription.findUnique({
-      where: { stripeSubscriptionId },
+      where: { providerSubscriptionId },
       include: {
         plan: {
           include: {
@@ -50,12 +50,12 @@ export class UserSubscriptionsRepository {
     });
   }
 
-  updateByStripeId(
-    stripeSubscriptionId: string,
+  updateByProviderSubscriptionId(
+    providerSubscriptionId: string,
     data: Prisma.UserSubscriptionUpdateInput,
   ) {
     return this.prisma.userSubscription.update({
-      where: { stripeSubscriptionId },
+      where: { providerSubscriptionId },
       data,
     });
   }

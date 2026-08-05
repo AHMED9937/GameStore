@@ -75,7 +75,7 @@ export function getProductDetails(platform: string): ProductDetailItem[] {
       title: 'Secure payments',
       icon: 'card',
       description:
-        'We offer secure payment methods via Stripe and Paypal, ensuring a protected transaction.',
+        'We offer secure payment methods via Paddle, ensuring a protected transaction.',
     },
   ];
 }
