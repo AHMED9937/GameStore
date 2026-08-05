@@ -297,26 +297,6 @@
   display: block;
 }
 
-.storeTrustBar {
-  padding: 0 0 2.5rem;
-  border-top: 1px solid var(--border-light);
-  margin-top: 0.5rem;
-}
-
-.storeTrustText {
-  padding-top: 1.25rem;
-  font-size: 0.875rem;
-  text-align: center;
-  letter-spacing: 0.02em;
-}
-
-@media (min-width: 900px) {
-  .storeTrustText {
-    text-align: left;
-  }
-}
-
-
 .twoCol {
   padding: 1rem 1.25rem;
   margin-bottom: 0.75rem;
