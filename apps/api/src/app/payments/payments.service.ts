@@ -57,12 +57,6 @@ export class PaymentsService {
     dto: CreateCheckoutDto,
     user?: AuthUser,
   ): Promise<CreateCheckoutSessionResult> {
-    if (!PaddleConfig.isCheckoutConfigured()) {
-      throw new ServiceUnavailableException(
-        'Payments are temporarily unavailable',
-      );
-    }
-
     const game = await this.resolvePurchasableGame(dto);
     const effective = resolveEffectivePrice(
       game.priceBase.toString(),
@@ -83,8 +77,16 @@ export class PaymentsService {
       throw new BadRequestException('Invalid price for this game');
     }
 
+    // Free games never touch Paddle, so they must not be blocked by a
+    // Paddle misconfiguration — only paid checkouts require it.
     if (chargeAmount === 0) {
       return this.claimFreeGame(game, user);
+    }
+
+    if (!PaddleConfig.isCheckoutConfigured()) {
+      throw new ServiceUnavailableException(
+        'Payments are temporarily unavailable',
+      );
     }
 
     let checkout: CreateCheckoutTransactionResult;
