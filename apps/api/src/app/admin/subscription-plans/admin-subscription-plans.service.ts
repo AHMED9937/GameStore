@@ -29,7 +29,7 @@ export type AdminSubscriptionPlanListItemDto = {
   id: string;
   name: string;
   slug: string;
-  providerPriceId: string;
+  stripePriceId: string;
   interval: string;
   intervalCount: number;
   isActive: boolean;
@@ -40,7 +40,7 @@ export type AdminSubscriptionPlanDetailDto = {
   id: string;
   name: string;
   slug: string;
-  providerPriceId: string;
+  stripePriceId: string;
   interval: string;
   intervalCount: number;
   isActive: boolean;
@@ -52,7 +52,7 @@ export type AdminSubscriptionPlanDetailDto = {
 export type CreateAdminSubscriptionPlanDto = {
   name: string;
   slug?: string;
-  providerPriceId: string;
+  stripePriceId: string;
   interval: string;
   intervalCount?: number;
   isActive?: boolean;
@@ -62,7 +62,7 @@ export type CreateAdminSubscriptionPlanDto = {
 export type UpdateAdminSubscriptionPlanDto = {
   name?: string;
   slug?: string;
-  providerPriceId?: string;
+  stripePriceId?: string;
   interval?: string;
   intervalCount?: number;
   isActive?: boolean;
@@ -117,9 +117,9 @@ export class AdminSubscriptionPlansService {
     }
 
     const slug = this.resolveSlug(name, dto.slug);
-    const providerPriceId = dto.providerPriceId?.trim();
-    if (!providerPriceId) {
-      throw new BadRequestException('providerPriceId is required');
+    const stripePriceId = dto.stripePriceId?.trim();
+    if (!stripePriceId) {
+      throw new BadRequestException('stripePriceId is required');
     }
 
     const interval = this.normalizeInterval(dto.interval);
@@ -130,7 +130,7 @@ export class AdminSubscriptionPlansService {
       const plan = await this.plans.create({
         name,
         slug,
-        providerPriceId,
+        stripePriceId,
         interval,
         intervalCount,
         isActive: dto.isActive ?? true,
@@ -142,7 +142,7 @@ export class AdminSubscriptionPlansService {
 
       return this.findOne(plan.id);
     } catch (error) {
-      this.rethrowUniqueConstraint(error, slug, providerPriceId);
+      this.rethrowUniqueConstraint(error, slug, stripePriceId);
       throw error;
     }
   }
@@ -169,12 +169,12 @@ export class AdminSubscriptionPlansService {
       }
       data.slug = slug;
     }
-    if (dto.providerPriceId !== undefined) {
-      const providerPriceId = dto.providerPriceId.trim();
-      if (!providerPriceId) {
-        throw new BadRequestException('providerPriceId cannot be empty');
+    if (dto.stripePriceId !== undefined) {
+      const stripePriceId = dto.stripePriceId.trim();
+      if (!stripePriceId) {
+        throw new BadRequestException('stripePriceId cannot be empty');
       }
-      data.providerPriceId = providerPriceId;
+      data.stripePriceId = stripePriceId;
     }
     if (dto.interval !== undefined) {
       data.interval = this.normalizeInterval(dto.interval);
@@ -201,7 +201,7 @@ export class AdminSubscriptionPlansService {
       this.rethrowUniqueConstraint(
         error,
         typeof data.slug === 'string' ? data.slug : undefined,
-        typeof data.providerPriceId === 'string' ? data.providerPriceId : undefined,
+        typeof data.stripePriceId === 'string' ? data.stripePriceId : undefined,
       );
       throw error;
     }
@@ -294,7 +294,7 @@ export class AdminSubscriptionPlansService {
   private rethrowUniqueConstraint(
     error: unknown,
     slug?: string,
-    providerPriceId?: string,
+    stripePriceId?: string,
   ): void {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -307,9 +307,9 @@ export class AdminSubscriptionPlansService {
       if (target.includes('slug') && slug) {
         throw new ConflictException(`Subscription plan slug "${slug}" already exists`);
       }
-      if (target.includes('providerPriceId') && providerPriceId) {
+      if (target.includes('stripePriceId') && stripePriceId) {
         throw new ConflictException(
-          `Paddle price id "${providerPriceId}" is already linked to a plan`,
+          `Stripe price id "${stripePriceId}" is already linked to a plan`,
         );
       }
       throw new ConflictException('Subscription plan already exists');
@@ -320,7 +320,7 @@ export class AdminSubscriptionPlansService {
     id: string;
     name: string;
     slug: string;
-    providerPriceId: string;
+    stripePriceId: string;
     interval: string;
     intervalCount: number;
     isActive: boolean;
@@ -330,7 +330,7 @@ export class AdminSubscriptionPlansService {
       id: plan.id,
       name: plan.name,
       slug: plan.slug,
-      providerPriceId: plan.providerPriceId,
+      stripePriceId: plan.stripePriceId,
       interval: plan.interval,
       intervalCount: plan.intervalCount,
       isActive: plan.isActive,
@@ -342,7 +342,7 @@ export class AdminSubscriptionPlansService {
     id: string;
     name: string;
     slug: string;
-    providerPriceId: string;
+    stripePriceId: string;
     interval: string;
     intervalCount: number;
     isActive: boolean;
@@ -361,7 +361,7 @@ export class AdminSubscriptionPlansService {
       id: plan.id,
       name: plan.name,
       slug: plan.slug,
-      providerPriceId: plan.providerPriceId,
+      stripePriceId: plan.stripePriceId,
       interval: plan.interval,
       intervalCount: plan.intervalCount,
       isActive: plan.isActive,

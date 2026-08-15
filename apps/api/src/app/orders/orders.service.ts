@@ -47,7 +47,7 @@ export type OrderSessionLookupResponse =
     };
 
 type OrderWithRelations = NonNullable<
-  Awaited<ReturnType<OrdersRepository['findByProviderCheckoutId']>>
+  Awaited<ReturnType<OrdersRepository['findByStripeSessionId']>>
 >;
 
 @Injectable()
@@ -61,8 +61,8 @@ export class OrdersService {
     return this.orders.createPending(dto);
   }
 
-  findByProviderCheckoutId(providerCheckoutId: string) {
-    return this.orders.findByProviderCheckoutId(providerCheckoutId);
+  findByStripeSessionId(stripeSessionId: string) {
+    return this.orders.findByStripeSessionId(stripeSessionId);
   }
 
   findAll() {
@@ -81,7 +81,7 @@ export class OrdersService {
     sessionId: string,
     user?: AuthUser,
   ): Promise<OrderSessionLookupResponse> {
-    let order = await this.orders.findByProviderCheckoutId(sessionId);
+    let order = await this.orders.findByStripeSessionId(sessionId);
     if (!order) {
       throw new NotFoundException(
         `No order found for session "${sessionId}"`,
@@ -89,8 +89,8 @@ export class OrdersService {
     }
 
     if (order.status === 'pending') {
-      await this.fulfillment.cancelPaddleTransaction(sessionId);
-      order = await this.orders.findByProviderCheckoutId(sessionId);
+      await this.fulfillment.cancelCheckoutSession(sessionId);
+      order = await this.orders.findByStripeSessionId(sessionId);
       if (!order) {
         throw new NotFoundException(
           `No order found for session "${sessionId}"`,
@@ -111,7 +111,7 @@ export class OrdersService {
     sessionId: string,
     user?: AuthUser,
   ): Promise<OrderSessionLookupResponse> {
-    let order = await this.orders.findByProviderCheckoutId(sessionId);
+    let order = await this.orders.findByStripeSessionId(sessionId);
     if (!order) {
       throw new NotFoundException(
         `No order found for session "${sessionId}"`,
@@ -121,8 +121,8 @@ export class OrdersService {
     let pendingMessage: string | undefined;
 
     if (order.status === 'pending') {
-      const syncResult = await this.fulfillment.syncFulfillmentFromPaddle(sessionId);
-      order = await this.orders.findByProviderCheckoutId(sessionId);
+      const syncResult = await this.fulfillment.syncFulfillmentFromStripe(sessionId);
+      order = await this.orders.findByStripeSessionId(sessionId);
       if (!order) {
         throw new NotFoundException(
           `No order found for session "${sessionId}"`,
@@ -146,13 +146,13 @@ export class OrdersService {
     return this.orders.markCompleted(id, data);
   }
 
-  markFailed(providerCheckoutId: string) {
-    return this.orders.markFailed(providerCheckoutId);
+  markFailed(stripeSessionId: string) {
+    return this.orders.markFailed(stripeSessionId);
   }
 
   private pendingMessageFromSync(sync: FulfillmentResult): string {
     if (sync.action === 'pending_payment') {
-      return 'Confirming payment with Paddle…';
+      return 'Confirming payment with Stripe…';
     }
 
     return 'Payment received issuing your license…';

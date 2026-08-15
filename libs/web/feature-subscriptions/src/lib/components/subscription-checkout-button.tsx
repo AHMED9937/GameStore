@@ -40,7 +40,7 @@ export function SubscriptionCheckoutButton({
     try {
       const response = await createSubscriptionCheckout({ planSlug });
       if (!response.url || !isValidCheckoutUrl(response.url)) {
-        setError('Invalid checkout URL from server. Check Paddle configuration and default payment link.');
+        setError('Invalid checkout URL from server. Check Stripe configuration.');
         setLoading(false);
         return;
       }

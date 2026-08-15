@@ -1,25 +1,23 @@
-export type CreateCheckoutTransactionInput = {
+export type CreateCheckoutSessionInput = {
   gameId: string;
   gameSlug: string;
   title: string;
-  description?: string | null;
-  productId?: string | null;
   priceBase: number;
   coverImage?: string | null;
   userId?: string;
   customerEmail?: string;
 };
 
-export type CreateCheckoutTransactionResult = {
-  transactionId: string;
+export type CreateCheckoutSessionResult = {
+  sessionId: string;
   url: string;
 };
 
-export type CreateSubscriptionCheckoutTransactionInput = {
+export type CreateSubscriptionCheckoutSessionInput = {
   planId: string;
   planSlug: string;
   planName: string;
-  providerPriceId: string;
+  stripePriceId: string;
   userId: string;
   customerEmail?: string;
 };

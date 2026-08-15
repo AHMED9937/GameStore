@@ -5,7 +5,7 @@ import { AuthModule } from '@gamestore/api/auth';
 import { DataAccessModule } from '@gamestore/api/data-access';
 import { PrismaModule } from '@gamestore/api/prisma';
 import { SteamModule } from '@gamestore/api/steam';
-import { PaddleModule } from '@gamestore/api/paddle';
+import { StripeModule } from '@gamestore/api/stripe';
 import { AppThrottlerGuard } from '../security/app-throttler.guard';
 import { RequestLoggingInterceptor } from '../security/request-logging.interceptor';
 import { buildThrottlerModuleOptions } from '../security/throttle.config';
@@ -44,7 +44,7 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
     PrismaModule,
     DataAccessModule,
     AuthModule,
-    PaddleModule,
+    StripeModule,
     SteamModule,
     AdminModule,
     EntitlementsModule,

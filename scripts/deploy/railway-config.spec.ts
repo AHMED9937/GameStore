@@ -4,14 +4,14 @@ import { describe, expect, it } from 'vitest';
 import {
   buildGamesUrl,
   buildHealthUrl,
-  buildPaddleWebhookUrl,
+  buildStripeWebhookUrl,
   RAILWAY_BUILD_COMMAND,
   RAILWAY_HEALTHCHECK_PATH,
   RAILWAY_RELEASE_COMMAND,
   RAILWAY_STAGING_ENV_KEYS,
   RAILWAY_START_COMMAND,
-  PADDLE_WEBHOOK_EVENTS,
-  PADDLE_WEBHOOK_PATH,
+  STRIPE_WEBHOOK_EVENTS,
+  STRIPE_WEBHOOK_PATH,
 } from './railway-config';
 
 const ROOT = join(__dirname, '../..');
@@ -66,7 +66,7 @@ describe('nx.json Railway-safe project graph', () => {
   });
 });
 
-describe('Railway staging URLs + Paddle webhook (D2)', () => {
+describe('Railway staging URLs + Stripe webhook (D2)', () => {
   const api = 'https://api-staging.up.railway.app';
 
   it('builds health and games smoke URLs', () => {
@@ -74,21 +74,21 @@ describe('Railway staging URLs + Paddle webhook (D2)', () => {
     expect(buildGamesUrl(`${api}/`)).toBe('https://api-staging.up.railway.app/api/games');
   });
 
-  it('builds Paddle webhook URL that bypasses the Next BFF', () => {
-    expect(buildPaddleWebhookUrl(api)).toBe(
-      `https://api-staging.up.railway.app${PADDLE_WEBHOOK_PATH}`,
+  it('builds Stripe webhook URL that bypasses the Next BFF', () => {
+    expect(buildStripeWebhookUrl(api)).toBe(
+      `https://api-staging.up.railway.app${STRIPE_WEBHOOK_PATH}`,
     );
-    expect(PADDLE_WEBHOOK_PATH).toBe('/api/payments/webhook');
+    expect(STRIPE_WEBHOOK_PATH).toBe('/api/payments/webhook');
   });
 
-  it('lists Nest-handled Paddle events for the Dashboard webhook', () => {
-    expect(PADDLE_WEBHOOK_EVENTS).toContain('transaction.completed');
-    expect(PADDLE_WEBHOOK_EVENTS).toContain('subscription.activated');
-    expect(PADDLE_WEBHOOK_EVENTS).toContain('subscription.canceled');
+  it('lists Nest-handled Stripe events for the Dashboard webhook', () => {
+    expect(STRIPE_WEBHOOK_EVENTS).toContain('checkout.session.completed');
+    expect(STRIPE_WEBHOOK_EVENTS).toContain('invoice.paid');
+    expect(STRIPE_WEBHOOK_EVENTS).toContain('customer.subscription.deleted');
   });
 
   it('documents required Railway env keys including webhook secret', () => {
-    expect(RAILWAY_STAGING_ENV_KEYS).toContain('PADDLE_NOTIFICATION_WEBHOOK_SECRET');
+    expect(RAILWAY_STAGING_ENV_KEYS).toContain('STRIPE_WEBHOOK_SECRET');
     expect(RAILWAY_STAGING_ENV_KEYS).toContain('CORS_ORIGINS');
     expect(RAILWAY_STAGING_ENV_KEYS).toContain('STEAM_ENCRYPTION_KEY');
     expect(RAILWAY_STAGING_ENV_KEYS).toContain('NEXT_PUBLIC_SITE_URL');

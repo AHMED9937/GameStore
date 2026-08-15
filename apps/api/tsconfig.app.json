@@ -16,13 +16,13 @@
       "path": "../../libs/shared/marketing"
     },
     {
-      "path": "../../libs/api/paddle"
+      "path": "../../libs/shared/pricing"
+    },
+    {
+      "path": "../../libs/api/stripe"
     },
     {
       "path": "../../libs/shared/game-requirements"
-    },
-    {
-      "path": "../../libs/shared/pricing"
     },
     {
       "path": "../../libs/api/steam"

@@ -21,7 +21,7 @@ describe('OrdersRepository', () => {
 
     await repo.createPending({
       gameId: 'game-1',
-      providerCheckoutId: 'txn_test_abc',
+      stripeSessionId: 'cs_test_abc',
       amount: 19.99,
       ownerId: 'user-1',
     });
@@ -29,7 +29,7 @@ describe('OrdersRepository', () => {
     expect(prisma.order.create).toHaveBeenCalledWith({
       data: {
         game: { connect: { id: 'game-1' } },
-        providerCheckoutId: 'txn_test_abc',
+        stripeSessionId: 'cs_test_abc',
         amount: 19.99,
         currency: 'USD',
         status: 'pending',
@@ -41,14 +41,14 @@ describe('OrdersRepository', () => {
     });
   });
 
-  it('findByProviderCheckoutId includes game and license summaries', async () => {
+  it('findByStripeSessionId includes game and license summaries', async () => {
     const prisma = createPrismaMock();
     const repo = new OrdersRepository(prisma as unknown as PrismaService);
 
-    await repo.findByProviderCheckoutId('txn_test_abc');
+    await repo.findByStripeSessionId('cs_test_abc');
 
     expect(prisma.order.findUnique).toHaveBeenCalledWith({
-      where: { providerCheckoutId: 'txn_test_abc' },
+      where: { stripeSessionId: 'cs_test_abc' },
       include: {
         game: { select: { id: true, title: true, slug: true } },
         license: { select: { id: true, licenseKey: true, status: true, source: true } },
@@ -62,7 +62,7 @@ describe('OrdersRepository', () => {
 
     await repo.markCompleted('order-1', {
       licenseId: 'lic-1',
-      providerPaymentId: 'txn_test_abc',
+      stripePaymentId: 'pi_test',
       buyerEmail: 'buyer@example.com',
       amount: 19.99,
     });
@@ -72,7 +72,7 @@ describe('OrdersRepository', () => {
       data: {
         status: 'completed',
         licenseId: 'lic-1',
-        providerPaymentId: 'txn_test_abc',
+        stripePaymentId: 'pi_test',
         buyerEmail: 'buyer@example.com',
         amount: 19.99,
       },
@@ -83,14 +83,14 @@ describe('OrdersRepository', () => {
     });
   });
 
-  it('markFailed sets status failed by provider checkout id', async () => {
+  it('markFailed sets status failed by stripe session id', async () => {
     const prisma = createPrismaMock();
     const repo = new OrdersRepository(prisma as unknown as PrismaService);
 
-    await repo.markFailed('txn_test_abc');
+    await repo.markFailed('cs_test_abc');
 
     expect(prisma.order.update).toHaveBeenCalledWith({
-      where: { providerCheckoutId: 'txn_test_abc' },
+      where: { stripeSessionId: 'cs_test_abc' },
       data: { status: 'failed' },
     });
   });

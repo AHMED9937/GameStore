@@ -4,17 +4,17 @@ import { nxCopyAssetsPlugin } from '@nx/vite/plugins/nx-copy-assets.plugin';
 
 export default defineConfig(() => ({
   root: __dirname,
-  cacheDir: '../../../node_modules/.vite/libs/api/paddle',
+  cacheDir: '../../../node_modules/.vite/libs/api/stripe',
   plugins: [nxViteTsPaths(), nxCopyAssetsPlugin(['*.md'])],
   test: {
-    name: 'api-paddle',
+    name: 'api-stripe',
     watch: false,
     globals: true,
     environment: 'node',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     reporters: ['default'],
     coverage: {
-      reportsDirectory: '../../../coverage/libs/api/paddle',
+      reportsDirectory: '../../../coverage/libs/api/stripe',
       provider: 'v8' as const,
     },
   },
