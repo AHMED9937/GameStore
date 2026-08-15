@@ -7,7 +7,7 @@ const samplePlan = {
   id: 'plan-1',
   name: 'All Access',
   slug: 'all-access-monthly',
-  stripePriceId: 'price_test_monthly',
+  providerPriceId: 'price_test_monthly',
   interval: 'month',
   intervalCount: 1,
   isActive: true,
@@ -23,7 +23,7 @@ describe('AdminSubscriptionPlansController', () => {
         id: 'plan-1',
         name: 'All Access',
         slug: 'all-access-monthly',
-        stripePriceId: 'price_test_monthly',
+        providerPriceId: 'price_test_monthly',
         interval: 'month',
         intervalCount: 1,
         isActive: true,
@@ -71,7 +71,7 @@ describe('AdminSubscriptionPlansController', () => {
     const result = await controller.create(
       {
         name: 'All Access',
-        stripePriceId: 'price_test_monthly',
+        providerPriceId: 'price_test_monthly',
         interval: 'month',
       },
       user,

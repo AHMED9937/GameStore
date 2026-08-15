@@ -24,7 +24,7 @@ function toFormValues(plan: AdminSubscriptionPlanRecord): AdminSubscriptionPlanF
   return {
     name: plan.name,
     slug: plan.slug,
-    stripePriceId: plan.stripePriceId,
+    providerPriceId: plan.providerPriceId,
     interval: plan.interval,
     intervalCount: String(plan.intervalCount),
     isActive: plan.isActive,
@@ -80,7 +80,7 @@ export function AdminSubscriptionPlanEditPage({
         const result = await updateAdminSubscriptionPlan(plan.id, {
           name: values.name.trim(),
           slug: values.slug.trim(),
-          stripePriceId: values.stripePriceId.trim(),
+          providerPriceId: values.providerPriceId.trim(),
           interval: values.interval,
           intervalCount:
             Number.isInteger(intervalCount) && intervalCount > 0

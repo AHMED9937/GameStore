@@ -16,11 +16,11 @@ import {
 } from '@gamestore/api/data-access';
 import {
   buildCheckoutUrls,
-  StripeConfig,
-  StripeMisconfiguredError,
-  StripeService,
-  type CreateCheckoutSessionResult,
-} from '@gamestore/api/stripe';
+  PaddleConfig,
+  PaddleMisconfiguredError,
+  PaddleService,
+  type CreateCheckoutTransactionResult,
+} from '@gamestore/api/paddle';
 import { resolveEffectivePrice } from '@gamestore/shared/pricing';
 import { PaymentFulfillmentService } from './payment-fulfillment.service';
 
@@ -31,6 +31,11 @@ export type CreateCheckoutDto = {
 
 export type CreateSubscriptionCheckoutDto = {
   planSlug: string;
+};
+
+export type CreateCheckoutSessionResult = {
+  sessionId: string;
+  url: string;
 };
 
 type PurchasableGame = NonNullable<Awaited<ReturnType<GamesRepository['findById']>>>;
@@ -44,7 +49,7 @@ export class PaymentsService {
     private readonly gameAccounts: GameAccountsRepository,
     private readonly orders: OrdersRepository,
     private readonly plans: SubscriptionPlansRepository,
-    private readonly stripe: StripeService,
+    private readonly paddle: PaddleService,
     private readonly fulfillment: PaymentFulfillmentService,
   ) {}
 
@@ -52,12 +57,6 @@ export class PaymentsService {
     dto: CreateCheckoutDto,
     user?: AuthUser,
   ): Promise<CreateCheckoutSessionResult> {
-    if (!StripeConfig.isCheckoutConfigured()) {
-      throw new ServiceUnavailableException(
-        'Payments are temporarily unavailable',
-      );
-    }
-
     const game = await this.resolvePurchasableGame(dto);
     const effective = resolveEffectivePrice(
       game.priceBase.toString(),
@@ -78,23 +77,31 @@ export class PaymentsService {
       throw new BadRequestException('Invalid price for this game');
     }
 
+    // Free games never touch Paddle, so they must not be blocked by a
+    // Paddle misconfiguration — only paid checkouts require it.
     if (chargeAmount === 0) {
       return this.claimFreeGame(game, user);
     }
 
-    let session: CreateCheckoutSessionResult;
+    if (!PaddleConfig.isCheckoutConfigured()) {
+      throw new ServiceUnavailableException(
+        'Payments are temporarily unavailable',
+      );
+    }
+
+    let checkout: CreateCheckoutTransactionResult;
     try {
-      session = await this.stripe.createCheckoutSession({
+      checkout = await this.paddle.createCheckoutTransaction({
         gameId: game.id,
         gameSlug: game.slug,
         title: game.title,
+        productId: game.paddleProductId,
         priceBase: chargeAmount,
-        coverImage: game.coverImage,
         userId: user?.id,
         customerEmail: user?.email,
       });
     } catch (error) {
-      if (error instanceof StripeMisconfiguredError) {
+      if (error instanceof PaddleMisconfiguredError) {
         throw new ServiceUnavailableException(error.message);
       }
       throw error;
@@ -105,23 +112,26 @@ export class PaymentsService {
         gameId: game.id,
         gameTitleSnapshot: game.title,
         gameSlugSnapshot: game.slug,
-        stripeSessionId: session.sessionId,
+        providerCheckoutId: checkout.transactionId,
         amount: chargeAmount,
         ownerId: user?.id,
       });
     } catch (error) {
       this.logger.error(
-        `Stripe session ${session.sessionId} created but pending order insert failed for game ${game.id}`,
+        `Paddle transaction ${checkout.transactionId} created but pending order insert failed for game ${game.id}`,
         error instanceof Error ? error.stack : String(error),
       );
       throw error;
     }
 
-    return session;
+    return {
+      sessionId: checkout.transactionId,
+      url: checkout.url,
+    };
   }
 
   /**
-   * 100%-off games skip Stripe entirely: grant the license immediately and
+   * 100%-off games skip Paddle entirely: grant the license immediately and
    * point the caller at the same success URL a paid checkout would use, so
    * the frontend needs no separate code path.
    */
@@ -148,7 +158,7 @@ export class PaymentsService {
     const { successUrl } = buildCheckoutUrls(game.slug);
     return {
       sessionId: result.sessionId,
-      url: successUrl.replace('{CHECKOUT_SESSION_ID}', result.sessionId),
+      url: successUrl.replace('{CHECKOUT_TRANSACTION_ID}', result.sessionId),
     };
   }
 
@@ -160,7 +170,7 @@ export class PaymentsService {
       throw new UnauthorizedException('Sign in to subscribe');
     }
 
-    if (!StripeConfig.isCheckoutConfigured()) {
+    if (!PaddleConfig.isCheckoutConfigured()) {
       throw new ServiceUnavailableException(
         'Payments are temporarily unavailable',
       );
@@ -183,16 +193,21 @@ export class PaymentsService {
     }
 
     try {
-      return await this.stripe.createSubscriptionCheckoutSession({
+      const checkout = await this.paddle.createSubscriptionCheckoutTransaction({
         planId: plan.id,
         planSlug: plan.slug,
         planName: plan.name,
-        stripePriceId: plan.stripePriceId,
+        providerPriceId: plan.providerPriceId,
         userId: user.id,
         customerEmail: user.email,
       });
+
+      return {
+        sessionId: checkout.transactionId,
+        url: checkout.url,
+      };
     } catch (error) {
-      if (error instanceof StripeMisconfiguredError) {
+      if (error instanceof PaddleMisconfiguredError) {
         throw new ServiceUnavailableException(error.message);
       }
       throw error;

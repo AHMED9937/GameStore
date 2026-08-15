@@ -1,26 +1,26 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ServiceUnavailableException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuditLogService } from '@gamestore/api/auth';
-import { StripeMisconfiguredError, StripeService } from '@gamestore/api/stripe';
+import { PaddleMisconfiguredError, PaddleService } from '@gamestore/api/paddle';
 import type { PaymentFulfillmentService } from './payment-fulfillment.service';
 import { PaymentsWebhookController } from './payments-webhook.controller';
 import type { SubscriptionFulfillmentService } from './subscription-fulfillment.service';
 
 describe('PaymentsWebhookController', () => {
-  const stripe = {
-    constructWebhookEvent: vi.fn(),
-  } as unknown as StripeService;
+  const paddle = {
+    unmarshalWebhook: vi.fn(),
+  } as unknown as PaddleService;
 
   const fulfillment = {
-    handleCheckoutSessionCompleted: vi.fn(),
-    handleCheckoutSessionFailed: vi.fn(),
+    handleTransactionCompleted: vi.fn(),
+    handleTransactionFailed: vi.fn(),
   } as unknown as PaymentFulfillmentService;
 
   const subscriptionFulfillment = {
-    handleCheckoutSessionCompleted: vi.fn(),
-    handleInvoicePaid: vi.fn(),
+    handleTransactionCompletedForSubscription: vi.fn(),
+    handleSubscriptionActivated: vi.fn(),
     handleSubscriptionUpdated: vi.fn(),
-    handleSubscriptionDeleted: vi.fn(),
+    handleSubscriptionCanceled: vi.fn(),
   } as unknown as SubscriptionFulfillmentService;
 
   const auditLogService = {
@@ -32,25 +32,25 @@ describe('PaymentsWebhookController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     controller = new PaymentsWebhookController(
-      stripe,
+      paddle,
       fulfillment,
       subscriptionFulfillment,
       auditLogService,
     );
   });
 
-  it('routes checkout.session.completed to payment fulfillment', async () => {
-    const session = {
-      id: 'cs_test_abc',
-      mode: 'payment',
-      payment_status: 'paid',
+  it('routes transaction.completed to payment fulfillment for one-time payments', async () => {
+    const transaction = {
+      id: 'txn_test_abc',
+      status: 'completed',
+      subscriptionId: null,
     };
-    vi.mocked(stripe.constructWebhookEvent).mockReturnValue({
-      id: 'evt_1',
-      type: 'checkout.session.completed',
-      data: { object: session },
+    vi.mocked(paddle.unmarshalWebhook).mockResolvedValue({
+      eventId: 'evt_1',
+      eventType: 'transaction.completed',
+      data: transaction,
     } as never);
-    vi.mocked(fulfillment.handleCheckoutSessionCompleted).mockResolvedValue({
+    vi.mocked(fulfillment.handleTransactionCompleted).mockResolvedValue({
       action: 'fulfilled',
       orderId: 'order-1',
       licenseId: 'lic-1',
@@ -61,27 +61,27 @@ describe('PaymentsWebhookController', () => {
       'sig_test',
     );
 
-    expect(fulfillment.handleCheckoutSessionCompleted).toHaveBeenCalledWith(
-      session,
+    expect(fulfillment.handleTransactionCompleted).toHaveBeenCalledWith(
+      transaction,
     );
     expect(response).toEqual({ received: true, action: 'fulfilled' });
   });
 
-  it('routes checkout.session.async_payment_succeeded to payment fulfillment', async () => {
-    const session = {
-      id: 'cs_test_async',
-      mode: 'payment',
-      payment_status: 'paid',
+  it('routes transaction.completed with subscriptionId to subscription fulfillment', async () => {
+    const transaction = {
+      id: 'txn_sub_test',
+      status: 'completed',
+      subscriptionId: 'sub_paddle_123',
     };
-    vi.mocked(stripe.constructWebhookEvent).mockReturnValue({
-      id: 'evt_2',
-      type: 'checkout.session.async_payment_succeeded',
-      data: { object: session },
+    vi.mocked(paddle.unmarshalWebhook).mockResolvedValue({
+      eventId: 'evt_2',
+      eventType: 'transaction.completed',
+      data: transaction,
     } as never);
-    vi.mocked(fulfillment.handleCheckoutSessionCompleted).mockResolvedValue({
-      action: 'fulfilled',
-      orderId: 'order-2',
-      licenseId: 'lic-2',
+    vi.mocked(subscriptionFulfillment.handleTransactionCompletedForSubscription).mockResolvedValue({
+      action: 'subscription_fulfilled',
+      subscriptionId: 'sub-1',
+      licenseIds: ['lic-1'],
     });
 
     const response = await controller.handleWebhook(
@@ -89,21 +89,21 @@ describe('PaymentsWebhookController', () => {
       'sig_test',
     );
 
-    expect(fulfillment.handleCheckoutSessionCompleted).toHaveBeenCalledWith(
-      session,
+    expect(subscriptionFulfillment.handleTransactionCompletedForSubscription).toHaveBeenCalledWith(
+      transaction,
     );
-    expect(response).toEqual({ received: true, action: 'fulfilled' });
+    expect(response).toEqual({ received: true, action: 'subscription_fulfilled' });
   });
 
-  it('rejects missing stripe-signature header', async () => {
+  it('rejects missing paddle-signature header', async () => {
     await expect(
       controller.handleWebhook({ rawBody: Buffer.from('{}') }, undefined),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('returns service unavailable when webhook secret is misconfigured', async () => {
-    vi.mocked(stripe.constructWebhookEvent).mockImplementation(() => {
-      throw new StripeMisconfiguredError('STRIPE_WEBHOOK_SECRET is missing or invalid');
+    vi.mocked(paddle.unmarshalWebhook).mockImplementation(() => {
+      throw new PaddleMisconfiguredError('PADDLE_NOTIFICATION_WEBHOOK_SECRET is missing or invalid');
     });
 
     await expect(
@@ -111,6 +111,6 @@ describe('PaymentsWebhookController', () => {
         { rawBody: Buffer.from('{}') },
         'sig_test',
       ),
-    ).rejects.toMatchObject({ status: 503 });
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 });
