@@ -276,6 +276,23 @@ describe('PaymentsService', () => {
       });
     });
 
+    it('grants a free game even when Paddle checkout is misconfigured', async () => {
+      vi.spyOn(PaddleConfig, 'isCheckoutConfigured').mockReturnValue(false);
+      vi.mocked(games.findBySlug).mockResolvedValue({
+        ...publishedGame,
+        discount: freeDiscount,
+      } as never);
+
+      const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
+
+      expect(paddle.createCheckoutTransaction).not.toHaveBeenCalled();
+      expect(fulfillment.fulfillFreeOrder).toHaveBeenCalled();
+      expect(result).toEqual({
+        sessionId: 'free_abc123',
+        url: expect.stringContaining('success'),
+      });
+    });
+
     it('rejects anonymous claims of a free game', async () => {
       vi.mocked(games.findBySlug).mockResolvedValue({
         ...publishedGame,
