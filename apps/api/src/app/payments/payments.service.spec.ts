@@ -7,7 +7,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AuthUser } from '@gamestore/api/auth';
 import type { GamesRepository, GameAccountsRepository, OrdersRepository, SubscriptionPlansRepository } from '@gamestore/api/data-access';
-import { PaddleConfig, type PaddleService } from '@gamestore/api/paddle';
+import { StripeConfig, type StripeService } from '@gamestore/api/stripe';
 import type { PaymentFulfillmentService } from './payment-fulfillment.service';
 import { PaymentsService } from './payments.service';
 
@@ -25,7 +25,6 @@ const publishedGame = {
   slug: 'demo-game-1',
   title: 'Demo Game',
   priceBase: { toString: () => '19.99' },
-  paddleProductId: 'prod_game_1',
   coverImage: 'https://cdn.example.com/cover.jpg',
   publishedAt: new Date('2025-01-01'),
   soldOut: false,
@@ -50,10 +49,10 @@ describe('PaymentsService', () => {
     findBySlug: vi.fn(),
   } as unknown as SubscriptionPlansRepository;
 
-  const paddle = {
-    createCheckoutTransaction: vi.fn(),
-    createSubscriptionCheckoutTransaction: vi.fn(),
-  } as unknown as PaddleService;
+  const stripe = {
+    createCheckoutSession: vi.fn(),
+    createSubscriptionCheckoutSession: vi.fn(),
+  } as unknown as StripeService;
 
   const fulfillment = {
     fulfillFreeOrder: vi.fn(),
@@ -68,19 +67,19 @@ describe('PaymentsService', () => {
       gameAccounts,
       orders,
       plans,
-      paddle,
+      stripe,
       fulfillment,
     );
 
-    vi.spyOn(PaddleConfig, 'isCheckoutConfigured').mockReturnValue(true);
+    vi.spyOn(StripeConfig, 'isCheckoutConfigured').mockReturnValue(true);
     vi.mocked(games.findBySlug).mockResolvedValue(publishedGame as never);
     vi.mocked(gameAccounts.getActivePoolFlagsByGameIds).mockResolvedValue(
       new Map([['game-1', true]]),
     );
     vi.mocked(gameAccounts.hasOpenPoolCapacity).mockResolvedValue(true);
-    vi.mocked(paddle.createCheckoutTransaction).mockResolvedValue({
-      transactionId: 'txn_test_abc',
-      url: 'https://checkout.paddle.com/txn_test_abc',
+    vi.mocked(stripe.createCheckoutSession).mockResolvedValue({
+      sessionId: 'cs_test_abc',
+      url: 'https://checkout.stripe.com/pay/cs_test_abc',
     });
     vi.mocked(orders.createPending).mockResolvedValue({ id: 'order-1' } as never);
     vi.mocked(fulfillment.fulfillFreeOrder).mockResolvedValue({
@@ -91,15 +90,15 @@ describe('PaymentsService', () => {
     });
   });
 
-  it('creates a checkout transaction and pending order for a published game slug', async () => {
+  it('creates a checkout session and pending order for a published game slug', async () => {
     const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
 
-    expect(paddle.createCheckoutTransaction).toHaveBeenCalledWith({
+    expect(stripe.createCheckoutSession).toHaveBeenCalledWith({
       gameId: 'game-1',
       gameSlug: 'demo-game-1',
       title: 'Demo Game',
-      productId: 'prod_game_1',
       priceBase: 19.99,
+      coverImage: 'https://cdn.example.com/cover.jpg',
       userId: 'user-a',
       customerEmail: 'buyer@example.com',
     });
@@ -107,13 +106,13 @@ describe('PaymentsService', () => {
       gameId: 'game-1',
       gameTitleSnapshot: 'Demo Game',
       gameSlugSnapshot: 'demo-game-1',
-      providerCheckoutId: 'txn_test_abc',
+      stripeSessionId: 'cs_test_abc',
       amount: 19.99,
       ownerId: 'user-a',
     });
     expect(result).toEqual({
-      sessionId: 'txn_test_abc',
-      url: 'https://checkout.paddle.com/txn_test_abc',
+      sessionId: 'cs_test_abc',
+      url: 'https://checkout.stripe.com/pay/cs_test_abc',
     });
   });
 
@@ -166,15 +165,15 @@ describe('PaymentsService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('returns 503 when Paddle checkout env is misconfigured', async () => {
-    vi.spyOn(PaddleConfig, 'isCheckoutConfigured').mockReturnValue(false);
+  it('returns 503 when Stripe checkout env is misconfigured', async () => {
+    vi.spyOn(StripeConfig, 'isCheckoutConfigured').mockReturnValue(false);
 
     await expect(
       service.createCheckout({ slug: 'demo-game-1' }),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
-  it('logs and rethrows when pending order creation fails after Paddle transaction', async () => {
+  it('logs and rethrows when pending order creation fails after Stripe session', async () => {
     vi.mocked(orders.createPending).mockRejectedValue(new Error('db down'));
     const errorSpy = vi.spyOn(service['logger'], 'error');
 
@@ -183,12 +182,12 @@ describe('PaymentsService', () => {
     ).rejects.toThrow('db down');
 
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('txn_test_abc'),
+      expect.stringContaining('cs_test_abc'),
       expect.any(String),
     );
   });
 
-  it('creates a checkout transaction at the discounted sale price when active', async () => {
+  it('creates a checkout session at the discounted sale price when active', async () => {
     vi.mocked(games.findBySlug).mockResolvedValue({
       ...publishedGame,
       discount: {
@@ -202,7 +201,7 @@ describe('PaymentsService', () => {
 
     await service.createCheckout({ slug: 'demo-game-1' }, user);
 
-    expect(paddle.createCheckoutTransaction).toHaveBeenCalledWith(
+    expect(stripe.createCheckoutSession).toHaveBeenCalledWith(
       expect.objectContaining({
         priceBase: 15.99,
       }),
@@ -210,23 +209,22 @@ describe('PaymentsService', () => {
     expect(orders.createPending).toHaveBeenCalledWith(
       expect.objectContaining({
         amount: 15.99,
-        providerCheckoutId: 'txn_test_abc',
       }),
     );
   });
 
-  it('creates a subscription checkout transaction for an active plan', async () => {
+  it('creates a subscription checkout session for an active plan', async () => {
     vi.mocked(plans.findBySlug).mockResolvedValue({
       id: 'plan-1',
       slug: 'all-access-monthly',
       name: 'All Access',
-      providerPriceId: 'pri_test_monthly',
+      stripePriceId: 'price_test_monthly',
       isActive: true,
       games: [{ gameId: 'game-1' }],
     } as never);
-    vi.mocked(paddle.createSubscriptionCheckoutTransaction).mockResolvedValue({
-      transactionId: 'txn_sub_test',
-      url: 'https://checkout.paddle.com/txn_sub_test',
+    vi.mocked(stripe.createSubscriptionCheckoutSession).mockResolvedValue({
+      sessionId: 'cs_sub_test',
+      url: 'https://checkout.stripe.com/pay/cs_sub_test',
     });
 
     const result = await service.createSubscriptionCheckout(
@@ -234,15 +232,15 @@ describe('PaymentsService', () => {
       user,
     );
 
-    expect(paddle.createSubscriptionCheckoutTransaction).toHaveBeenCalledWith({
+    expect(stripe.createSubscriptionCheckoutSession).toHaveBeenCalledWith({
       planId: 'plan-1',
       planSlug: 'all-access-monthly',
       planName: 'All Access',
-      providerPriceId: 'pri_test_monthly',
+      stripePriceId: 'price_test_monthly',
       userId: 'user-a',
       customerEmail: 'buyer@example.com',
     });
-    expect(result.sessionId).toBe('txn_sub_test');
+    expect(result.sessionId).toBe('cs_sub_test');
   });
 
   describe('free games (100% discount)', () => {
@@ -254,7 +252,7 @@ describe('PaymentsService', () => {
       showCountdown: true,
     };
 
-    it('skips Paddle and grants a license for a signed-in user', async () => {
+    it('skips Stripe and grants a license for a signed-in user', async () => {
       vi.mocked(games.findBySlug).mockResolvedValue({
         ...publishedGame,
         discount: freeDiscount,
@@ -262,7 +260,8 @@ describe('PaymentsService', () => {
 
       const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
 
-      expect(paddle.createCheckoutTransaction).not.toHaveBeenCalled();
+      expect(stripe.createCheckoutSession).not.toHaveBeenCalled();
+      expect(orders.createPending).not.toHaveBeenCalled();
       expect(fulfillment.fulfillFreeOrder).toHaveBeenCalledWith({
         gameId: 'game-1',
         gameTitleSnapshot: 'Demo Game',
@@ -270,14 +269,12 @@ describe('PaymentsService', () => {
         ownerId: 'user-a',
         buyerEmail: 'buyer@example.com',
       });
-      expect(result).toEqual({
-        sessionId: 'free_abc123',
-        url: expect.stringContaining('success'),
-      });
+      expect(result.sessionId).toBe('free_abc123');
+      expect(result.url).toContain('/checkout/success?session_id=free_abc123');
     });
 
-    it('grants a free game even when Paddle checkout is misconfigured', async () => {
-      vi.spyOn(PaddleConfig, 'isCheckoutConfigured').mockReturnValue(false);
+    it('grants a free game even when Stripe checkout is misconfigured', async () => {
+      vi.spyOn(StripeConfig, 'isCheckoutConfigured').mockReturnValue(false);
       vi.mocked(games.findBySlug).mockResolvedValue({
         ...publishedGame,
         discount: freeDiscount,
@@ -285,7 +282,7 @@ describe('PaymentsService', () => {
 
       const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
 
-      expect(paddle.createCheckoutTransaction).not.toHaveBeenCalled();
+      expect(stripe.createCheckoutSession).not.toHaveBeenCalled();
       expect(fulfillment.fulfillFreeOrder).toHaveBeenCalled();
       expect(result).toEqual({
         sessionId: 'free_abc123',
@@ -312,7 +309,8 @@ describe('PaymentsService', () => {
       } as never);
       vi.mocked(fulfillment.fulfillFreeOrder).mockResolvedValue({
         action: 'no_pool_capacity',
-      } as never);
+        sessionId: 'free_abc123',
+      });
 
       await expect(
         service.createCheckout({ slug: 'demo-game-1' }, user),
@@ -326,17 +324,15 @@ describe('PaymentsService', () => {
       } as never);
       vi.mocked(fulfillment.fulfillFreeOrder).mockResolvedValue({
         action: 'already_fulfilled',
-        orderId: 'order-existing',
-        licenseId: 'lic-existing',
-        sessionId: 'free_existing',
+        orderId: 'free-order-1',
+        licenseId: 'lic-1',
+        sessionId: 'free_abc123',
       });
 
       const result = await service.createCheckout({ slug: 'demo-game-1' }, user);
 
-      expect(result).toEqual({
-        sessionId: 'free_existing',
-        url: expect.stringContaining('free_existing'),
-      });
+      expect(fulfillment.fulfillFreeOrder).toHaveBeenCalledTimes(1);
+      expect(result.sessionId).toBe('free_abc123');
     });
   });
 });

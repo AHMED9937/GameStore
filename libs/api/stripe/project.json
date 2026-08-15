@@ -1,7 +1,7 @@
 {
-  "name": "api-paddle",
+  "name": "api-stripe",
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/api/paddle/src",
+  "sourceRoot": "libs/api/stripe/src",
   "projectType": "library",
   "tags": ["scope:api", "type:integration", "platform:payments"],
   "targets": {
@@ -9,7 +9,7 @@
       "executor": "@nx/vitest:test",
       "outputs": ["{options.reportsDirectory}"],
       "options": {
-        "reportsDirectory": "coverage/libs/api/paddle"
+        "reportsDirectory": "coverage/libs/api/stripe"
       }
     }
   }

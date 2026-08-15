@@ -43,15 +43,15 @@ export const D1_ENV_KEYS: DeployEnvKey[] = [
     d1Required: true,
   },
   {
-    name: 'PADDLE_API_KEY',
+    name: 'STRIPE_SECRET_KEY',
     host: 'railway',
-    description: 'Paddle API key (Test mode for staging)',
+    description: 'Stripe secret (Test mode for staging)',
     d1Required: true,
   },
   {
-    name: 'NEXT_PUBLIC_PADDLE_ENV',
+    name: 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
     host: 'vercel',
-    description: 'Paddle environment for the web storefront (sandbox or production)',
+    description: 'Stripe publishable (Test mode for staging)',
     d1Required: true,
   },
   {
@@ -77,9 +77,9 @@ export const D1_ENV_KEYS: DeployEnvKey[] = [
 /** Keys set in later slices — documented in .env.example but not D1-gated. */
 export const LATER_DEPLOY_ENV_KEYS: DeployEnvKey[] = [
   {
-    name: 'PADDLE_NOTIFICATION_WEBHOOK_SECRET',
+    name: 'STRIPE_WEBHOOK_SECRET',
     host: 'railway',
-    description: 'Paddle notification webhook signing secret (D2 — after Railway URL)',
+    description: 'Stripe webhook signing secret (D2 — after Railway URL)',
     d1Required: false,
   },
   {
@@ -116,7 +116,7 @@ export const LATER_DEPLOY_ENV_KEYS: DeployEnvKey[] = [
     name: 'NEXT_PUBLIC_SITE_URL',
     host: 'both',
     description:
-      'Public site URL (https://offlinegamenia.com). Required on Railway for Paddle redirects; Vercel for SEO',
+      'Public site URL (https://offlinegamenia.com). Required on Railway for Stripe redirects; Vercel for SEO',
     d1Required: false,
   },
   {

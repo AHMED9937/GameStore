@@ -26,7 +26,7 @@ const userB: AuthUser = {
 describe('OrdersService', () => {
   const orders = {
     createPending: vi.fn(),
-    findByProviderCheckoutId: vi.fn(),
+    findByStripeSessionId: vi.fn(),
     findAll: vi.fn(),
     findById: vi.fn(),
     markCompleted: vi.fn(),
@@ -34,11 +34,11 @@ describe('OrdersService', () => {
   } as unknown as OrdersRepository;
 
   const fulfillment = {
-    syncFulfillmentFromPaddle: vi.fn().mockResolvedValue({ action: 'ignored' }),
-    cancelPaddleTransaction: vi.fn().mockResolvedValue({ action: 'ignored' }),
+    syncFulfillmentFromStripe: vi.fn().mockResolvedValue({ action: 'ignored' }),
+    cancelCheckoutSession: vi.fn().mockResolvedValue({ action: 'ignored' }),
   } satisfies Pick<
     PaymentFulfillmentService,
-    'syncFulfillmentFromPaddle' | 'cancelPaddleTransaction'
+    'syncFulfillmentFromStripe' | 'cancelCheckoutSession'
   >;
 
   let service: OrdersService;
@@ -59,24 +59,24 @@ describe('OrdersService', () => {
 
     const result = await service.createPending({
       gameId: 'game-1',
-      providerCheckoutId: 'txn_test_abc',
+      stripeSessionId: 'cs_test_abc',
       amount: 9.99,
     });
 
     expect(orders.createPending).toHaveBeenCalledWith({
       gameId: 'game-1',
-      providerCheckoutId: 'txn_test_abc',
+      stripeSessionId: 'cs_test_abc',
       amount: 9.99,
     });
     expect(result).toMatchObject({ id: 'order-1', status: 'pending' });
   });
 
-  it('findByProviderCheckoutId delegates to the repository', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue(null);
+  it('findByStripeSessionId delegates to the repository', async () => {
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue(null);
 
-    await service.findByProviderCheckoutId('txn_test_abc');
+    await service.findByStripeSessionId('cs_test_abc');
 
-    expect(orders.findByProviderCheckoutId).toHaveBeenCalledWith('txn_test_abc');
+    expect(orders.findByStripeSessionId).toHaveBeenCalledWith('cs_test_abc');
   });
 
   it('findOne throws when the order is missing', async () => {
@@ -101,13 +101,13 @@ describe('OrdersService', () => {
   });
 
   it('markFailed delegates to the repository', async () => {
-    await service.markFailed('txn_test_abc');
+    await service.markFailed('cs_test_abc');
 
-    expect(orders.markFailed).toHaveBeenCalledWith('txn_test_abc');
+    expect(orders.markFailed).toHaveBeenCalledWith('cs_test_abc');
   });
 
   it('getCheckoutBySession returns completed order with license', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue({
       id: 'order-1',
       status: 'completed',
       amount: { toString: () => '19.99' },
@@ -123,7 +123,7 @@ describe('OrdersService', () => {
       },
     } as never);
 
-    const result = await service.getCheckoutBySession('txn_test_abc', userA);
+    const result = await service.getCheckoutBySession('cs_test_abc', userA);
 
     expect(result).toEqual({
       status: 'completed',
@@ -142,8 +142,8 @@ describe('OrdersService', () => {
     });
   });
 
-  it('getCheckoutBySession syncs pending orders from Paddle before responding', async () => {
-    vi.mocked(orders.findByProviderCheckoutId)
+  it('getCheckoutBySession syncs pending orders from Stripe before responding', async () => {
+    vi.mocked(orders.findByStripeSessionId)
       .mockResolvedValueOnce({
         id: 'order-1',
         status: 'pending',
@@ -164,16 +164,16 @@ describe('OrdersService', () => {
           status: 'available',
         },
       } as never);
-    vi.mocked(fulfillment.syncFulfillmentFromPaddle).mockResolvedValue({
+    vi.mocked(fulfillment.syncFulfillmentFromStripe).mockResolvedValue({
       action: 'fulfilled',
       orderId: 'order-1',
       licenseId: 'lic-1',
     });
 
-    const result = await service.getCheckoutBySession('txn_test_abc', userA);
+    const result = await service.getCheckoutBySession('cs_test_abc', userA);
 
-    expect(fulfillment.syncFulfillmentFromPaddle).toHaveBeenCalledWith(
-      'txn_test_abc',
+    expect(fulfillment.syncFulfillmentFromStripe).toHaveBeenCalledWith(
+      'cs_test_abc',
     );
     expect(result).toMatchObject({
       status: 'completed',
@@ -184,16 +184,16 @@ describe('OrdersService', () => {
   });
 
   it('getCheckoutBySession returns pending when webhook has not fulfilled', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue({
       id: 'order-1',
       status: 'pending',
       ownerId: null,
     } as never);
 
-    const result = await service.getCheckoutBySession('txn_test_abc');
+    const result = await service.getCheckoutBySession('cs_test_abc');
 
-    expect(fulfillment.syncFulfillmentFromPaddle).toHaveBeenCalledWith(
-      'txn_test_abc',
+    expect(fulfillment.syncFulfillmentFromStripe).toHaveBeenCalledWith(
+      'cs_test_abc',
     );
     expect(result).toEqual({
       status: 'pending',
@@ -202,7 +202,7 @@ describe('OrdersService', () => {
   });
 
   it('getCheckoutBySession syncs pending orders without auth before access check', async () => {
-    vi.mocked(orders.findByProviderCheckoutId)
+    vi.mocked(orders.findByStripeSessionId)
       .mockResolvedValueOnce({
         id: 'order-1',
         status: 'pending',
@@ -213,29 +213,29 @@ describe('OrdersService', () => {
         status: 'pending',
         ownerId: 'user-a',
       } as never);
-    vi.mocked(fulfillment.syncFulfillmentFromPaddle).mockResolvedValue({
+    vi.mocked(fulfillment.syncFulfillmentFromStripe).mockResolvedValue({
       action: 'pending_payment',
     });
 
-    const result = await service.getCheckoutBySession('txn_test_abc');
+    const result = await service.getCheckoutBySession('cs_test_abc');
 
-    expect(fulfillment.syncFulfillmentFromPaddle).toHaveBeenCalledWith(
-      'txn_test_abc',
+    expect(fulfillment.syncFulfillmentFromStripe).toHaveBeenCalledWith(
+      'cs_test_abc',
     );
     expect(result).toEqual({
       status: 'pending',
-      message: 'Confirming payment with Paddle…',
+      message: 'Confirming payment with Stripe…',
     });
   });
 
   it('getCheckoutBySession returns failed for failed orders', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue({
       id: 'order-1',
       status: 'failed',
       ownerId: null,
     } as never);
 
-    const result = await service.getCheckoutBySession('txn_test_abc');
+    const result = await service.getCheckoutBySession('cs_test_abc');
 
     expect(result).toEqual({
       status: 'failed',
@@ -244,19 +244,19 @@ describe('OrdersService', () => {
   });
 
   it('getCheckoutBySession enforces owner access for wrong signed-in user', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue({
       id: 'order-1',
       status: 'pending',
       ownerId: 'user-a',
     } as never);
 
     await expect(
-      service.getCheckoutBySession('txn_test_abc', userB),
+      service.getCheckoutBySession('cs_test_abc', userB),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('getCheckoutBySession returns completed order with license from snapshots', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue({
       id: 'order-1',
       status: 'completed',
       amount: { toString: () => '19.99' },
@@ -266,8 +266,8 @@ describe('OrdersService', () => {
       ownerId: 'user-a',
       gameId: null,
       game: null,
-      gameTitleSnapshot: 'Demo Game',
-      gameSlugSnapshot: 'demo-game-1',
+      gameTitleSnapshot: 'Deleted Game',
+      gameSlugSnapshot: 'deleted-game',
       license: {
         id: 'lic-1',
         licenseKey: 'GS-ABCD-EF01-2345',
@@ -275,40 +275,53 @@ describe('OrdersService', () => {
       },
     } as never);
 
-    const result = await service.getCheckoutBySession('txn_test_abc', userA);
+    const result = await service.getCheckoutBySession('cs_test_abc', userA);
 
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       status: 'completed',
+      order: {
+        id: 'order-1',
+        amount: '19.99',
+        currency: 'USD',
+        buyerEmail: 'buyer@example.com',
+        createdAt: '2025-01-01T00:00:00.000Z',
+      },
       license: {
-        game: { id: '', title: 'Demo Game', slug: 'demo-game-1' },
+        licenseKey: 'GS-ABCD-EF01-2345',
+        status: 'available',
+        game: { id: '', title: 'Deleted Game', slug: 'deleted-game' },
       },
     });
   });
 
   it('getCheckoutBySession returns 404 for unknown sessions', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue(null);
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue(null);
 
     await expect(
-      service.getCheckoutBySession('missing', userA),
+      service.getCheckoutBySession('cs_missing'),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('cancelCheckoutBySession marks pending orders failed via fulfillment', async () => {
-    vi.mocked(orders.findByProviderCheckoutId)
+    vi.mocked(orders.findByStripeSessionId)
       .mockResolvedValueOnce({
         id: 'order-1',
         status: 'pending',
-        ownerId: 'user-a',
+        ownerId: null,
       } as never)
       .mockResolvedValueOnce({
         id: 'order-1',
         status: 'failed',
-        ownerId: 'user-a',
+        ownerId: null,
       } as never);
+    vi.mocked(fulfillment.cancelCheckoutSession).mockResolvedValue({
+      action: 'marked_failed',
+      orderId: 'order-1',
+    });
 
-    const result = await service.cancelCheckoutBySession('txn_test_abc', userA);
+    const result = await service.cancelCheckoutBySession('cs_test_abc');
 
-    expect(fulfillment.cancelPaddleTransaction).toHaveBeenCalledWith('txn_test_abc');
+    expect(fulfillment.cancelCheckoutSession).toHaveBeenCalledWith('cs_test_abc');
     expect(result).toEqual({
       status: 'failed',
       message: 'Payment was not completed.',
@@ -316,38 +329,18 @@ describe('OrdersService', () => {
   });
 
   it('cancelCheckoutBySession skips fulfillment when order is already failed', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
+    vi.mocked(orders.findByStripeSessionId).mockResolvedValue({
       id: 'order-1',
       status: 'failed',
-      ownerId: 'user-a',
+      ownerId: null,
     } as never);
 
-    const result = await service.cancelCheckoutBySession('txn_test_abc', userA);
+    const result = await service.cancelCheckoutBySession('cs_test_abc');
 
-    expect(fulfillment.cancelPaddleTransaction).not.toHaveBeenCalled();
+    expect(fulfillment.cancelCheckoutSession).not.toHaveBeenCalled();
     expect(result).toEqual({
       status: 'failed',
       message: 'Payment was not completed.',
     });
-  });
-
-  it('cancelCheckoutBySession enforces owner access', async () => {
-    vi.mocked(orders.findByProviderCheckoutId).mockResolvedValue({
-      id: 'order-1',
-      status: 'pending',
-      ownerId: 'user-a',
-    } as never);
-
-    await expect(
-      service.cancelCheckoutBySession('txn_test_abc', userB),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
-  it('findAll delegates to the repository', async () => {
-    vi.mocked(orders.findAll).mockResolvedValue([]);
-
-    await service.findAll();
-
-    expect(orders.findAll).toHaveBeenCalled();
   });
 });

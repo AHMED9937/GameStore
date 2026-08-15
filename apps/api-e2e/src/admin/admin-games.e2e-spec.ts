@@ -560,7 +560,7 @@ describe.skipIf(!hasDatabase)('Admin games API', () => {
         gameId,
         gameTitleSnapshot: 'E2E Order Snapshot Game',
         gameSlugSnapshot: slug,
-        providerCheckoutId: `txn_test_snap_${ts}`,
+        stripeSessionId: `cs_test_snap_${ts}`,
         amount: 8.99,
         currency: 'USD',
         status: 'completed',

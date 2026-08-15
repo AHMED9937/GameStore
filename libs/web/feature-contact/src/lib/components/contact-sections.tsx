@@ -50,7 +50,7 @@ export function ContactInfo() {
     <Card className={styles.panel}>
       <Heading level="h2">Other ways to reach us</Heading>
       <Text tone="muted" style={{ marginTop: '0.75rem' }}>
-        support@offlinegamenia.com
+        support@gamestore.example
       </Text>
       <Text tone="dim" style={{ marginTop: '0.5rem' }}>
         Join our Discord community for faster help from staff and other players.

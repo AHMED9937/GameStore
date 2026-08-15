@@ -6,7 +6,7 @@ export function AdminSubscriptionPlansHeader() {
   return (
     <AdminPageHeader
       title="Subscription plans"
-      description="Define Paddle-backed plans and link published games for all-access access."
+      description="Define Stripe-backed plans and link published games for all-access access."
       actions={
         <Link href="/admin/subscriptions/new">
           <Button type="button">Add plan</Button>

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { GamesRepository } from '@gamestore/api/data-access';
 import type { SubscriptionPlansRepository } from '@gamestore/api/data-access';
@@ -15,7 +15,7 @@ const planRecord = {
   id: 'plan-1',
   name: 'All Access',
   slug: 'all-access-monthly',
-  providerPriceId: 'price_test_monthly',
+  stripePriceId: 'price_test_monthly',
   interval: 'month',
   intervalCount: 1,
   isActive: true,
@@ -55,17 +55,13 @@ describe('AdminSubscriptionPlansService', () => {
     games as unknown as GamesRepository,
   );
 
-  beforeEach(() => {
-    vi.mocked(games.findById).mockResolvedValue(publishedGame);
-  });
-
   it('findAll maps plan list items with game counts', async () => {
     await expect(service.findAll()).resolves.toEqual([
       {
         id: 'plan-1',
         name: 'All Access',
         slug: 'all-access-monthly',
-        providerPriceId: 'price_test_monthly',
+        stripePriceId: 'price_test_monthly',
         interval: 'month',
         intervalCount: 1,
         isActive: true,
@@ -77,7 +73,7 @@ describe('AdminSubscriptionPlansService', () => {
   it('create links published games to the plan', async () => {
     const result = await service.create({
       name: 'All Access',
-      providerPriceId: 'price_test_monthly',
+      stripePriceId: 'price_test_monthly',
       interval: 'month',
       gameIds: ['game-1'],
     });
@@ -96,7 +92,7 @@ describe('AdminSubscriptionPlansService', () => {
     await expect(
       service.create({
         name: 'All Access',
-        providerPriceId: 'price_test_monthly',
+        stripePriceId: 'price_test_monthly',
         interval: 'month',
         gameIds: ['game-1'],
       }),

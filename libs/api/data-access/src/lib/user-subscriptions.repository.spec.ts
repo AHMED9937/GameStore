@@ -14,14 +14,14 @@ function createPrismaMock() {
 }
 
 describe('UserSubscriptionsRepository', () => {
-  it('findByProviderSubscriptionId loads plan games and licenses', async () => {
+  it('findByStripeSubscriptionId loads plan games and licenses', async () => {
     const prisma = createPrismaMock();
     const repo = new UserSubscriptionsRepository(prisma as unknown as PrismaService);
 
-    await repo.findByProviderSubscriptionId('sub_paddle_123');
+    await repo.findByStripeSubscriptionId('sub_stripe_123');
 
     expect(prisma.userSubscription.findUnique).toHaveBeenCalledWith({
-      where: { providerSubscriptionId: 'sub_paddle_123' },
+      where: { stripeSubscriptionId: 'sub_stripe_123' },
       include: {
         plan: {
           include: {

@@ -27,8 +27,8 @@ export function AdminSubscriptionPlanFormPage() {
   const handleSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (!values.name.trim() || !values.providerPriceId.trim()) {
-        setError('Plan name and Paddle price ID are required.');
+      if (!values.name.trim() || !values.stripePriceId.trim()) {
+        setError('Plan name and Stripe price ID are required.');
         return;
       }
 
@@ -40,7 +40,7 @@ export function AdminSubscriptionPlanFormPage() {
         const plan = await createAdminSubscriptionPlan({
           name: values.name.trim(),
           slug: values.slug.trim() || undefined,
-          providerPriceId: values.providerPriceId.trim(),
+          stripePriceId: values.stripePriceId.trim(),
           interval: values.interval,
           intervalCount:
             Number.isInteger(intervalCount) && intervalCount > 0
@@ -65,7 +65,7 @@ export function AdminSubscriptionPlanFormPage() {
       <AdminPageShell>
         <AdminPageHeader
           title="Add subscription plan"
-          description="Create a Paddle price-backed plan and choose which published games it includes."
+          description="Create a Stripe price-backed plan and choose which published games it includes."
         />
         <form onSubmit={(event) => void handleSubmit(event)}>
           <AdminSubscriptionPlanForm
