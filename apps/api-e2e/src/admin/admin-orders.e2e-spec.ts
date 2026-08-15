@@ -49,7 +49,7 @@ describe.skipIf(!hasDatabase)('Admin orders bulk API', () => {
     const pending = await prisma.order.create({
       data: {
         gameId,
-        stripeSessionId: `cs_test_bulk_pending_${ts}`,
+        providerCheckoutId: `txn_test_bulk_pending_${ts}`,
         amount: 19.99,
         currency: 'USD',
         status: 'pending',
@@ -58,7 +58,7 @@ describe.skipIf(!hasDatabase)('Admin orders bulk API', () => {
     const failed = await prisma.order.create({
       data: {
         gameId,
-        stripeSessionId: `cs_test_bulk_failed_${ts}`,
+        providerCheckoutId: `txn_test_bulk_failed_${ts}`,
         amount: 9.99,
         currency: 'USD',
         status: 'failed',

@@ -62,7 +62,7 @@ describe.skipIf(!hasDatabase)('Admin subscription plans API', () => {
       .send({
         name: 'E2E All Access',
         slug,
-        stripePriceId: `price_${slug}`,
+        providerPriceId: `pri_${slug}`,
         interval: 'month',
         gameIds: [gameId],
       })
@@ -137,7 +137,7 @@ describe.skipIf(!hasDatabase)('Admin subscription plans API', () => {
         .send({
           name: `E2E Bulk Plan ${suffix}`,
           slug,
-          stripePriceId: `price_${slug}`,
+          providerPriceId: `pri_${slug}`,
           interval: 'month',
           gameIds: [gameId],
         })

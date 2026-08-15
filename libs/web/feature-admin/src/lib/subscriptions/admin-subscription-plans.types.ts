@@ -2,7 +2,7 @@ export type AdminSubscriptionPlanListItem = {
   id: string;
   name: string;
   slug: string;
-  stripePriceId: string;
+  providerPriceId: string;
   interval: string;
   intervalCount: number;
   isActive: boolean;
@@ -12,7 +12,7 @@ export type AdminSubscriptionPlanListItem = {
 export type AdminSubscriptionPlanFormValues = {
   name: string;
   slug: string;
-  stripePriceId: string;
+  providerPriceId: string;
   interval: string;
   intervalCount: string;
   isActive: boolean;
@@ -23,7 +23,7 @@ export const EMPTY_ADMIN_SUBSCRIPTION_PLAN_FORM_VALUES: AdminSubscriptionPlanFor
   {
     name: '',
     slug: '',
-    stripePriceId: '',
+    providerPriceId: '',
     interval: 'month',
     intervalCount: '1',
     isActive: true,

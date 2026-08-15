@@ -13,18 +13,22 @@ export const RAILWAY_START_COMMAND = 'pnpm db:migrate && node dist/apps/api/main
 
 export const RAILWAY_HEALTHCHECK_PATH = '/api/health/db';
 
-/** Nest global prefix + controller path for Stripe webhooks (hit Railway directly). */
-export const STRIPE_WEBHOOK_PATH = '/api/payments/webhook';
+/** Nest global prefix + controller path for Paddle notifications (hit Railway directly). */
+export const PADDLE_WEBHOOK_PATH = '/api/payments/webhook';
 
-/** Stripe Dashboard → Webhooks → events Nest handles. */
-export const STRIPE_WEBHOOK_EVENTS = [
-  'checkout.session.completed',
-  'checkout.session.async_payment_succeeded',
-  'checkout.session.async_payment_failed',
-  'checkout.session.expired',
-  'invoice.paid',
-  'customer.subscription.updated',
-  'customer.subscription.deleted',
+/** Paddle Dashboard → Notifications → events Nest handles. */
+export const PADDLE_WEBHOOK_EVENTS = [
+  'transaction.completed',
+  'transaction.paid',
+  'transaction.canceled',
+  'transaction.past_due',
+  'subscription.activated',
+  'subscription.created',
+  'subscription.updated',
+  'subscription.canceled',
+  'subscription.past_due',
+  'subscription.paused',
+  'subscription.resumed',
 ] as const;
 
 /** Env vars that must be set on the Railway API service for staging. */
@@ -34,8 +38,8 @@ export const RAILWAY_STAGING_ENV_KEYS = [
   'DIRECT_URL',
   'CORS_ORIGINS',
   'CLERK_SECRET_KEY',
-  'STRIPE_SECRET_KEY',
-  'STRIPE_WEBHOOK_SECRET',
+  'PADDLE_API_KEY',
+  'PADDLE_NOTIFICATION_WEBHOOK_SECRET',
   'STEAM_ENCRYPTION_KEY',
   'IGDB_CLIENT_ID',
   'IGDB_CLIENT_SECRET',
@@ -43,9 +47,9 @@ export const RAILWAY_STAGING_ENV_KEYS = [
   'DISCORD_NEW_GAMES_WEBHOOK_URL',
 ] as const;
 
-export function buildStripeWebhookUrl(apiBaseUrl: string): string {
+export function buildPaddleWebhookUrl(apiBaseUrl: string): string {
   const base = apiBaseUrl.replace(/\/$/, '');
-  return `${base}${STRIPE_WEBHOOK_PATH}`;
+  return `${base}${PADDLE_WEBHOOK_PATH}`;
 }
 
 export function buildHealthUrl(apiBaseUrl: string): string {

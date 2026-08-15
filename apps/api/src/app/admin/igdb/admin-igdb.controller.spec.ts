@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AuditLogService } from '@gamestore/api/auth';
 import { AdminIgdbController } from './admin-igdb.controller';
 import type { AdminIgdbImportService } from './admin-igdb-import.service';
-import type { IgdbService } from '@gamestore/api/igdb';
+import { IgdbConfig, type IgdbService } from '@gamestore/api/igdb';
 
 const setupMessage =
   'IGDB search is not configured. Set IGDB_CLIENT_ID and IGDB_CLIENT_SECRET in .env and restart the API.';
@@ -41,6 +41,8 @@ describe('AdminIgdbController', () => {
   const adminUser = { id: 'admin-1', clerkId: 'clerk-admin', role: 'admin' as const };
 
   it('health returns configured flag', () => {
+    vi.spyOn(IgdbConfig, 'isConfigured').mockReturnValue(false);
+
     expect(controller.health()).toEqual({
       integration: 'igdb',
       configured: false,

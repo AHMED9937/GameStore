@@ -1,12 +1,12 @@
 import { apiGet, apiPost } from './api-client';
 
-export type StripeHealthResponse = {
+export type PaddleHealthResponse = {
   status: 'ok' | 'misconfigured';
-  integration: 'stripe';
+  integration: 'paddle';
   env: {
-    secretKey: 'missing' | 'invalid' | 'valid';
+    apiKey: 'missing' | 'invalid' | 'valid';
     webhookSecret: 'missing' | 'invalid' | 'valid';
-    publishableKey: 'missing' | 'invalid' | 'valid';
+    environment: 'missing' | 'invalid' | 'valid';
   };
 };
 
@@ -30,8 +30,8 @@ export async function createCheckout(
   return apiPost<CreateCheckoutResult>('/payments/checkout', input);
 }
 
-export async function getPaymentsHealth(): Promise<StripeHealthResponse> {
-  return apiGet<StripeHealthResponse>('/payments/health');
+export async function getPaymentsHealth(): Promise<PaddleHealthResponse> {
+  return apiGet<PaddleHealthResponse>('/payments/health');
 }
 
 export async function createSubscriptionCheckout(
