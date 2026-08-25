@@ -65,7 +65,7 @@ export class LicensesRepository {
       where: { ownerId, gameId, status: { not: 'revoked' } },
       orderBy: { createdAt: 'desc' },
       include: {
-        order: { select: { id: true, providerCheckoutId: true } },
+        order: { select: { id: true, stripeSessionId: true } },
       },
     });
   }

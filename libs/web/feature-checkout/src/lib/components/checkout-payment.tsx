@@ -11,7 +11,6 @@ import {
   getGameDisplayPrice,
   getPaymentsHealth,
   type GameDetail,
-  type PaddleHealthResponse,
 } from '@gamestore/web/data-access';
 import styles from './section.module.css';
 
@@ -35,7 +34,7 @@ const POLICY_SUMMARIES: Record<PolicyKey, { title: string; body: string }> = {
   },
   privacy: {
     title: 'Privacy Policy',
-    body: 'We use your email and order details only to deliver your purchase and provide support. Payments are handled by Paddle — we never see or store your card details, and we never sell your data.',
+    body: 'We use your email and order details only to deliver your purchase and provide support. Payments are handled by Stripe — we never see or store your card details, and we never sell your data.',
   },
   refund: {
     title: 'Refund Policy',
@@ -56,10 +55,7 @@ function checkoutErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     const body = error.body.toLowerCase();
     if (body.includes('url') || body.includes('images')) {
-      return 'Could not start checkout. Product image URL is invalid for Paddle — use an HTTPS cover URL or leave cover empty.';
-    }
-    if (body.includes('paddle product')) {
-      return 'This game has not been published to Paddle yet. Contact support or try again later.';
+      return 'Could not start checkout. Product image URL is invalid for Stripe use an HTTPS cover URL or leave cover empty.';
     }
   }
 
@@ -85,10 +81,10 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
     }
 
     void getPaymentsHealth()
-      .then((health: PaddleHealthResponse) => {
+      .then((health) => {
         if (health.env.webhookSecret === 'missing') {
           setWebhookNote(
-            'Local dev: licenses issue on the success page even without webhook forwarding. For production-like flow, configure a Paddle notification destination and set PADDLE_NOTIFICATION_WEBHOOK_SECRET.',
+            'Local dev: licenses issue on the success page even without webhook forwarding. For production-like flow, run stripe listen and set STRIPE_WEBHOOK_SECRET.',
           );
         }
       })
@@ -103,7 +99,7 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
     try {
       const response = await createCheckout({ slug: game.slug });
       if (!response.url || !isValidCheckoutUrl(response.url)) {
-        setError('Invalid checkout URL from server. Check Paddle configuration and default payment link.');
+        setError('Invalid checkout URL from server. Check Stripe configuration.');
         setPaying(false);
         return;
       }
@@ -152,7 +148,7 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
           <span className={styles.valueCheck} aria-hidden>
             ✓
           </span>
-          Secure payment powered by Paddle
+          Secure payment powered by Stripe
         </li>
       </ul>
       {webhookNote ? (
@@ -235,7 +231,7 @@ export function CheckoutPayment({ game }: CheckoutPaymentProps) {
         </span>
       </button>
       <Text tone="dim" className={styles.trustNote}>
-        🔒 Secured by Paddle · Instant delivery after payment
+        🔒 Secured by Stripe · Instant delivery after payment
       </Text>
       {error ? (
         <div

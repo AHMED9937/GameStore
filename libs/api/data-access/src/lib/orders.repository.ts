@@ -30,7 +30,7 @@ export type CreatePendingOrderInput = {
   gameId: string;
   gameTitleSnapshot?: string;
   gameSlugSnapshot?: string;
-  providerCheckoutId: string;
+  stripeSessionId: string;
   amount: Prisma.Decimal | string | number;
   currency?: string;
   ownerId?: string;
@@ -38,7 +38,7 @@ export type CreatePendingOrderInput = {
 
 export type MarkOrderCompletedInput = {
   licenseId: string;
-  providerPaymentId?: string;
+  stripePaymentId?: string;
   buyerEmail?: string;
   amount?: Prisma.Decimal | string | number;
   ownerId?: string;
@@ -54,7 +54,7 @@ export class OrdersRepository {
         game: { connect: { id: data.gameId } },
         gameTitleSnapshot: data.gameTitleSnapshot,
         gameSlugSnapshot: data.gameSlugSnapshot,
-        providerCheckoutId: data.providerCheckoutId,
+        stripeSessionId: data.stripeSessionId,
         amount: data.amount,
         currency: data.currency ?? 'USD',
         status: 'pending',
@@ -66,9 +66,9 @@ export class OrdersRepository {
     });
   }
 
-  findByProviderCheckoutId(providerCheckoutId: string) {
+  findByStripeSessionId(stripeSessionId: string) {
     return this.prisma.order.findUnique({
-      where: { providerCheckoutId },
+      where: { stripeSessionId },
       include: {
         game: { select: gameSummarySelect },
         license: { select: licenseSummarySelect },
@@ -128,7 +128,7 @@ export class OrdersRepository {
       data: {
         status: 'completed',
         licenseId: data.licenseId,
-        providerPaymentId: data.providerPaymentId,
+        stripePaymentId: data.stripePaymentId,
         buyerEmail: data.buyerEmail,
         ...(data.amount !== undefined ? { amount: data.amount } : {}),
         ...(data.ownerId !== undefined ? { ownerId: data.ownerId } : {}),
@@ -140,9 +140,9 @@ export class OrdersRepository {
     });
   }
 
-  markFailed(providerCheckoutId: string) {
+  markFailed(stripeSessionId: string) {
     return this.prisma.order.update({
-      where: { providerCheckoutId },
+      where: { stripeSessionId },
       data: { status: 'failed' },
     });
   }

@@ -2,8 +2,6 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../../dist/out-tsc",
-    "declaration": true,
-    "moduleResolution": "bundler",
     "types": ["vitest/globals", "node", "@nx/react/typings/cssmodule.d.ts"]
   },
   "include": [

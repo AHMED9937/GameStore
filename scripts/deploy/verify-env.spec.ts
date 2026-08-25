@@ -8,9 +8,9 @@ import {
   checkDatabaseUrl,
   checkIgdbClientId,
   checkIgdbClientSecret,
-  checkPaddleApiKey,
-  checkPaddleEnv,
   checkSteamEncryptionKey,
+  checkStripePublishableKey,
+  checkStripeSecretKey,
   findMissingEnvExampleKeys,
   parseEnvFile,
   verifyD1Env,
@@ -27,8 +27,8 @@ const STAGING_FIXTURE: Record<string, string> = {
     'postgresql://user:pass@ep-staging.us-east-2.aws.neon.tech/neondb?sslmode=require',
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test_staging_example',
   CLERK_SECRET_KEY: 'sk_test_staging_example',
-  PADDLE_API_KEY: 'pdl_sdbx_staging_example',
-  NEXT_PUBLIC_PADDLE_ENV: 'sandbox',
+  STRIPE_SECRET_KEY: 'sk_test_staging_example',
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_staging_example',
   IGDB_CLIENT_ID: 'twitch_client_id',
   IGDB_CLIENT_SECRET: 'twitch_client_secret_value',
   STEAM_ENCRYPTION_KEY: 'a'.repeat(64),
@@ -41,7 +41,7 @@ describe('deploy env-keys', () => {
   });
 
   it('assigns Railway-only secrets to railway host', () => {
-    const railwayOnly = ['PADDLE_API_KEY', 'IGDB_CLIENT_ID', 'STEAM_ENCRYPTION_KEY'];
+    const railwayOnly = ['STRIPE_SECRET_KEY', 'IGDB_CLIENT_ID', 'STEAM_ENCRYPTION_KEY'];
     for (const name of railwayOnly) {
       const entry = ALL_DOCUMENTED_ENV_KEYS.find((k) => k.name === name);
       expect(entry?.host).toBe('railway');
@@ -50,9 +50,9 @@ describe('deploy env-keys', () => {
 
   it('assigns browser-safe keys to vercel host', () => {
     const vercelKeys = keysForHost('vercel').map((k) => k.name);
-    expect(vercelKeys).toContain('NEXT_PUBLIC_PADDLE_ENV');
+    expect(vercelKeys).toContain('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
     expect(vercelKeys).toContain('API_URL');
-    expect(vercelKeys).not.toContain('PADDLE_API_KEY');
+    expect(vercelKeys).not.toContain('STRIPE_SECRET_KEY');
   });
 });
 
@@ -73,12 +73,10 @@ describe('verify-env format checks', () => {
     expect(checkClerkPublishableKey('invalid').ok).toBe(false);
   });
 
-  it('requires Paddle sandbox keys for staging', () => {
-    expect(checkPaddleApiKey('pdl_sdbx_abc', 'staging').ok).toBe(true);
-    expect(checkPaddleApiKey('pdl_live_abc', 'staging').ok).toBe(false);
-    expect(checkPaddleEnv('sandbox').ok).toBe(true);
-    expect(checkPaddleEnv('production').ok).toBe(true);
-    expect(checkPaddleEnv('invalid').ok).toBe(false);
+  it('requires Stripe Test keys for staging', () => {
+    expect(checkStripeSecretKey('sk_test_abc', 'staging').ok).toBe(true);
+    expect(checkStripeSecretKey('sk_live_abc', 'staging').ok).toBe(false);
+    expect(checkStripePublishableKey('pk_live_abc', 'staging').ok).toBe(false);
   });
 
   it('validates IGDB credentials are non-trivial', () => {
