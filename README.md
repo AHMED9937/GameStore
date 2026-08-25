@@ -202,7 +202,11 @@ E2E specs that require a database will skip gracefully if `DATABASE_URL` is not 
 |-------------|-----------|
 | ![Admin IGDB import](docs/images/admin-igdb-import.png) | ![Admin dashboard](docs/images/admin-dashboard.png) |
 
-> Checkout, My Games, and license-management screens require authentication and are not shown here.
+|| Licenses |
+||----------|
+| ![Admin licenses](docs/images/admin-licenses.png) |
+
+> Checkout and My Games require authentication and are not shown here.
 
 ## Deployment
 
