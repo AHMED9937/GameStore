@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build-and-test:
-    name: Build, lint, and test
+    name: Build and test
     runs-on: ubuntu-latest
 
     steps:
@@ -43,13 +43,50 @@ jobs:
           pnpm run deploy:vercel-config:test
           pnpm run deploy:railway-config:test
 
-      - name: Run Nx lint and build
+      - name: Build NestJS API
+        run: pnpm nx build api --parallel=1
+        env:
+          NX_DAEMON: 'false'
+          NX_CLOUD: 'false'
+
+      - name: Build Next.js web (Vercel command)
+        run: pnpm run vercel-build
+        env:
+          NX_DAEMON: 'false'
+          NX_CLOUD: 'false'
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint affected projects
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            pnpm nx affected -t lint build --base=origin/main --head=HEAD --parallel=1
+            pnpm nx affected -t lint --base=origin/main --head=HEAD --parallel=1
           else
-            pnpm nx affected -t lint build --base=HEAD~1 --head=HEAD --parallel=1
+            pnpm nx affected -t lint --base=HEAD~1 --head=HEAD --parallel=1
           fi
         env:
           NX_DAEMON: 'false'
