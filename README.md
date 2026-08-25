@@ -192,7 +192,17 @@ E2E specs that require a database will skip gracefully if `DATABASE_URL` is not 
 |---------|
 | ![Contact page](docs/images/contact.png) |
 
-> Checkout, My Games, and admin screens require authentication and are not shown here.
+### Admin dashboard
+
+| Games | Steam accounts |
+|-------|----------------|
+| ![Admin games](docs/images/admin-games.png) | ![Admin accounts](docs/images/admin-accounts.png) |
+
+| IGDB import | Dashboard |
+|-------------|-----------|
+| ![Admin IGDB import](docs/images/admin-igdb-import.png) | ![Admin dashboard](docs/images/admin-dashboard.png) |
+
+> Checkout, My Games, and license-management screens require authentication and are not shown here.
 
 ## Deployment
 
