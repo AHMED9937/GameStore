@@ -180,7 +180,19 @@ E2E specs that require a database will skip gracefully if `DATABASE_URL` is not 
 - **Live site:** [https://offlinegamenia.com](https://offlinegamenia.com)
 - **Screenshot guide:** [docs/images/screenshots.md](docs/images/screenshots.md)
 
-Screenshots of the home, shop, game detail, checkout, my-games, and admin screens should be placed in `docs/images/` to make this README render fully. Marked as `[NEEDS MY INPUT]` until they are added.
+| Home | Shop |
+|------|------|
+| ![Home page](docs/images/home.png) | ![Shop catalog](docs/images/shop.png) |
+
+| Game detail | FAQ |
+|-------------|-----|
+| ![Game detail page](docs/images/game-detail.png) | ![FAQ page](docs/images/faq.png) |
+
+| Contact |
+|---------|
+| ![Contact page](docs/images/contact.png) |
+
+> Checkout, My Games, and admin screens require authentication and are not shown here.
 
 ## Deployment
 
