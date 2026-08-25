@@ -2,7 +2,7 @@
   "name": "@gamestore/source",
   "version": "0.0.0",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "nx": "nx",
     "db:generate": "prisma generate --schema=libs/api/prisma/prisma/schema.prisma",
