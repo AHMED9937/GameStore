@@ -1,15 +1,19 @@
-# Screenshot Capture Guide
+# Screenshot gallery
 
-Drop image files here and link them from `README.md` to give recruiters a visual walkthrough.
+These screenshots were captured from the live site at `https://offlinegamenia.com` using Playwright at 1440×900 with the dark color scheme.
 
-| File | What to capture |
-|------|-----------------|
-| `home.png` | Landing page (`/`) with hero, brand, and dark theme |
-| `shop.png` | Game catalog grid with filters/search (`/shop`) |
-| `game-detail.png` | Game detail page with cover, price, and "Buy Now" (`/games/{slug}`) |
-| `checkout.png` | Stripe checkout session or summary screen (`/checkout`) |
-| `my-games.png` | License activation + Steam Guard panel (`/my-games`) |
-| `admin.png` | Admin dashboard with games/accounts/licenses overview (`/admin`) |
+| File | Source URL | What it shows |
+|------|------------|---------------|
+| `home.png` | `/` | Landing hero, brand, and navigation |
+| `shop.png` | `/shop` | Game catalog grid with cards and filters |
+| `game-detail.png` | `/games/grand-theft-auto-vi-ultimate-edition` | Game detail page with cover art and pricing |
+| `faq.png` | `/faq` | FAQ accordion |
+| `contact.png` | `/contact` | Contact form and support links |
 
-Capture at 1440x900 desktop viewport and compress with a tool like `pngquant` if needed.
+Additional screenshots to add later:
+
+- `checkout.png` — `/checkout` (requires a signed-in buyer)
+- `my-games.png` — `/my-games` (requires a signed-in buyer)
+- `admin.png` — `/admin` (requires an admin role)
+
 Keep screenshots focused on the product UI; do not include real customer data or secrets.
