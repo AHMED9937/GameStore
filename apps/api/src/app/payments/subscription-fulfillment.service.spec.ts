@@ -5,35 +5,27 @@ import type {
   UserSubscriptionsRepository,
 } from '@gamestore/api/data-access';
 import type { PrismaService } from '@gamestore/api/prisma';
-import type { PaddleService } from '@gamestore/api/paddle';
+import type { StripeService } from '@gamestore/api/stripe';
 import { SubscriptionFulfillmentService } from './subscription-fulfillment.service';
 
-const periodStart = new Date().toISOString();
-const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+const periodStart = Math.floor(Date.now() / 1000);
+const periodEnd = periodStart + 30 * 24 * 60 * 60;
 
-const paddleSubscription = {
-  id: 'sub_paddle_123',
+const stripeSubscription = {
+  id: 'sub_stripe_123',
   status: 'active',
-  customerId: 'cus_paddle_123',
-  currentBillingPeriod: {
-    startsAt: periodStart,
-    endsAt: periodEnd,
+  cancel_at_period_end: false,
+  current_period_start: periodStart,
+  current_period_end: periodEnd,
+  items: {
+    data: [
+      {
+        current_period_start: periodStart,
+        current_period_end: periodEnd,
+      },
+    ],
   },
-  customData: {
-    planId: 'plan-1',
-    userId: 'user-1',
-    customerEmail: 'buyer@example.com',
-  },
-};
-
-function buildPaddleTransaction(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'txn_sub_test',
-    status: 'completed',
-    subscriptionId: 'sub_paddle_123',
-    ...overrides,
-  };
-}
+} as import('stripe').default.Subscription;
 
 describe('SubscriptionFulfillmentService', () => {
   const tx = {
@@ -48,6 +40,7 @@ describe('SubscriptionFulfillmentService', () => {
 
   const prisma = {
     license: {
+      upsert: vi.fn(),
       findMany: vi.fn().mockResolvedValue([]),
       updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
@@ -61,7 +54,7 @@ describe('SubscriptionFulfillmentService', () => {
   } as unknown as SubscriptionPlansRepository;
 
   const userSubscriptions = {
-    findByProviderSubscriptionId: vi.fn(),
+    findByStripeSubscriptionId: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
   } as unknown as UserSubscriptionsRepository;
@@ -71,9 +64,9 @@ describe('SubscriptionFulfillmentService', () => {
     advanceNextAccountIfFull: vi.fn().mockResolvedValue('acct-1'),
   } as unknown as GameAccountsRepository;
 
-  const paddle = {
+  const stripe = {
     retrieveSubscription: vi.fn(),
-  } as unknown as PaddleService;
+  } as unknown as StripeService;
 
   let service: SubscriptionFulfillmentService;
 
@@ -84,7 +77,7 @@ describe('SubscriptionFulfillmentService', () => {
       plans,
       userSubscriptions,
       gameAccounts,
-      paddle,
+      stripe,
     );
 
     vi.mocked(plans.findById).mockResolvedValue({
@@ -93,16 +86,23 @@ describe('SubscriptionFulfillmentService', () => {
       isActive: true,
       games: [{ gameId: 'game-1', planId: 'plan-1' }],
     } as never);
-    vi.mocked(userSubscriptions.findByProviderSubscriptionId).mockResolvedValue(null);
+    vi.mocked(userSubscriptions.findByStripeSubscriptionId).mockResolvedValue(null);
     vi.mocked(userSubscriptions.create).mockResolvedValue({ id: 'user-sub-1' } as never);
-    vi.mocked(paddle.retrieveSubscription).mockResolvedValue(paddleSubscription as never);
+    vi.mocked(stripe.retrieveSubscription).mockResolvedValue(stripeSubscription);
     vi.mocked(gameAccounts.claimSeatForGame).mockResolvedValue({ id: 'acct-1' } as never);
     tx.license.findUnique.mockResolvedValue(null);
     tx.license.create.mockResolvedValue({ id: 'lic-1' });
   });
 
   it('fulfills a paid subscription checkout session', async () => {
-    const result = await service.handleSubscriptionActivated(paddleSubscription as never);
+    const result = await service.handleCheckoutSessionCompleted({
+      id: 'cs_sub_test',
+      mode: 'subscription',
+      payment_status: 'paid',
+      subscription: 'sub_stripe_123',
+      metadata: { planId: 'plan-1', userId: 'user-1' },
+      customer_details: { email: 'buyer@example.com' },
+    } as never);
 
     expect(result).toEqual({
       action: 'subscription_fulfilled',
@@ -120,19 +120,19 @@ describe('SubscriptionFulfillmentService', () => {
     );
   });
 
-  it('renews subscription licenses on transaction.completed for a subscription', async () => {
-    vi.mocked(userSubscriptions.findByProviderSubscriptionId).mockResolvedValue({
+  it('renews subscription licenses on invoice.paid', async () => {
+    vi.mocked(userSubscriptions.findByStripeSubscriptionId).mockResolvedValue({
       id: 'user-sub-1',
       licenses: [{ id: 'lic-1' }],
     } as never);
     vi.mocked(prisma.license.findMany).mockResolvedValue([{ id: 'lic-1' }]);
 
-    const result = await service.handleTransactionCompletedForSubscription(
-      buildPaddleTransaction() as never,
-    );
+    const result = await service.handleInvoicePaid({
+      id: 'in_test',
+      subscription: 'sub_stripe_123',
+    } as Stripe.Invoice);
 
-    expect(paddle.retrieveSubscription).toHaveBeenCalledWith('sub_paddle_123');
-    expect(result.action).toBe('subscription_synced');
+    expect(result.action).toBe('subscription_renewed');
     expect(prisma.license.updateMany).toHaveBeenCalled();
   });
 });

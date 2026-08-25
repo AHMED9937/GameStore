@@ -14,7 +14,8 @@ import {
   Public,
   recordAudit,
 } from '@gamestore/api/auth';
-import { PaddleMisconfiguredError, PaddleService } from '@gamestore/api/paddle';
+import { StripeMisconfiguredError, StripeService } from '@gamestore/api/stripe';
+import type Stripe from 'stripe';
 import { PaymentFulfillmentService } from './payment-fulfillment.service';
 import { SubscriptionFulfillmentService } from './subscription-fulfillment.service';
 
@@ -38,7 +39,7 @@ export class PaymentsWebhookController {
   private readonly logger = new Logger(PaymentsWebhookController.name);
 
   constructor(
-    private readonly paddle: PaddleService,
+    private readonly stripe: StripeService,
     private readonly fulfillment: PaymentFulfillmentService,
     private readonly subscriptionFulfillment: SubscriptionFulfillmentService,
     private readonly auditLogService: AuditLogService,
@@ -49,10 +50,10 @@ export class PaymentsWebhookController {
   @HttpCode(200)
   async handleWebhook(
     @Req() request: WebhookRequest,
-    @Headers('paddle-signature') signature?: string,
+    @Headers('stripe-signature') signature?: string,
   ) {
     if (!signature) {
-      throw new BadRequestException('Missing paddle-signature header');
+      throw new BadRequestException('Missing stripe-signature header');
     }
 
     const rawBody = request.rawBody;
@@ -60,11 +61,11 @@ export class PaymentsWebhookController {
       throw new BadRequestException('Missing raw request body');
     }
 
-    let event;
+    let event: Stripe.Event;
     try {
-      event = await this.paddle.unmarshalWebhook(rawBody, signature);
+      event = this.stripe.constructWebhookEvent(rawBody, signature);
     } catch (error) {
-      if (error instanceof PaddleMisconfiguredError) {
+      if (error instanceof StripeMisconfiguredError) {
         throw new ServiceUnavailableException(error.message);
       }
       throw new BadRequestException('Invalid webhook signature');
@@ -80,8 +81,8 @@ export class PaymentsWebhookController {
         resourceId: result.subscriptionId ?? result.orderId ?? null,
         ip: request.ip ?? null,
         metadata: {
-          paddleEventId: event.eventId,
-          paddleEventType: event.eventType,
+          stripeEventId: event.id,
+          stripeEventType: event.type,
           fulfillment: result.action,
           licenseId: result.licenseId,
           licenseIds: result.licenseIds,
@@ -92,50 +93,38 @@ export class PaymentsWebhookController {
     return { received: true, action: result.action };
   }
 
-  private async routeEvent(event: {
-    eventType: string;
-    data: unknown;
-  }): Promise<WebhookHandlerResult> {
-    switch (event.eventType) {
-      case 'transaction.completed':
-      case 'transaction.paid': {
-        const transaction = event.data as { subscriptionId?: string | null };
-        if (transaction.subscriptionId) {
-          return this.subscriptionFulfillment.handleTransactionCompletedForSubscription(
-            transaction as never,
-          );
+  private async routeEvent(event: Stripe.Event): Promise<WebhookHandlerResult> {
+    switch (event.type) {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === 'subscription') {
+          return this.subscriptionFulfillment.handleCheckoutSessionCompleted(session);
         }
-        return this.fulfillment.handleTransactionCompleted(
-          transaction as never,
+        return this.fulfillment.handleCheckoutSessionCompleted(session);
+      }
+      case 'invoice.paid':
+        return this.subscriptionFulfillment.handleInvoicePaid(
+          event.data.object as Stripe.Invoice,
         );
-      }
-      case 'transaction.canceled':
-      case 'transaction.past_due': {
-        const transaction = event.data as { id: string };
-        return this.fulfillment.handleTransactionFailed(transaction.id);
-      }
-      case 'subscription.activated':
-      case 'subscription.created': {
-        return this.subscriptionFulfillment.handleSubscriptionActivated(
-          event.data as never,
-        );
-      }
-      case 'subscription.updated':
-      case 'subscription.past_due':
-      case 'subscription.paused':
-      case 'subscription.resumed':
-      case 'subscription.trialing': {
+      case 'customer.subscription.updated':
         return this.subscriptionFulfillment.handleSubscriptionUpdated(
-          event.data as never,
+          event.data.object as Stripe.Subscription,
         );
-      }
-      case 'subscription.canceled': {
-        return this.subscriptionFulfillment.handleSubscriptionCanceled(
-          event.data as never,
+      case 'customer.subscription.deleted':
+        return this.subscriptionFulfillment.handleSubscriptionDeleted(
+          event.data.object as Stripe.Subscription,
         );
+      case 'checkout.session.expired':
+      case 'checkout.session.async_payment_failed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.mode === 'subscription' || !session.id) {
+          return { action: 'ignored' };
+        }
+        return this.fulfillment.handleCheckoutSessionFailed(session.id);
       }
       default:
-        this.logger.debug(`Ignoring unhandled Paddle event ${event.eventType}`);
+        this.logger.debug(`Ignoring unhandled Stripe event ${event.type}`);
         return { action: 'ignored' };
     }
   }

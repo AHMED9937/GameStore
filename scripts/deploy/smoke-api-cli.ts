@@ -9,8 +9,8 @@
 import {
   buildGamesUrl,
   buildHealthUrl,
-  buildPaddleWebhookUrl,
-  PADDLE_WEBHOOK_EVENTS,
+  buildStripeWebhookUrl,
+  STRIPE_WEBHOOK_EVENTS,
 } from './railway-config';
 
 function parseArgs(argv: string[]): { url: string | null; printWebhook: boolean } {
@@ -67,13 +67,13 @@ async function main(): Promise<void> {
   }
 
   if (printWebhook) {
-    console.log('\nPaddle Test notification destination (D2):');
-    console.log(`  URL: ${buildPaddleWebhookUrl(url)}`);
-    console.log(`  Events: ${PADDLE_WEBHOOK_EVENTS.join(', ')}`);
-    console.log('  Copy signing secret → Railway PADDLE_NOTIFICATION_WEBHOOK_SECRET\n');
+    console.log('\nStripe Test webhook (D2):');
+    console.log(`  URL: ${buildStripeWebhookUrl(url)}`);
+    console.log(`  Events: ${STRIPE_WEBHOOK_EVENTS.join(', ')}`);
+    console.log('  Copy signing secret → Railway STRIPE_WEBHOOK_SECRET\n');
   }
 
-  console.log('\nD2 smoke passed. Next: Paddle Test notification destination + CORS finalize in D3.\n');
+  console.log('\nD2 smoke passed. Next: Stripe Test webhook + CORS finalize in D3.\n');
   process.exit(0);
 }
 

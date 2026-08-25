@@ -27,7 +27,7 @@ export type AdminLicensesFiltersProps = {
 const SOURCE_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'admin', label: 'Admin' },
-  { value: 'purchase', label: 'Purchase' },
+  { value: 'stripe', label: 'Stripe' },
   { value: 'manual', label: 'Manual' },
 ] as const;
 

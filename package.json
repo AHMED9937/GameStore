@@ -2,7 +2,7 @@
   "name": "@gamestore/source",
   "version": "0.0.0",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "nx": "nx",
     "db:generate": "prisma generate --schema=libs/api/prisma/prisma/schema.prisma",
@@ -90,7 +90,6 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/throttler": "^6.5.0",
-    "@paddle/paddle-node-sdk": "^3.8.0",
     "@prisma/client": "^6.19.3",
     "discord.js": "14",
     "helmet": "^8.2.0",
@@ -102,6 +101,7 @@
     "remark-gfm": "^4.0.1",
     "rxjs": "^7.8.0",
     "steam-totp": "^2.1.2",
+    "stripe": "^22.3.0",
     "svix": "^1.96.1"
   }
 }

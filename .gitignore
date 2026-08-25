@@ -34,3 +34,15 @@ coverage
 # misc
 *.log
 vitest.config.*.timestamp*
+
+# ai / agent tooling (do not commit to public portfolio)
+.agents/
+.claude/
+.devin/
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+tools/ai-team/
+
+# temporary / local docs
+_docs_backup/
