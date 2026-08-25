@@ -13,7 +13,6 @@
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "@gamestore/workspace": ["./tools/gamestore-plugin/src/index.ts"],
       "@gamestore/testing/test-utils": [
