@@ -20,9 +20,7 @@ These screenshots were captured from the live site at `https://offlinegamenia.co
 | `admin-games.png` | Games management list with platform, price, and pool status |
 | `admin-accounts.png` | Steam account pool with capacity and active-user counts |
 | `admin-igdb-import.png` | IGDB search and import flow for game metadata |
-| `admin-licenses.png` | License key list with owner and source details |
-
-> **Security note:** `admin-licenses.png` contains real customer email addresses in the owner column. Do not embed it in the public README unless the emails are blurred or redacted.
+| `admin-licenses.png` | License key list with owner and source details (test data) |
 
 ## Missing authenticated flows
 
