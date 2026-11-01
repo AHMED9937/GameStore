@@ -101,7 +101,7 @@ importers:
         version: 23.0.1(p4ow7ilo4yraidbp5qy76vfmpq)
       '@nx/next':
         specifier: 23.0.1
-        version: 23.0.1(llzzymg57fp6wgtdlnh3hi35zq)
+        version: 23.0.1(us4h6zirjumfqhux2xlfup5edq)
       '@nx/node':
         specifier: 23.0.1
         version: 23.0.1(@babel/traverse@7.29.7)(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(@types/node@20.19.9)(@zkochan/js-yaml@0.0.7)(babel-plugin-macros@3.1.0)(eslint@9.39.4(jiti@2.7.0))(express@5.2.1)(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))(typescript@5.9.3)
@@ -249,17 +249,39 @@ importers:
 
   libs/api/data-access:
     dependencies:
+      '@nestjs/common':
+        specifier: ^11.0.0
+        version: 11.1.27(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@prisma/client':
+        specifier: ^6.19.3
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
 
   libs/api/igdb:
     dependencies:
+      '@nestjs/common':
+        specifier: ^11.0.0
+        version: 11.1.27(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@prisma/client':
+        specifier: ^6.19.3
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
 
-  libs/api/steam: {}
+  libs/api/steam:
+    dependencies:
+      '@nestjs/common':
+        specifier: ^11.0.0
+        version: 11.1.27(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      steam-totp:
+        specifier: ^2.1.2
+        version: 2.1.2
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
 
   libs/testing/test-utils:
     dependencies:
@@ -282,13 +304,19 @@ importers:
         version: 23.0.1(p4ow7ilo4yraidbp5qy76vfmpq)
       '@nx/next':
         specifier: 23.0.1
-        version: 23.0.1(7vq7lsejgn2ifp4ld5bvinw6ny)
+        version: 23.0.1(us4h6zirjumfqhux2xlfup5edq)
       '@nx/playwright':
         specifier: 23.0.1
         version: 23.0.1(@babel/traverse@7.29.7)(@nx/jest@23.0.1(@babel/traverse@7.29.7)(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))(typescript@5.9.3))(@playwright/test@1.61.1)(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(@zkochan/js-yaml@0.0.7)(eslint@9.39.4(jiti@2.7.0))(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))
       '@nx/react':
         specifier: 23.0.1
         version: 23.0.1(3n3zfmafzoi5hi3bs6upotetuq)
+      next:
+        specifier: ~16.1.6
+        version: 16.1.7(@babel/core@7.29.7)(@playwright/test@1.61.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.101.0)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
       tslib:
         specifier: ^2.3.0
         version: 2.8.1
@@ -1913,20 +1941,11 @@ packages:
   '@next/env@16.1.7':
     resolution: {integrity: sha512-rJJbIdJB/RQr2F1nylZr/PJzamvNNhfr3brdKP6s/GW850jbtR70QlSfFselvIBbcPUOlQwBakexjFzqLzF6pg==}
 
-  '@next/env@16.2.9':
-    resolution: {integrity: sha512-ki5VxxXfzD/9TDe13wyeTKIjQTAwBVpnr8KhRDUr8ltMUq1/NBpWNT5tiPoxiGl+PHM4X2ahSOiPk6iAimIzPg==}
-
   '@next/eslint-plugin-next@16.2.9':
     resolution: {integrity: sha512-UZi8+YT/MLgTC9nrrn2Xd4lBYv1B7lVmtWHfPcthAI5Tt/C1LuDe6DfmtCtJ+WQod3ksY4VrKSvk3oMVAnL7qw==}
 
   '@next/swc-darwin-arm64@16.1.7':
     resolution: {integrity: sha512-b2wWIE8sABdyafc4IM8r5Y/dS6kD80JRtOGrUiKTsACFQfWWgUQ2NwoUX1yjFMXVsAwcQeNpnucF2ZrujsBBPg==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@next/swc-darwin-arm64@16.2.9':
-    resolution: {integrity: sha512-HkfxNYUCmcct0Xsqib5KxqMSHV4AHJq857BNRchyBDs4YS19aHzVfn1kDuBYKqLLQBjXgnkIsjV2Kd4d2wzYhw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
@@ -1937,20 +1956,8 @@ packages:
     cpu: [x64]
     os: [darwin]
 
-  '@next/swc-darwin-x64@16.2.9':
-    resolution: {integrity: sha512-7IAtK4MeybpqRV9GRABWEhJ62mOS+rzWOzOTFie4cSEtm12xsoOMJRcECoZx3FHPzFAqN/IJtHqWAFOLfl152w==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [darwin]
-
   '@next/swc-linux-arm64-gnu@16.1.7':
     resolution: {integrity: sha512-2ant89Lux/Q3VyC8vNVg7uBaFVP9SwoK2jJOOR0L8TQnX8CAYnh4uctAScy2Hwj2dgjVHqHLORQZJ2wH6VxhSQ==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
-  '@next/swc-linux-arm64-gnu@16.2.9':
-    resolution: {integrity: sha512-hBD75iWpUtkL9SmQmcRhmLomn9jgkPzCEkbOcLgHymPEKzv+6ONy13RRiIEz/iEObjkS2Jlb5gYS2XGoS3X4rw==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
@@ -1961,20 +1968,8 @@ packages:
     cpu: [arm64]
     os: [linux]
 
-  '@next/swc-linux-arm64-musl@16.2.9':
-    resolution: {integrity: sha512-qZTI3pf9SGc/obr8NkQAekBxmp1QK+kVm+VAf3BALLfFAj+1kUhkTxmrWpVos9R/UYIA8AWX2p6cGI5WdwzVUA==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [linux]
-
   '@next/swc-linux-x64-gnu@16.1.7':
     resolution: {integrity: sha512-KWVf2gxYvHtvuT+c4MBOGxuse5TD7DsMFYSxVxRBnOzok/xryNeQSjXgxSv9QpIVlaGzEn/pIuI6Koosx8CGWA==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
-  '@next/swc-linux-x64-gnu@16.2.9':
-    resolution: {integrity: sha512-xm0HfRNX+UkH4R3c18ynswjj5o5uEj/7iI9p9omdtTSIsRCzQqkGMA+10nzJ4EHnYC3as65IMhbbl5fWRUWHYg==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
@@ -1985,32 +1980,14 @@ packages:
     cpu: [x64]
     os: [linux]
 
-  '@next/swc-linux-x64-musl@16.2.9':
-    resolution: {integrity: sha512-QumimHkGEG6vM3PfEDWKyKen03NcqLOkeKB1EfcPe7VxzmEiCa4jNnMyBn/US5zcd/VE1CI+O8Ovb3lfjVHfGw==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [linux]
-
   '@next/swc-win32-arm64-msvc@16.1.7':
     resolution: {integrity: sha512-S0n3KrDJokKTeFyM/vGGGR8+pCmXYrjNTk2ZozOL1C/JFdfUIL9O1ATaJOl5r2POe56iRChbsszrjMAdWSv7kQ==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [win32]
 
-  '@next/swc-win32-arm64-msvc@16.2.9':
-    resolution: {integrity: sha512-hzQpKZvw8rAwI6A2uQh6SacCSvNAXaIkPNsWwzqqfRiIMiXMfH936skDhz1OO6KpvdKkJrgHHtqQOq5PIXOvdQ==}
-    engines: {node: '>= 10'}
-    cpu: [arm64]
-    os: [win32]
-
   '@next/swc-win32-x64-msvc@16.1.7':
     resolution: {integrity: sha512-mwgtg8CNZGYm06LeEd+bNnOUfwOyNem/rOiP14Lsz+AnUY92Zq/LXwtebtUiaeVkhbroRCQ0c8GlR4UT1U+0yg==}
-    engines: {node: '>= 10'}
-    cpu: [x64]
-    os: [win32]
-
-  '@next/swc-win32-x64-msvc@16.2.9':
-    resolution: {integrity: sha512-qr2VL3Ce5QrwgO2yh1ujSBawrimjVKX8FGF/cOynmdYKJY0BdHpGVNIRK1tqONB10Vkm25Ub1BD2bkjWs4+96w==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
@@ -6388,27 +6365,6 @@ packages:
       sass:
         optional: true
 
-  next@16.2.9:
-    resolution: {integrity: sha512-MEOJiq/UvuezAdqVSceHbqDgZt1kDw2tpGVOlsdIoJsQdbN2JY2hpVG4xnXGkbdJUOEWhnRfiu/O4Hpc9Juwww==}
-    engines: {node: '>=20.9.0'}
-    hasBin: true
-    peerDependencies:
-      '@opentelemetry/api': ^1.1.0
-      '@playwright/test': ^1.51.1
-      babel-plugin-react-compiler: '*'
-      react: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
-      react-dom: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
-      sass: ^1.3.0
-    peerDependenciesMeta:
-      '@opentelemetry/api':
-        optional: true
-      '@playwright/test':
-        optional: true
-      babel-plugin-react-compiler:
-        optional: true
-      sass:
-        optional: true
-
   no-case@3.0.4:
     resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
 
@@ -10308,8 +10264,6 @@ snapshots:
 
   '@next/env@16.1.7': {}
 
-  '@next/env@16.2.9': {}
-
   '@next/eslint-plugin-next@16.2.9':
     dependencies:
       fast-glob: 3.3.1
@@ -10317,49 +10271,25 @@ snapshots:
   '@next/swc-darwin-arm64@16.1.7':
     optional: true
 
-  '@next/swc-darwin-arm64@16.2.9':
-    optional: true
-
   '@next/swc-darwin-x64@16.1.7':
-    optional: true
-
-  '@next/swc-darwin-x64@16.2.9':
     optional: true
 
   '@next/swc-linux-arm64-gnu@16.1.7':
     optional: true
 
-  '@next/swc-linux-arm64-gnu@16.2.9':
-    optional: true
-
   '@next/swc-linux-arm64-musl@16.1.7':
-    optional: true
-
-  '@next/swc-linux-arm64-musl@16.2.9':
     optional: true
 
   '@next/swc-linux-x64-gnu@16.1.7':
     optional: true
 
-  '@next/swc-linux-x64-gnu@16.2.9':
-    optional: true
-
   '@next/swc-linux-x64-musl@16.1.7':
-    optional: true
-
-  '@next/swc-linux-x64-musl@16.2.9':
     optional: true
 
   '@next/swc-win32-arm64-msvc@16.1.7':
     optional: true
 
-  '@next/swc-win32-arm64-msvc@16.2.9':
-    optional: true
-
   '@next/swc-win32-x64-msvc@16.1.7':
-    optional: true
-
-  '@next/swc-win32-x64-msvc@16.2.9':
     optional: true
 
   '@noble/hashes@1.4.0': {}
@@ -10596,70 +10526,7 @@ snapshots:
       - typescript
       - verdaccio
 
-  '@nx/next@23.0.1(7vq7lsejgn2ifp4ld5bvinw6ny)':
-    dependencies:
-      '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7)
-      '@nx/devkit': 23.0.1(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))
-      '@nx/eslint': 23.0.1(@babel/traverse@7.29.7)(@nx/jest@23.0.1(@babel/traverse@7.29.7)(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(@types/node@20.19.9)(babel-plugin-macros@3.1.0)(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))(typescript@5.9.3))(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(@zkochan/js-yaml@0.0.7)(eslint@9.39.4(jiti@2.7.0))(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))
-      '@nx/js': 23.0.1(@babel/traverse@7.29.7)(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))
-      '@nx/react': 23.0.1(3n3zfmafzoi5hi3bs6upotetuq)
-      '@nx/web': 23.0.1(wryoltc676br7m6eg6ho7ih4pm)
-      '@nx/webpack': 23.0.1(@babel/traverse@7.29.7)(@rspack/core@1.6.8(@swc/helpers@0.5.23))(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/cli@0.8.1(@swc/core@1.5.29(@swc/helpers@0.5.23))(chokidar@5.0.0))(@swc/core@1.5.29(@swc/helpers@0.5.23))(esbuild@0.28.1)(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))(typescript@5.9.3)(webpack-dev-server@5.2.5(tslib@2.8.1)(webpack@5.105.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(esbuild@0.28.1)(postcss@8.5.16)))(webpack@5.105.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(esbuild@0.28.1)(postcss@8.5.16))
-      '@phenomnomnominal/tsquery': 6.2.0(typescript@5.9.3)
-      '@svgr/webpack': 8.1.0(typescript@5.9.3)
-      copy-webpack-plugin: 14.0.0(webpack@5.105.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(esbuild@0.28.1)(postcss@8.5.16))
-      ignore: 7.0.5
-      next: 16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.101.0)
-      semver: 7.8.5
-      tslib: 2.8.1
-      webpack-merge: 5.10.0
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@babel/traverse'
-      - '@minify-html/node'
-      - '@module-federation/enhanced'
-      - '@module-federation/node'
-      - '@nx/cypress'
-      - '@nx/jest'
-      - '@nx/playwright'
-      - '@nx/vite'
-      - '@parcel/css'
-      - '@rspack/core'
-      - '@swc-node/register'
-      - '@swc/cli'
-      - '@swc/core'
-      - '@swc/css'
-      - '@swc/helpers'
-      - '@swc/html'
-      - '@types/babel__core'
-      - '@zkochan/js-yaml'
-      - babel-plugin-react-compiler
-      - clean-css
-      - cssnano
-      - csso
-      - debug
-      - esbuild
-      - eslint
-      - html-minifier-terser
-      - html-webpack-plugin
-      - lightningcss
-      - node-sass
-      - nx
-      - postcss
-      - react
-      - react-dom
-      - rollup
-      - supports-color
-      - typescript
-      - uglify-js
-      - verdaccio
-      - vite
-      - vitest
-      - webpack
-      - webpack-cli
-      - webpack-dev-server
-
-  '@nx/next@23.0.1(llzzymg57fp6wgtdlnh3hi35zq)':
+  '@nx/next@23.0.1(us4h6zirjumfqhux2xlfup5edq)':
     dependencies:
       '@babel/plugin-proposal-decorators': 7.29.7(@babel/core@7.29.7)
       '@nx/devkit': 23.0.1(nx@23.0.1(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.23))(@swc/types@0.1.27)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.23)))
@@ -15960,32 +15827,6 @@ snapshots:
       '@next/swc-linux-x64-musl': 16.1.7
       '@next/swc-win32-arm64-msvc': 16.1.7
       '@next/swc-win32-x64-msvc': 16.1.7
-      '@playwright/test': 1.61.1
-      sass: 1.101.0
-      sharp: 0.34.5
-    transitivePeerDependencies:
-      - '@babel/core'
-      - babel-plugin-macros
-
-  next@16.2.9(@babel/core@7.29.7)(@playwright/test@1.61.1)(babel-plugin-macros@3.1.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.101.0):
-    dependencies:
-      '@next/env': 16.2.9
-      '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.10.40
-      caniuse-lite: 1.0.30001799
-      postcss: 8.4.31
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      styled-jsx: 5.1.6(@babel/core@7.29.7)(babel-plugin-macros@3.1.0)(react@19.2.7)
-    optionalDependencies:
-      '@next/swc-darwin-arm64': 16.2.9
-      '@next/swc-darwin-x64': 16.2.9
-      '@next/swc-linux-arm64-gnu': 16.2.9
-      '@next/swc-linux-arm64-musl': 16.2.9
-      '@next/swc-linux-x64-gnu': 16.2.9
-      '@next/swc-linux-x64-musl': 16.2.9
-      '@next/swc-win32-arm64-msvc': 16.2.9
-      '@next/swc-win32-x64-msvc': 16.2.9
       '@playwright/test': 1.61.1
       sass: 1.101.0
       sharp: 0.34.5

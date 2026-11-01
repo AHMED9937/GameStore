@@ -12,7 +12,9 @@
     "@nx/next": "23.0.1",
     "@nx/playwright": "23.0.1",
     "@nx/react": "23.0.1",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "next": "~16.1.6",
+    "react": "^19.0.0"
   },
   "generators": "./generators.json"
 }
