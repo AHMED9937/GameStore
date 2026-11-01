@@ -6,17 +6,16 @@ const globalForPrisma = globalThis as unknown as {
 
 function createDbClient() {
   const databaseUrl = process.env['DATABASE_URL'];
-  if (!databaseUrl) {
-    throw new Error(
-      'DATABASE_URL must be a Neon PostgreSQL connection string (see Clerk Neon integration guide).',
-    );
-  }
 
   return new PrismaClient({
     log: process.env['NODE_ENV'] === 'development' ? ['error', 'warn'] : ['error'],
-    datasources: {
-      db: { url: databaseUrl },
-    },
+    ...(databaseUrl
+      ? {
+          datasources: {
+            db: { url: databaseUrl },
+          },
+        }
+      : {}),
   });
 }
 
