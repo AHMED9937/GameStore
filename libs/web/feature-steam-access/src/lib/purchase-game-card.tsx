@@ -17,7 +17,6 @@ export function PurchaseGameCard({
     <aside className={styles.gameCard} data-testid="steam-game-card">
       <p className={styles.gameLabel}>Your Game</p>
       <h2 className={styles.gameTitle}>{game.title}</h2>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         className={styles.cover}
         src={coverSrc}

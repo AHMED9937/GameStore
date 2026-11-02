@@ -44,7 +44,6 @@ export function SubscriptionPlanCard({
       <div className={styles.gameList}>
         {plan.games.map((game) => (
           <div key={game.id} className={styles.gameRow}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={getGameCardCover(game)}
               alt=""
