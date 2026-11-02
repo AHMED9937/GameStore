@@ -32,6 +32,15 @@ export default [
           ],
           depConstraints: [
             {
+              // Applications are the composition root: a deployable app may wire
+              // together libraries from any scope. Library-to-library boundaries
+              // below stay strict. (The Next.js web app is full-stack: its server
+              // tier — route handlers, server actions, server-only libs — consumes
+              // scope:api libs; client-bundle safety is enforced by `server-only`.)
+              sourceTag: 'type:app',
+              onlyDependOnLibsWithTags: ['*'],
+            },
+            {
               sourceTag: 'scope:shared',
               onlyDependOnLibsWithTags: ['scope:shared'],
             },
