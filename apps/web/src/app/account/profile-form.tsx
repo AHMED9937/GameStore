@@ -82,7 +82,7 @@ export function ProfileForm() {
       <div className={styles.profileHeader}>
         <div className={styles.avatar} aria-hidden>
           {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <img src={avatarUrl} alt="" className={styles.avatarImage} />
           ) : (
             <span className={styles.avatarInitials}>{initials}</span>

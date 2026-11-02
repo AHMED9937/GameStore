@@ -185,7 +185,7 @@ describe.skipIf(!hasDatabase)('Stripe checkout → activation → Steam Guard', 
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn(
     'Skipping Stripe activation API e2e tests: DATABASE_URL is not set',
   );

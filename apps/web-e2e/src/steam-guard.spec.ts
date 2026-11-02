@@ -100,6 +100,6 @@ test.describe('activation flow (real API)', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping real activation web e2e: DATABASE_URL is not set');
 }

@@ -273,6 +273,6 @@ describe.skipIf(!hasDatabase)('Admin setup API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Admin setup API e2e tests: DATABASE_URL is not set');
 }

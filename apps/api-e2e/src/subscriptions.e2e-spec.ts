@@ -322,6 +322,6 @@ describe.skipIf(!hasDatabase)('Stripe subscription routes', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Stripe subscription e2e tests: DATABASE_URL is not set');
 }

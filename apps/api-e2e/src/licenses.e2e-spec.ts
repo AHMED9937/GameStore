@@ -146,6 +146,6 @@ describe.skipIf(!hasDatabase)('Licenses API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Licenses API e2e tests: DATABASE_URL is not set');
 }

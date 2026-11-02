@@ -41,7 +41,7 @@ test.describe('license validate', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn(
     'Skipping license validate DB e2e tests: DATABASE_URL is not set',
   );

@@ -2,7 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const { composePlugins, withNx } = require('@nx/next');
 
 /** Load workspace-root `.env` when Nx runs Next with cwd `apps/web`. */
