@@ -11,6 +11,8 @@ export default [
       '**/.next',
       '**/coverage',
       '**/vitest.config.*.timestamp*',
+      // Nx generator template sources are scaffolding, not workspace code.
+      '**/src/generators/**/files*/**',
     ],
   },
   {
@@ -55,6 +57,10 @@ export default [
     files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
     rules: {
       'no-restricted-imports': 'off',
+      // Tests legitimately import across boundaries and use `typeof import()` in
+      // vi.mock factories; the latter is misread as a lazy dependency and would
+      // otherwise flag every static import of the mocked lib in production code.
+      '@nx/enforce-module-boundaries': 'off',
     },
   },
   {
