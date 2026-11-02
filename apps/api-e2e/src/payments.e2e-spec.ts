@@ -460,6 +460,6 @@ describe.skipIf(!hasDatabase)('Stripe payment routes', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Stripe API e2e tests: DATABASE_URL is not set');
 }

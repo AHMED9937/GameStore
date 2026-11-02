@@ -167,6 +167,6 @@ describe.skipIf(!hasDatabase)('Admin subscription plans API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Admin subscription plans e2e tests: DATABASE_URL is not set');
 }

@@ -212,6 +212,6 @@ describe.skipIf(!hasDatabase)('Admin games Discord announcement lifecycle', () =
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Admin games Discord e2e tests: DATABASE_URL is not set');
 }

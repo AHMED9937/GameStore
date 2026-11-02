@@ -33,7 +33,6 @@ export function LicenseGamePicker() {
         <Heading level="h2">Select your game</Heading>
         <Card className={styles.panel} style={{ marginTop: '1rem' }}>
           <div className={styles.pickerCard}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               className={styles.pickerCover}
               src={coverSrc}

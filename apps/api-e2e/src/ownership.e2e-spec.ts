@@ -107,6 +107,6 @@ describe.skipIf(!hasDatabase)('Security ownership API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Security ownership API e2e tests: DATABASE_URL is not set');
 }

@@ -168,6 +168,6 @@ describe.skipIf(!hasDatabase)('Admin licenses API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Admin licenses API e2e tests: DATABASE_URL is not set');
 }

@@ -167,7 +167,7 @@ describe.skipIf(!hasDatabase)('License activation + Steam Guard API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn(
     'Skipping activation API e2e tests: DATABASE_URL is not set',
   );

@@ -48,6 +48,6 @@ describe.skipIf(!hasDatabase)('Steam routes', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Steam API e2e tests: DATABASE_URL is not set');
 }

@@ -94,6 +94,6 @@ describe.skipIf(!hasDatabase)('Admin orders bulk API', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn('Skipping Admin orders bulk API e2e tests: DATABASE_URL is not set');
 }

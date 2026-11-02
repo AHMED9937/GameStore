@@ -12,6 +12,8 @@ import { ADMIN_LICENSE_COLUMNS } from './licenses.constants';
 import type { AdminTableSelectionProps } from '../types/admin-table-selection';
 import styles from './licenses.module.css';
 
+import { getLicenseExpiryState } from '@gamestore/web/feature-subscriptions';
+
 export type AdminLicensesTableProps = {
   licenses: AdminLicenseListItem[];
   revokingId?: string | null;
@@ -30,8 +32,6 @@ function statusVariant(
   }
   return 'default';
 }
-
-import { getLicenseExpiryState } from '@gamestore/web/feature-subscriptions';
 function renderRowCells(
   license: AdminLicenseListItem,
   revokingId: string | null,

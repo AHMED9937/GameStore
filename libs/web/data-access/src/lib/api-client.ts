@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference -- ambient window.Clerk augmentation; must load as a reference, not a module import
 /// <reference path="./clerk-window.d.ts" />
 
 export class ApiError extends Error {

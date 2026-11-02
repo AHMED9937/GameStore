@@ -27,6 +27,7 @@ const steps = [
   ['Verify Railway config', 'pnpm run deploy:railway-config:test'],
   ['Build NestJS API', 'pnpm nx build api --parallel=1'],
   ['Build Next.js web (Vercel command)', 'pnpm run vercel-build'],
+  ['Lint all projects', 'pnpm nx run-many -t lint --all --parallel=3'],
 ];
 
 const env = {

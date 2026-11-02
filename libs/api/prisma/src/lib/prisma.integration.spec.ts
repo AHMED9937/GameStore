@@ -16,7 +16,7 @@ describe.skipIf(!hasDatabase)('Prisma integration', () => {
 });
 
 if (!hasDatabase) {
-  // eslint-disable-next-line no-console
+   
   console.warn(
     'Skipping Prisma integration tests: DATABASE_URL is not set',
   );
